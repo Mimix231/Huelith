@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="Backdrop">
+<defs><linearGradient id="grad"><stop stop-color="#5a4cc7"/><stop offset=".45" stop-color="#28c7e7"/><stop offset="1" stop-color="#ffd17c"/></linearGradient></defs>
+<rect x="1" y="1" width="46" height="46" rx="12" fill="#222438"/>
+<g fill="none" stroke="#ef9f54" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.1"><path d="M8 8v32h32M11 36C20 36 17 9 28 15s3 23 14 6"/></g>
+</svg>

@@ -1,0 +1,85 @@
+/* Blossom has independent light/dark palettes and a unique control language. */
+.theme-blossom.tone-light {
+  --app-bg: #f7f6ff;
+  --title-bg: #eeedfc;
+  --panel-bg: #f9f9ff;
+  --context-bg: #e9e5f8;
+  --tabbar-bg: #f1eefe;
+  --status-bg: #e9e5fa;
+  --text: #332a51;
+  --muted: #71658d;
+  --border: #d6ceeb;
+  --accent: #754bb1;
+  --on-accent: #fff;
+  --accent-soft: #e5d8ff;
+  --accent-line: #ab86d8;
+  --active-bg: #ece4ff;
+  --good: #b393de;
+  --thumb-bg: #ebe3f6;
+}
+.theme-blossom.tone-dark {
+  --app-bg: #1b1830;
+  --title-bg: #27213e;
+  --panel-bg: #2b2242;
+  --context-bg: #34294c;
+  --tabbar-bg: #2d2448;
+  --status-bg: #201b32;
+  --text: #f6eeff;
+  --muted: #a99cce;
+  --border: #51436c;
+  --accent: #b49cf1;
+  --on-accent: #20123a;
+  --accent-soft: #493567;
+  --accent-line: #8f74c4;
+  --active-bg: #3f315b;
+  --good: #a990e4;
+  --thumb-bg: #352946;
+}
+.theme-blossom {
+  --control-bg: var(--panel-bg);
+  --logo-bg: linear-gradient(135deg, var(--accent), var(--accent-line));
+  --logo-radius: 16px;
+  --radius-sm: 16px;
+  --radius-lg: 22px;
+  --selected-shadow: inset 0 0 0 1px var(--accent-line);
+  --window-shadow: 0 10px 38px #17131c26;
+  background: var(--app-bg);
+}
+.theme-blossom .toolrail,
+.theme-blossom .inspector,
+.theme-blossom .titlebar {
+  background: var(--panel-bg);
+}
+.theme-blossom .titlebar {
+  background-image: linear-gradient(115deg, var(--title-bg), var(--panel-bg));
+}
+.theme-blossom .canvas-host {
+  background-color: var(--app-bg);
+  background-image: radial-gradient(circle at 85% 12%, #b594ff30, transparent 45%);
+  background-size: 38px 38px;
+}
+.theme-blossom .brand-mark,
+.theme-blossom .toolrail .MuiIconButton-root.selected {
+  border-radius: 50% 38% 50% 42%;
+  transform: rotate(-10deg);
+}
+.theme-blossom .doc-tab.active {
+  box-shadow: inset 0 2px var(--accent-line);
+}
+.theme-blossom .layer-row.active {
+  background: var(--active-bg);
+  border-color: var(--accent-line);
+}
+.theme-blossom .fx-launcher {
+  border-radius: 16px;
+  background: linear-gradient(105deg, var(--accent-soft), var(--panel-bg));
+}
+.theme-blossom .fx-overlay {
+  border-radius: 18px;
+}
+
+
+/* Animation interface personality, independent of document pixels. */
+.theme-blossom .timeline-frame-card.selected { border-radius: 12px; box-shadow: 0 0 0 1px #8e65c544, 0 2px 9px #8b62c52e; }
+.theme-blossom .animation-timeline { background-image: radial-gradient(circle at 12% 0, #b89bdf22, transparent 42%); }
+.theme-blossom .timeline-header button { border-radius: 12px; }

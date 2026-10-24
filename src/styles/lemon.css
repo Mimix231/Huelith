@@ -1,0 +1,85 @@
+/* Lemon has independent light/dark palettes and a unique control language. */
+.theme-lemon.tone-light {
+  --app-bg: #faf9e9;
+  --title-bg: #fffde7;
+  --panel-bg: #fffff4;
+  --context-bg: #f4f1d6;
+  --tabbar-bg: #fffde9;
+  --status-bg: #fcf4cf;
+  --text: #363822;
+  --muted: #626431;
+  --border: #dedbb0;
+  --accent: #786000;
+  --on-accent: #fff;
+  --accent-soft: #f4e69c;
+  --accent-line: #d3bb43;
+  --active-bg: #f8edc2;
+  --good: #ecd44b;
+  --thumb-bg: #f3ebc3;
+}
+.theme-lemon.tone-dark {
+  --app-bg: #222419;
+  --title-bg: #2c2d1e;
+  --panel-bg: #303020;
+  --context-bg: #373a25;
+  --tabbar-bg: #303123;
+  --status-bg: #222518;
+  --text: #fffada;
+  --muted: #bbb789;
+  --border: #595634;
+  --accent: #ffdc64;
+  --on-accent: #342a03;
+  --accent-soft: #514922;
+  --accent-line: #a49736;
+  --active-bg: #474328;
+  --good: #e3b434;
+  --thumb-bg: #383a20;
+}
+.theme-lemon {
+  --control-bg: var(--panel-bg);
+  --logo-bg: linear-gradient(135deg, var(--accent), var(--accent-line));
+  --logo-radius: 5px;
+  --radius-sm: 5px;
+  --radius-lg: 22px;
+  --selected-shadow: inset 0 0 0 1px var(--accent-line);
+  --window-shadow: 0 10px 38px #17131c26;
+  background: var(--app-bg);
+}
+.theme-lemon .toolrail,
+.theme-lemon .inspector,
+.theme-lemon .titlebar {
+  background: var(--panel-bg);
+}
+.theme-lemon .titlebar {
+  background-image: linear-gradient(115deg, var(--title-bg), var(--panel-bg));
+}
+.theme-lemon .canvas-host {
+  background-color: var(--app-bg);
+  background-image: repeating-linear-gradient(135deg, transparent 0 20px, #fff8bd20 20px 21px);
+  background-size: 38px 38px;
+}
+.theme-lemon .brand-mark,
+.theme-lemon .toolrail .MuiIconButton-root.selected {
+  border-left: 3px solid var(--accent);
+  border-bottom: 0;
+}
+.theme-lemon .doc-tab.active {
+  box-shadow: inset 0 2px var(--accent-line);
+}
+.theme-lemon .layer-row.active {
+  background: var(--active-bg);
+  border-color: var(--accent-line);
+}
+.theme-lemon .fx-launcher {
+  border-radius: 5px;
+  background: linear-gradient(105deg, var(--accent-soft), var(--panel-bg));
+}
+.theme-lemon .fx-overlay {
+  border-radius: 18px;
+}
+
+
+/* Animation interface personality, independent of document pixels. */
+.theme-lemon .timeline-frame-card.selected { border-radius: 3px; box-shadow: inset 3px 0 var(--accent); }
+.theme-lemon .timeline-ruler { background: repeating-linear-gradient(90deg, transparent 0 79px, #e0cf8240 79px 80px); }
+.theme-lemon .timeline-header button { border-radius: 4px; }

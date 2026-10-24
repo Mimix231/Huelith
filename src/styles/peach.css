@@ -1,0 +1,84 @@
+/* Peach has independent light/dark palettes and a unique control language. */
+.theme-peach.tone-light {
+  --app-bg: #fff7f0;
+  --title-bg: #ffede4;
+  --panel-bg: #fff9f6;
+  --context-bg: #ffe5d7;
+  --tabbar-bg: #fff0e8;
+  --status-bg: #ffe5d8;
+  --text: #563527;
+  --muted: #775449;
+  --border: #eccfbc;
+  --accent: #ad4936;
+  --on-accent: #fff;
+  --accent-soft: #ffddd0;
+  --accent-line: #d69a7c;
+  --active-bg: #ffe5da;
+  --good: #e6a279;
+  --thumb-bg: #ecd8cb;
+}
+.theme-peach.tone-dark {
+  --app-bg: #2b1e1b;
+  --title-bg: #37251f;
+  --panel-bg: #38251f;
+  --context-bg: #493129;
+  --tabbar-bg: #412a23;
+  --status-bg: #2c201b;
+  --text: #ffece3;
+  --muted: #c4a699;
+  --border: #61483e;
+  --accent: #ffac90;
+  --on-accent: #472119;
+  --accent-soft: #593b31;
+  --accent-line: #c9876c;
+  --active-bg: #50382f;
+  --good: #f49f84;
+  --thumb-bg: #3c2b23;
+}
+.theme-peach {
+  --control-bg: var(--panel-bg);
+  --logo-bg: linear-gradient(135deg, var(--accent), var(--accent-line));
+  --logo-radius: 13px;
+  --radius-sm: 13px;
+  --radius-lg: 22px;
+  --selected-shadow: inset 0 0 0 1px var(--accent-line);
+  --window-shadow: 0 10px 38px #17131c26;
+  background: var(--app-bg);
+}
+.theme-peach .toolrail,
+.theme-peach .inspector,
+.theme-peach .titlebar {
+  background: var(--panel-bg);
+}
+.theme-peach .titlebar {
+  background-image: linear-gradient(115deg, var(--title-bg), var(--panel-bg));
+}
+.theme-peach .canvas-host {
+  background-color: var(--app-bg);
+  background-image: radial-gradient(ellipse at top right, #fff2eb50, transparent 65%);
+  background-size: 38px 38px;
+}
+.theme-peach .brand-mark,
+.theme-peach .toolrail .MuiIconButton-root.selected {
+  border-radius: 18px 18px 5px 18px;
+}
+.theme-peach .doc-tab.active {
+  box-shadow: inset 0 2px var(--accent-line);
+}
+.theme-peach .layer-row.active {
+  background: var(--active-bg);
+  border-color: var(--accent-line);
+}
+.theme-peach .fx-launcher {
+  border-radius: 13px;
+  background: linear-gradient(105deg, var(--accent-soft), var(--panel-bg));
+}
+.theme-peach .fx-overlay {
+  border-radius: 18px;
+}
+
+
+/* Animation interface personality, independent of document pixels. */
+.theme-peach .animation-timeline { background-image: linear-gradient(100deg, #f99e6915, transparent 65%); }
+.theme-peach .timeline-frame-card.selected { border-radius: 14px; box-shadow: 0 2px 8px #fa9d7c30; }
+.theme-peach .timeline-header button { border-radius: 11px; }

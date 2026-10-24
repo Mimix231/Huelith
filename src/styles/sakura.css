@@ -1,0 +1,84 @@
+/* Sakura has independent light/dark palettes and a unique control language. */
+.theme-sakura.tone-light {
+  --app-bg: #fcf9fd;
+  --title-bg: #fdf0f6;
+  --panel-bg: #fffaff;
+  --context-bg: #f5e6f2;
+  --tabbar-bg: #faedf6;
+  --status-bg: #fae5f0;
+  --text: #44394d;
+  --muted: #755a78;
+  --border: #ead7e6;
+  --accent: #905180;
+  --on-accent: #fff;
+  --accent-soft: #f8dff0;
+  --accent-line: #cd9bbf;
+  --active-bg: #f6e7f2;
+  --good: #dfa9cc;
+  --thumb-bg: #e9dce8;
+}
+.theme-sakura.tone-dark {
+  --app-bg: #211b28;
+  --title-bg: #2b2232;
+  --panel-bg: #302638;
+  --context-bg: #382b43;
+  --tabbar-bg: #342839;
+  --status-bg: #251c2e;
+  --text: #f6eaf6;
+  --muted: #b29db6;
+  --border: #564363;
+  --accent: #dd9ecf;
+  --on-accent: #361b34;
+  --accent-soft: #5a395b;
+  --accent-line: #b77db2;
+  --active-bg: #49384e;
+  --good: #dca2c4;
+  --thumb-bg: #3d2e42;
+}
+.theme-sakura {
+  --control-bg: var(--panel-bg);
+  --logo-bg: linear-gradient(135deg, var(--accent), var(--accent-line));
+  --logo-radius: 15px;
+  --radius-sm: 15px;
+  --radius-lg: 22px;
+  --selected-shadow: inset 0 0 0 1px var(--accent-line);
+  --window-shadow: 0 10px 38px #17131c26;
+  background: var(--app-bg);
+}
+.theme-sakura .toolrail,
+.theme-sakura .inspector,
+.theme-sakura .titlebar {
+  background: var(--panel-bg);
+}
+.theme-sakura .titlebar {
+  background-image: linear-gradient(115deg, var(--title-bg), var(--panel-bg));
+}
+.theme-sakura .canvas-host {
+  background-color: var(--app-bg);
+  background-image: radial-gradient(circle at 12% 12%, #f8c2d540 0 2px, transparent 3px), radial-gradient(circle at 78% 45%, #f8b9d830 0 2px, transparent 3px);
+  background-size: 38px 38px;
+}
+.theme-sakura .brand-mark,
+.theme-sakura .toolrail .MuiIconButton-root.selected {
+  border-radius: 16px 16px 5px 16px;
+}
+.theme-sakura .doc-tab.active {
+  box-shadow: inset 0 2px var(--accent-line);
+}
+.theme-sakura .layer-row.active {
+  background: var(--active-bg);
+  border-color: var(--accent-line);
+}
+.theme-sakura .fx-launcher {
+  border-radius: 15px;
+  background: linear-gradient(105deg, var(--accent-soft), var(--panel-bg));
+}
+.theme-sakura .fx-overlay {
+  border-radius: 18px;
+}
+
+
+/* Animation interface personality, independent of document pixels. */
+.theme-sakura .timeline-frame-card.selected { border-radius: 15px 15px 5px 5px; border-style: dashed; }
+.theme-sakura .animation-timeline { background-image: linear-gradient(90deg, #ee9bc315, transparent 70%); }
+.theme-sakura .timeline-header button { border-radius: 16px; }

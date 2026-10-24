@@ -1,0 +1,84 @@
+/* Mango has independent light/dark palettes and a unique control language. */
+.theme-mango.tone-light {
+  --app-bg: #fff6e9;
+  --title-bg: #fff1d8;
+  --panel-bg: #fffbf1;
+  --context-bg: #fee7c6;
+  --tabbar-bg: #fff0d9;
+  --status-bg: #fbe4bd;
+  --text: #52341f;
+  --muted: #7b542f;
+  --border: #f1d5a8;
+  --accent: #a65316;
+  --on-accent: #fff;
+  --accent-soft: #ffddaa;
+  --accent-line: #eaa43a;
+  --active-bg: #f3ddb7;
+  --good: #ffb24e;
+  --thumb-bg: #ffead0;
+}
+.theme-mango.tone-dark {
+  --app-bg: #251e17;
+  --title-bg: #332416;
+  --panel-bg: #3a2a1b;
+  --context-bg: #453020;
+  --tabbar-bg: #3c281a;
+  --status-bg: #251d16;
+  --text: #ffe9cb;
+  --muted: #c6a17b;
+  --border: #685035;
+  --accent: #ffb45e;
+  --on-accent: #382313;
+  --accent-soft: #68401e;
+  --accent-line: #e79e49;
+  --active-bg: #583b21;
+  --good: #e5a64f;
+  --thumb-bg: #49331b;
+}
+.theme-mango {
+  --control-bg: var(--panel-bg);
+  --logo-bg: linear-gradient(135deg, var(--accent), var(--accent-line));
+  --logo-radius: 8px;
+  --radius-sm: 8px;
+  --radius-lg: 22px;
+  --selected-shadow: inset 0 0 0 1px var(--accent-line);
+  --window-shadow: 0 10px 38px #17131c26;
+  background: var(--app-bg);
+}
+.theme-mango .toolrail,
+.theme-mango .inspector,
+.theme-mango .titlebar {
+  background: var(--panel-bg);
+}
+.theme-mango .titlebar {
+  background-image: linear-gradient(115deg, var(--title-bg), var(--panel-bg));
+}
+.theme-mango .canvas-host {
+  background-color: var(--app-bg);
+  background-image: linear-gradient(115deg, #ffc35620, transparent 55%);
+  background-size: 38px 38px;
+}
+.theme-mango .brand-mark,
+.theme-mango .toolrail .MuiIconButton-root.selected {
+  border-radius: 2px 13px 2px 13px;
+}
+.theme-mango .doc-tab.active {
+  box-shadow: inset 0 2px var(--accent-line);
+}
+.theme-mango .layer-row.active {
+  background: var(--active-bg);
+  border-color: var(--accent-line);
+}
+.theme-mango .fx-launcher {
+  border-radius: 8px;
+  background: linear-gradient(105deg, var(--accent-soft), var(--panel-bg));
+}
+.theme-mango .fx-overlay {
+  border-radius: 18px;
+}
+
+
+/* Animation interface personality, independent of document pixels. */
+.theme-mango .animation-timeline { background-image: linear-gradient(90deg, #ffb74e1a, transparent 54%); }
+.theme-mango .timeline-frame-card.selected { border-radius: 12px 4px; box-shadow: inset 0 2px #ffae4496; }
+.theme-mango .timeline-marker { text-shadow: 0 2px #b75d2844; }

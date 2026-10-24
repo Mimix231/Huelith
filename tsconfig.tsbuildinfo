@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/main.tsx","./src/components/canvas.tsx","./src/editor/files.ts","./src/editor/recovery.ts","./src/editor/render.ts","./src/editor/store.ts","./src/editor/types.ts"],"errors":true,"version":"5.9.3"}

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="Holographic">
+<defs><linearGradient id="grad"><stop stop-color="#5a4cc7"/><stop offset=".45" stop-color="#28c7e7"/><stop offset="1" stop-color="#ffd17c"/></linearGradient></defs>
+<rect x="1" y="1" width="46" height="46" rx="12" fill="#222438"/>
+<g fill="none" stroke="#dfaaee" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.1"><path d="M7 33a17 17 0 0 1 34 0M13 33a11 11 0 0 1 22 0M19 33a5 5 0 0 1 10 0"/></g>
+</svg>

@@ -1,0 +1,100 @@
+/* Material You: sunny tonal surfaces, large expressive curves, clear elevations. */
+.theme-material {
+  --app-bg: #f5f2fa;
+  --title-bg: #ede8f5;
+  --tabbar-bg: #f2eef8;
+  --panel-bg: #fbf8ff;
+  --context-bg: #ebe6f5;
+  --status-bg: #e8e2ed;
+  --control-bg: #f3eff8;
+  --text: #26212d;
+  --muted: #6a6372;
+  --border: #dad3e0;
+  --accent: #6750a4;
+  --on-accent: #ffffff;
+  --accent-soft: #e9ddff;
+  --accent-line: #aa94d8;
+  --active-bg: #e6def0;
+  --thumb-bg: #e1dcf2;
+  --good: #008a77;
+  --logo-bg: linear-gradient(155deg, #6750a4, #b69bea);
+  --logo-radius: 18px;
+  --radius-sm: 14px;
+  --radius-lg: 32px;
+  --selected-shadow: none;
+  --window-shadow: 0 17px 45px #62527a38;
+  background: #f5f2fa;
+}
+
+.theme-material .titlebar {
+  border-bottom: 0;
+}
+
+.theme-material .toolrail {
+  border-radius: 0 19px 19px 0;
+}
+
+.theme-material .toolrail .MuiIconButton-root {
+  border-radius: 17px;
+}
+
+.theme-material .doc-tab {
+  border-radius: 16px 16px 0 0;
+}
+
+.theme-material .doc-tab.active {
+  border-color: transparent;
+  background: #e4ddeb;
+}
+
+.theme-material .inspector-tabs button.active {
+  background: #eadffd;
+  border-bottom-color: transparent;
+  border-radius: 16px 16px 0 0;
+}
+
+.theme-material .layer-row.active {
+  border-color: transparent;
+}
+
+.theme-material .canvas-host {
+  background-color: #e1dce9;
+  background-image: radial-gradient(circle, #cbc4d0 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.theme-material .canvas-hint {
+  background: #fffaff;
+  color: #49375d;
+  border: 1px solid #d1c3da;
+  box-shadow: 0 4px 16px #5a4c7440;
+}
+
+/* Readable dark counterpart retaining the material component geometry. */
+.theme-material.tone-dark {
+  --app-bg: #201f26;
+  --title-bg: #292832;
+  --tabbar-bg: #25242c;
+  --panel-bg: #302d39;
+  --context-bg: #34303f;
+  --status-bg: #25222e;
+  --control-bg: #383341;
+  --text: #f4edf8;
+  --muted: #b4aabc;
+  --border: #574c62;
+  --accent: #d4b8ff;
+  --on-accent: #2e174a;
+  --accent-soft: #514260;
+  --accent-line: #886ab3;
+  --active-bg: #4a4057;
+  --thumb-bg: #443b54;
+}
+
+.theme-material .fx-overlay {
+  border-radius: 25px;
+  backdrop-filter: none;
+  box-shadow: 0 16px 45px #3b2d5b24;
+}
+.theme-material .fx-filter-card {
+  border-radius: 15px;
+}

@@ -1,0 +1,103 @@
+/* Classic Desktop: utilitarian squared chrome, dense Linux/Windows-style panels. */
+.theme-classic {
+  --app-bg: #24282d;
+  --title-bg: #30343a;
+  --tabbar-bg: #24272c;
+  --panel-bg: #2c3035;
+  --context-bg: #343941;
+  --status-bg: #30343a;
+  --control-bg: #252930;
+  --text: #e0e5e9;
+  --muted: #a7b0bb;
+  --border: #4b525c;
+  --accent: #a5c5e5;
+  --on-accent: #152637;
+  --accent-soft: #50759850;
+  --accent-line: #7998b9;
+  --active-bg: #45617e;
+  --thumb-bg: #363f49;
+  --good: #68c28c;
+  --logo-bg: #4c7799;
+  --logo-radius: 2px;
+  --radius-sm: 2px;
+  --radius-lg: 3px;
+  --selected-shadow: inset 0 0 0 1px #a5c5e5;
+  --window-shadow: 5px 5px 0 #10141bcc;
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+}
+
+.theme-classic .brand,
+.theme-classic .panel-title,
+.theme-classic .property-heading {
+  letter-spacing: 0;
+}
+
+.theme-classic .titlebar {
+  box-shadow: inset 0 1px #68707c;
+}
+
+.theme-classic .toolrail .MuiIconButton-root {
+  height: 29px;
+}
+
+.theme-classic .contextbar,
+.theme-classic .inspector,
+.theme-classic .toolrail {
+  box-shadow: none;
+}
+
+.theme-classic .doc-tab.active {
+  border: 1px solid #5b6675;
+  border-bottom-color: #2c3035;
+}
+
+.theme-classic .inspector-tabs button.active {
+  color: #e7f5ff;
+}
+
+.theme-classic .layer-row.active,
+.theme-classic .layer-row.active .layer-info span {
+  color: white;
+}
+
+.theme-classic .canvas-host {
+  background: repeating-linear-gradient(45deg, #252930, #252930 8px, #292e36 8px, #292e36 16px);
+}
+
+.theme-classic .canvas-hint {
+  border-radius: 2px;
+  border: 1px solid #566273;
+  background: #222833;
+  color: #d2dce7;
+  backdrop-filter: none;
+}
+
+/* Readable light counterpart retaining the classic component geometry. */
+.theme-classic.tone-light {
+  --app-bg: #d9dce1;
+  --title-bg: #eceff4;
+  --tabbar-bg: #d5dae1;
+  --panel-bg: #f3f4f7;
+  --context-bg: #e1e5eb;
+  --status-bg: #e3e7eb;
+  --control-bg: #fff;
+  --text: #25313c;
+  --muted: #576675;
+  --border: #aeb9c6;
+  --accent: #2f6498;
+  --on-accent: #fff;
+  --accent-soft: #bdd5ed;
+  --accent-line: #728fae;
+  --active-bg: #d0e1f1;
+  --thumb-bg: #dae7f0;
+}
+
+.theme-classic .fx-overlay {
+  border-radius: 2px;
+  backdrop-filter: none;
+  box-shadow: 3px 4px 0 #080e1280;
+}
+.theme-classic .fx-filter-card,
+.theme-classic .fx-preset-card {
+  border-radius: 0;
+}

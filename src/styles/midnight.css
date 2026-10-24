@@ -1,0 +1,66 @@
+/* Midnight: low-glare photographic darkroom — not translucent or neumorphic. */
+.theme-midnight {
+  --tabbar-bg: #141a28;
+  --context-bg: #141b2a;
+  --status-bg: #172031;
+  --on-accent:  #0d1421;
+  --accent-soft: #1a263b;
+  --accent-line: #91bbff;
+  --active-bg: #102035;
+  --thumb-bg: #182338;
+  --good: #7db6ff;
+  --radius-sm: 3px;
+  --radius-lg: 6px;
+  --selected-shadow: inset 0 0 0 1px #91bbff;
+  --window-shadow: 0 15px 50px #0b182a66;
+  --app-bg: #0b1019;
+  --title-bg: #0e1420;
+  --panel-bg: #111827;
+  --toolbar-bg: #141d2b;
+  --border: #263348;
+  --text: #dce6f3;
+  --muted: #8298b5;
+  --accent: #84aaff;
+  --logo-bg: linear-gradient(130deg, #3b63a2, #0e4b71);
+  --logo-radius: 7px;
+  --canvas-bg: #0b1017;
+  --popup-bg: #192337;
+  --control-bg: #1a2739;
+  --item-hover: rgba(130, 175, 255, .10);
+}
+.theme-midnight .titlebar,
+.theme-midnight .inspector,
+.theme-midnight .toolrail,
+.theme-midnight .contextbar {
+  box-shadow: inset 0 1px rgba(190, 213, 255, .025);
+  backdrop-filter: none;
+}
+.theme-midnight .doc-tab.active { border-bottom: 2px solid #84aaff; }
+.theme-midnight .toolrail button.selected { box-shadow: inset 3px 0 #84aaff; }
+.theme-midnight .canvas-host { background: #080c12; }
+.theme-midnight .spectrum-popup { border: 1px solid #2e3e55; }
+
+/* Readable light counterpart retaining the midnight component geometry. */
+.theme-midnight.tone-light {
+  --app-bg: #e2eaf2;
+  --title-bg: #d4e0f0;
+  --tabbar-bg: #dce6f2;
+  --panel-bg: #f5f8fc;
+  --context-bg: #e8f0f9;
+  --status-bg: #d5dfeb;
+  --control-bg: #fff;
+  --text: #24374f;
+  --muted: #607089;
+  --border: #b9c9d9;
+  --accent: #39679a;
+  --on-accent: #fff;
+  --accent-soft: #c7d9ed;
+  --accent-line: #7ea4d1;
+  --active-bg: #d9e9fb;
+  --thumb-bg: #d9e3ef;
+}
+
+.theme-midnight .fx-overlay {
+  border-radius: 7px;
+  backdrop-filter: none;
+}

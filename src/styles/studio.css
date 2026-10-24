@@ -1,0 +1,71 @@
+/* Studio: light industrial editing suite — crisp borders, no blur or glass. */
+.theme-studio {
+  --tabbar-bg: #ebeff2;
+  --context-bg: #f5f7f8;
+  --status-bg: #f3f6f8;
+  --on-accent: #f4f6f8;
+  --accent-soft: #cfecf3;
+  --accent-line: #227c9d;
+  --active-bg: #d5e5ef;
+  --thumb-bg: #f5f7fb;
+  --good: #116b8c;
+  --radius-sm: 3px;
+  --radius-lg: 6px;
+  --selected-shadow: inset 0 0 0 1px #227c9d;
+  --window-shadow: 0 15px 50px #0b182a66;
+  --app-bg: #e7ebef;
+  --title-bg: #f7f8fa;
+  --panel-bg: #f7f9fb;
+  --toolbar-bg: #e1e7ec;
+  --border: #bfcbd4;
+  --text: #233340;
+  --muted: #556979;
+  --accent: #136c8f;
+  --logo-bg: #126d90;
+  --logo-radius: 2px;
+  --canvas-bg: #b9c3ca;
+  --popup-bg: #fff;
+  --control-bg: #fefefe;
+  --item-hover: #d0e6ed;
+}
+.theme-studio .titlebar,
+.theme-studio .inspector,
+.theme-studio .toolrail,
+.theme-studio .contextbar { box-shadow: none; backdrop-filter: none; }
+.theme-studio .toolrail button,
+.theme-studio .doc-tab,
+.theme-studio .layer-row,
+.theme-studio input,
+.theme-studio select { border-radius: 2px !important; }
+.theme-studio .doc-tab.active { border-top: 2px solid #177c9c; background: white; }
+.theme-studio .canvas-host { background-color: #b9c3ca; background-image: radial-gradient(#aab5bc 0.6px, transparent 0.8px); background-size: 15px 15px; }
+.theme-studio .spectrum-popup { border: 1px solid #b8c5d1; box-shadow: 1px 3px 8px #2d424c29; }
+
+/* Readable dark counterpart retaining the studio component geometry. */
+.theme-studio.tone-dark {
+  --app-bg: #20252b;
+  --title-bg: #292e35;
+  --tabbar-bg: #242a32;
+  --panel-bg: #30363e;
+  --context-bg: #2b333d;
+  --status-bg: #222b32;
+  --control-bg: #3b4249;
+  --text: #ebf3f7;
+  --muted: #acbdca;
+  --border: #58636e;
+  --accent: #8bd1e5;
+  --on-accent: #112730;
+  --accent-soft: #305263;
+  --accent-line: #6595ac;
+  --active-bg: #34515d;
+  --thumb-bg: #3b4550;
+}
+
+.theme-studio .fx-overlay {
+  border-radius: 4px;
+  backdrop-filter: none;
+  box-shadow: 1px 3px 12px #151d2736;
+}
+.theme-studio .fx-filter-card {
+  border-radius: 3px;
+}

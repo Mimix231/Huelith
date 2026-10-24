@@ -1,0 +1,89 @@
+/* Aurora's compact UI: theme-aware, accessible, and independent of editor internals. */
+.aurora-settings-dialog .aurora-settings-surface {
+  color: var(--text, #f4f1ff);
+  background: color-mix(in srgb, var(--panel-bg, #24233a) 96%, transparent);
+  border: 1px solid var(--border, #68617b);
+  border-radius: 17px;
+  overflow: hidden;
+  box-shadow: 0 30px 90px #04030e80, inset 0 1px #ffffff20;
+  backdrop-filter: blur(24px) saturate(120%);
+  height: min(630px, 88vh);
+  max-height: 88vh;
+}
+.aurora-settings-title {
+  flex: none; display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 15px; background: var(--title-bg, #24263b);
+  border-bottom: 1px solid var(--border, #aaa4);
+}
+.aurora-settings-brand { display: flex; align-items: center; gap: 11px; min-width: 0; }
+.aurora-settings-brand strong { display: block; font-size: 14px; }
+.aurora-settings-brand small { display: block; font-size: 10px; color: var(--muted, #aab); margin-top: 3px; }
+.aurora-settings-emblem { display: grid; place-items: center; font-size: 18px; color: var(--on-accent, #fff);
+  width: 31px; height: 31px; border-radius: 11px; background: var(--logo-bg, #8569ed); }
+.aurora-settings-close { border: 0; color: inherit; background: transparent; font-size: 23px; line-height: 1;
+  border-radius: 9px; width: 29px; height: 29px; }
+.aurora-settings-close:hover { background: var(--active-bg, #8883); }
+.aurora-settings-body { display: grid; grid-template-columns: 179px minmax(0, 1fr); flex: 1; overflow: hidden; min-height: 0; }
+.aurora-settings-nav { background: color-mix(in srgb, var(--panel-bg, #25263c) 82%, var(--app-bg, #0e1221));
+  display: flex; flex-direction: column; padding: 10px 7px; gap: 2px;
+  border-right: 1px solid var(--border, #aaaa4); overflow-y: auto; min-width: 0; }
+.aurora-settings-nav input { width: 100%; padding: 8px 9px; margin: 0 0 6px; min-width: 0;
+  background: var(--control-bg, #25263b); color: inherit; border: 1px solid var(--border, #aaaa4); border-radius: 8px; font-size: 11px; }
+.aurora-settings-nav button { width: 100%; padding: 8px 10px; display: flex; align-items: center; gap: 11px;
+  color: inherit; background: transparent; border: 1px solid transparent; border-radius: 8px; text-align: left; font-size: 11px; }
+.aurora-settings-nav button span { font-size: 15px; width: 18px; text-align: center; }
+.aurora-settings-nav button:hover { background: var(--active-bg, #8681d52b); }
+.aurora-settings-nav button.selected { background: var(--accent-soft, #7c6ad82b); border-color: var(--accent-line, #aba4e977);
+  color: var(--text, #fff); font-weight: 650; }
+.aurora-settings-content { overflow: auto; padding: 18px 20px 28px; min-width: 0; }
+.aurora-section-heading h3 { margin: 0; font-size: 17px; font-weight: 700; }
+.aurora-section-heading p { font-size: 11px; margin: 6px 0 18px; color: var(--muted, #aaa); }
+.aurora-setting-row { display: flex; justify-content: space-between; align-items: center; gap: 17px;
+  padding: 11px 2px; border-bottom: 1px solid var(--border, #8883); min-height: 53px; }
+.aurora-setting-row > div:first-child { flex: 1; min-width: 0; }
+.aurora-setting-row strong { display: block; font-size: 12px; }
+.aurora-setting-row small { display: block; color: var(--muted, #aaa); line-height: 1.5; margin-top: 4px; font-size: 10px; }
+.aurora-setting-control { display: flex; align-items: center; justify-content: flex-end; flex: 0 0 156px; }
+.aurora-setting-control select { width: 100%; min-width: 0; font-size: 11px; border-radius: 7px; padding: 6px;
+  border: 1px solid var(--border, #8885); background: var(--control-bg, #28283b); color: var(--text, #fff); }
+.aurora-setting-control .MuiSlider-root { color: var(--accent, #a88eff); margin-right: 8px; }
+.aurora-staged { font-size: 10px; line-height: 1.6; padding: 10px; margin: 5px 0 12px; border-radius: 10px;
+  background: var(--accent-soft, #8283ce27); border: 1px solid var(--accent-line, #a88cfe66); }
+.aurora-test-buttons { margin: 15px 0 6px; display: flex; flex-wrap: wrap; gap: 7px; }
+.aurora-hint { color: var(--muted, #aaa); font-size: 11px; line-height: 1.7; }
+.aurora-result { padding: 8px 11px; border: 1px solid var(--border, #7776); border-radius: 7px; font-size: 11px; }
+.aurora-info-card { border: 1px solid var(--border, #aaa4); border-radius: 9px; padding: 12px; margin-bottom: 10px;
+  background: var(--control-bg, #29283b); font-size: 11px; }
+.aurora-info-card p { line-height: 1.65; color: var(--muted, #aaa); }
+.aurora-shortcuts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px 13px; margin-bottom: 12px; }
+.aurora-shortcuts label { display: flex; align-items: center; justify-content: space-between; min-width: 0; font-size: 10px;
+  background: var(--control-bg, #26283b); border-radius: 7px; padding: 6px 9px; gap: 5px; }
+.aurora-shortcuts label span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.aurora-shortcuts input { text-align: center; width: 26px; height: 25px; padding: 0;
+  border-radius: 5px; border: 1px solid var(--border, #9995); color: inherit; background: transparent; }
+.aurora-settings-footer { display: flex; align-items: center; gap: 12px; padding: 9px 14px;
+  border-top: 1px solid var(--border, #8884); flex: none; font-size: 10px; }
+.aurora-settings-footer span { color: var(--muted, #aaa); margin-left: auto; }
+.aurora-reset { border: 0; background: none; color: var(--accent, #a88efe); font-size: 11px; }
+html[data-spectrum-density="comfortable"] .titlebar { height: 48px; min-height: 48px; }
+html[data-spectrum-density="comfortable"] .document-strip { height: 40px; min-height: 40px; }
+html[data-spectrum-transparency="false"] .app .titlebar,
+html[data-spectrum-transparency="false"] .app .document-strip,
+html[data-spectrum-transparency="false"] .app .inspector,
+html[data-spectrum-transparency="false"] .app .toolrail,
+html[data-spectrum-transparency="false"] .app .contextbar,
+html[data-spectrum-transparency="false"] .aurora-settings-surface { backdrop-filter: none !important; }
+html[data-spectrum-reduce-motion="true"] .app *,
+html[data-spectrum-reduce-motion="true"] .aurora-settings-surface * { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+@media (max-width: 570px) { .aurora-settings-body { grid-template-columns: 140px minmax(0, 1fr); }
+  .aurora-settings-content { padding: 12px; }
+  .aurora-setting-control { flex-basis: 100px; }
+  .aurora-shortcuts { grid-template-columns: 1fr; }
+}
+html[data-spectrum-transparency="false"] .app .titlebar,
+html[data-spectrum-transparency="false"] .app .document-strip,
+html[data-spectrum-transparency="false"] .app .inspector,
+html[data-spectrum-transparency="false"] .app .toolrail,
+html[data-spectrum-transparency="false"] .app .contextbar,
+html[data-spectrum-transparency="false"] .aurora-settings-surface { background: var(--aurora-solid-surface, #242738) !important; }
+html[data-spectrum-transparency="false"][data-spectrum-density="comfortable"] .aurora-settings-surface { box-shadow: 0 22px 70px #1118; }

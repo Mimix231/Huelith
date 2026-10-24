@@ -1,0 +1,82 @@
+/* Spectrum Studio 0.1: fixed-density library and single-purpose editors. */
+.spectrum-studio-v3 .studio-editor-view { display: flex; flex-direction: column; min-height: 0; flex: 1; animation: studio-panel-in .16s cubic-bezier(.2,.8,.2,1) both; }
+.spectrum-studio-v3 .studio-editor-intro { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+.spectrum-studio-v3 .studio-editor-intro > div { display: grid; gap: 2px; min-width: 0; }
+.spectrum-studio-v3 .studio-editor-intro small { color: var(--muted); font-size: 11px; }
+.spectrum-studio-v3 .studio-editor-icon { width: 31px; height: 31px; flex: none; }
+.spectrum-studio-v3 .studio-effect-scroll { flex: 1; min-height: 90px; overflow-y: auto; padding: 9px 12px; }
+.spectrum-studio-v3 .studio-editor-section { padding-bottom: 11px; border-bottom: 1px solid var(--border); margin-bottom: 10px; }
+.spectrum-studio-v3 .studio-editor-section h3 { margin: 3px 0 9px; font-size: 12px; }
+.spectrum-studio-v3 .studio-toggle { display: flex; align-items: center; gap: 6px; font-size: 11px; }
+.spectrum-studio-v3 .studio-editor-footer { display: flex; justify-content: flex-end; gap: 9px; padding: 9px 12px; border-top: 1px solid var(--border); }
+.spectrum-studio-v3 .studio-editor-footer button { font: inherit; border: 1px solid var(--border); background: var(--panel); color: var(--text); border-radius: 9px; padding: 5px 12px; cursor: pointer; }
+.spectrum-studio-v3 .studio-editor-footer .studio-apply { background: var(--accent); color: white; border-color: transparent; }
+.spectrum-studio-v3 .studio-icon-button { color: var(--text); background: transparent; border: 0; cursor: pointer; padding: 4px; }
+.spectrum-studio-v3 .studio-library-body { min-height: 0; }
+.spectrum-studio-v3 .studio-applied-section { padding: 8px 0 12px; border-top: 1px solid var(--border); margin-top: 10px; }
+.spectrum-studio-v3 .studio-applied-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(78px,1fr)); gap: 7px; }
+.spectrum-studio-v3 .studio-applied-tile { min-width: 0; display: grid; justify-items: center; align-content: start; gap: 3px; font-size: 10px; }
+.spectrum-studio-v3 .studio-applied-tile > span { max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.spectrum-studio-v3 .studio-app-icon { width: 46px; height: 43px; display: grid; place-items: center; cursor: pointer; border: 1px solid var(--border); border-radius: 13px; background: var(--panel); color: var(--text); }
+.spectrum-studio-v3 .studio-app-icon:hover { outline: 2px solid var(--accent); }
+.spectrum-studio-v3 .studio-app-icon svg { width: 28px; height: 28px; }
+.spectrum-studio-v3 .studio-app-actions { display: flex; gap: 7px; }
+.spectrum-studio-v3 .studio-app-actions button { border: 0; cursor: pointer; background: transparent; color: var(--muted); padding: 1px 3px; font-size: 12px; }
+.spectrum-studio-v3 .studio-app-icon:disabled, .spectrum-studio-v3 .studio-app-actions button:disabled { opacity: .4; cursor: default; }
+.spectrum-studio-v3 .studio-parameter { margin: 5px 0; }
+@keyframes studio-panel-in { from { opacity: 0; transform: translateY(7px) scale(.987); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@media (prefers-reduced-motion: reduce) { .spectrum-studio-v3 .studio-editor-view { animation: none; } }
+/* Stage I: colorized distortion palettes and explicit subject detection stay compact. */
+.spectrum-studio-v3 .studio-color-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 9px 0;
+}
+.spectrum-studio-v3 .studio-color-pair label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
+  font-size: 11px;
+  color: var(--text);
+}
+.spectrum-studio-v3 .studio-color-pair input[type='color'] {
+  width: 30px;
+  height: 26px;
+  flex-shrink: 0;
+  padding: 2px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  cursor: pointer;
+}
+.spectrum-studio-v3 .studio-mask-mode {
+  display: grid;
+  gap: 5px;
+  font-size: 11px;
+  margin: 9px 0;
+}
+.spectrum-studio-v3 .studio-mask-mode select {
+  min-width: 0;
+  width: 100%;
+  padding: 5px 7px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+}
+
+/* Aurora II Phase O: compact, keyboard-accessible professional editing controls. */
+.spectrum-studio-v3 .studio-edit-toolbar { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px 10px; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+.spectrum-studio-v3 .studio-detail-switch { display:flex; padding:2px; gap:2px; border:1px solid var(--border); border-radius:9px; }
+.spectrum-studio-v3 .studio-detail-switch button { border:0; border-radius:7px; color:var(--text); background:transparent; padding:4px 10px; font:inherit; font-size:11px; cursor:pointer; }
+.spectrum-studio-v3 .studio-detail-switch button.selected { background:var(--accent); color:white; }
+.spectrum-studio-v3 .studio-compare-hold { background:transparent; border:1px solid var(--border); border-radius:8px; color:var(--text); padding:5px 9px; font:inherit; font-size:11px; cursor:pointer; touch-action:none; }
+.spectrum-studio-v3 .studio-recipe-controls { display:flex; align-items:center; flex-wrap:wrap; gap:5px; margin:5px 0 9px; }
+.spectrum-studio-v3 .studio-recipe-controls :is(button, select, input) { min-width:0; max-width:130px; border-radius:7px; border:1px solid var(--border); background:var(--panel); color:var(--text); padding:5px 6px; font:inherit; font-size:11px; }
+.spectrum-studio-v3 .studio-recipe-controls input { flex:1 1 72px; }
+.spectrum-studio-v3 .studio-recipe-controls button { cursor:pointer; }
+.spectrum-studio-v3 .studio-edit-notice { margin:0; padding:4px 11px; color:var(--muted); font-size:11px; }

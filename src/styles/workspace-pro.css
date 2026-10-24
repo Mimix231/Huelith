@@ -1,0 +1,130 @@
+/* Spectrum 0.1 workspace polishing; animation and artboard share neutral chrome. */
+.spectrum-command-bar {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 1px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.spectrum-command-bar::-webkit-scrollbar { display: none; }
+.command-menu-trigger {
+  color: var(--text);
+  font-size: 11px;
+  font-family: inherit;
+  border: 0;
+  background: transparent;
+  border-radius: 5px;
+  min-height: 24px;
+  padding: 3px 7px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.command-menu-trigger:hover, .command-menu-trigger.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.command-menu-trigger:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.command-menu-popup.MuiPaper-root {
+  min-width: 228px;
+  max-height: min(75vh, 610px);
+  background: var(--panel-bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 7px);
+  box-shadow: 0 12px 38px #0004;
+  backdrop-filter: blur(16px);
+}
+.command-menu-heading.MuiListSubheader-root {
+  color: var(--muted);
+  background: transparent;
+  line-height: 22px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  font-size: 9px;
+  text-transform: uppercase;
+  padding-left: 13px;
+}
+.command-menu-item.MuiMenuItem-root {
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 27px;
+  font-size: 11px;
+  padding: 4px 13px;
+}
+.command-menu-item kbd {
+  font: inherit;
+  color: var(--muted);
+  font-size: 10px;
+  white-space: nowrap;
+}
+.shape-family-switcher { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; color: var(--muted); }
+.shape-family-switcher select {
+  max-width: 129px;
+  min-height: 23px;
+  background: var(--input-bg, var(--panel-bg));
+  color: var(--text);
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  font: inherit;
+  font-size: 10px;
+  padding: 2px 4px;
+}
+.parametric-properties { display: grid; gap: 8px; padding: 8px 0; border-top: 1px solid var(--border); }
+.canvas-host { --board-glow: #00000014; --board-center: #64677b12; }
+.artboard-canvas { touch-action: none; }
+/* This is outside artwork; no colored patterns are drawn inside the document. */
+.canvas-host {
+  background-color: var(--workspace-surface, #1b202a) !important;
+  background-image:
+    radial-gradient(ellipse at 51% 40%, var(--workspace-illuminate, #808fa019) 0, transparent 60%),
+    linear-gradient(155deg, transparent, var(--workspace-shade, #00000013)) !important;
+  background-size: 100% 100% !important;
+}
+.canvas-host::before { display: none !important; }
+
+.canvas-hint {
+  backdrop-filter: blur(8px);
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 10px #00000012;
+}
+/* Workspaces have distinct editorial environments, not candy-colored canvas checkerboards. */
+.theme-strawberry { --workspace-surface: #33262e; --workspace-illuminate: #ffabb33c; }
+.theme-melon { --workspace-surface: #203a38; --workspace-illuminate: #b7eac938; }
+.theme-peach { --workspace-surface: #3a302b; --workspace-illuminate: #f8c0a93a; }
+.theme-lemon { --workspace-surface: #38372b; --workspace-illuminate: #faeaa83b; }
+.theme-mango { --workspace-surface: #3a2e27; --workspace-illuminate: #ffb66439; }
+.theme-sakura { --workspace-surface: #362d39; --workspace-illuminate: #edb3dd38; }
+.theme-blossom { --workspace-surface: #292841; --workspace-illuminate: #b2abf83a; }
+.theme-shadow { --workspace-surface: #111119; --workspace-illuminate: #9590bd1c; }
+.theme-studio { --workspace-surface: #3d424a; --workspace-illuminate: #b8c5d020; }
+.theme-classic { --workspace-surface: #51565d; --workspace-illuminate: #ffffff19; }
+.theme-glass { --workspace-surface: #191e2e; --workspace-illuminate: #9eaaf52a; }
+.theme-material { --workspace-surface: #3a3747; --workspace-illuminate: #d7bdf429; }
+.theme-midnight { --workspace-surface: #090f1a; --workspace-illuminate: #6a85d523; }
+.tone-light.theme-strawberry { --workspace-surface: #e9dde1; --workspace-illuminate: #efacc135; }
+.tone-light.theme-melon { --workspace-surface: #dce8e3; --workspace-illuminate: #98ceb83a; }
+.tone-light.theme-peach { --workspace-surface: #eee0d9; --workspace-illuminate: #ffbeaa30; }
+.tone-light.theme-lemon { --workspace-surface: #ece8d9; --workspace-illuminate: #e9d9743a; }
+.tone-light.theme-mango { --workspace-surface: #ebdfcd; --workspace-illuminate: #f1b56736; }
+.tone-light.theme-sakura { --workspace-surface: #eae1e9; --workspace-illuminate: #d7a5cf36; }
+.tone-light.theme-blossom { --workspace-surface: #e0dcf0; --workspace-illuminate: #aba0db33; }
+.tone-light.theme-shadow { --workspace-surface: #dadbe2; --workspace-illuminate: #8d8eaf28; }
+.tone-light.theme-studio { --workspace-surface: #d7dade; }
+.tone-light.theme-classic { --workspace-surface: #d8dcdf; }
+.tone-light.theme-glass { --workspace-surface: #e2e1ef; }
+.tone-light.theme-material { --workspace-surface: #e4e0ee; }
+.tone-light.theme-midnight { --workspace-surface: #dce0e9; }
+@media (prefers-reduced-motion: reduce) {
+  .command-menu-trigger { transition: none !important; }
+}
+
+.fx-parameter-row { display: grid; gap: 2px; }
+.fx-parameter-controls { display: flex; align-items: center; gap: 8px; }
+.fx-parameter-controls .MuiSlider-root { flex: 1; min-width: 48px; }
+.fx-parameter-controls input {
+  width: 62px; height: 23px; box-sizing: border-box; background: var(--input-bg, var(--panel-bg));
+  color: var(--text); border: 1px solid var(--border); border-radius: 5px; padding: 2px 5px;
+  font: inherit; font-size: 11px;
+}

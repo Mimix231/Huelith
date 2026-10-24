@@ -1,0 +1,85 @@
+/* Strawberry has independent light/dark palettes and a unique control language. */
+.theme-strawberry.tone-light {
+  --app-bg: #fff8f6;
+  --title-bg: #fff3f3;
+  --panel-bg: #fffafa;
+  --context-bg: #f9e7e9;
+  --tabbar-bg: #fff0f2;
+  --status-bg: #fbe3e8;
+  --text: #48222f;
+  --muted: #9a586a;
+  --border: #e9c6ce;
+  --accent: #b92f5a;
+  --on-accent: #fff;
+  --accent-soft: #f9dbe4;
+  --accent-line: #f07d9b;
+  --active-bg: #ffe3ea;
+  --good: #ec4575;
+  --thumb-bg: #f7cfd7;
+}
+.theme-strawberry.tone-dark {
+  --app-bg: #21151d;
+  --title-bg: #291923;
+  --panel-bg: #2c1b25;
+  --context-bg: #37202c;
+  --tabbar-bg: #311d2b;
+  --status-bg: #24151d;
+  --text: #fff0f1;
+  --muted: #c8a1af;
+  --border: #603848;
+  --accent: #ff7eaa;
+  --on-accent: #2c0718;
+  --accent-soft: #56273b;
+  --accent-line: #c35377;
+  --active-bg: #523044;
+  --good: #ff8eae;
+  --thumb-bg: #3b2731;
+}
+.theme-strawberry {
+  --control-bg: var(--panel-bg);
+  --logo-bg: linear-gradient(135deg, var(--accent), var(--accent-line));
+  --logo-radius: 15px;
+  --radius-sm: 15px;
+  --radius-lg: 22px;
+  --selected-shadow: inset 0 0 0 1px var(--accent-line);
+  --window-shadow: 0 10px 38px #17131c26;
+  background: var(--app-bg);
+}
+.theme-strawberry .toolrail,
+.theme-strawberry .inspector,
+.theme-strawberry .titlebar {
+  background: var(--panel-bg);
+}
+.theme-strawberry .titlebar {
+  background-image: linear-gradient(115deg, var(--title-bg), var(--panel-bg));
+}
+.theme-strawberry .canvas-host {
+  background-color: var(--app-bg);
+  background-image: radial-gradient(circle at 20% 15%, #ff6f9870 0 1px, transparent 2px), radial-gradient(circle at 80% 75%, #fbc1d070 0 1px, transparent 2px);
+  background-size: 38px 38px;
+}
+.theme-strawberry .brand-mark,
+.theme-strawberry .toolrail .MuiIconButton-root.selected {
+  border-radius: 50% 38% 50% 42%;
+  transform: rotate(-10deg);
+}
+.theme-strawberry .doc-tab.active {
+  box-shadow: inset 0 2px var(--accent-line);
+}
+.theme-strawberry .layer-row.active {
+  background: var(--active-bg);
+  border-color: var(--accent-line);
+}
+.theme-strawberry .fx-launcher {
+  border-radius: 15px;
+  background: linear-gradient(105deg, var(--accent-soft), var(--panel-bg));
+}
+.theme-strawberry .fx-overlay {
+  border-radius: 18px;
+}
+
+
+/* Animation interface personality, independent of document pixels. */
+.theme-strawberry .animation-timeline { background-image: linear-gradient(105deg, #fa647612, transparent 38%, #f8b9b422); }
+.theme-strawberry .timeline-frame-card.selected { border-radius: 12px; box-shadow: inset 0 1px #ffffff90, 0 2px 7px #ff3a6027; }
+.theme-strawberry .timeline-marker { filter: drop-shadow(0 1px 1px #af2849); }

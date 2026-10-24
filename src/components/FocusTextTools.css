@@ -1,0 +1,7 @@
+.focus-style-panel { display: grid; gap: 5px; border-top: 1px solid var(--border); padding: 7px 12px 4px; min-width: 0; }
+.focus-style-groups { display: flex; flex-wrap: wrap; gap: 3px; }
+.focus-style-groups button, .focus-style-actions button { color: var(--text); background: var(--control-bg); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font: inherit; font-size: 11px; padding: 4px 7px; white-space: nowrap; }
+.focus-style-groups button.selected, .focus-style-actions button.selected { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+.focus-style-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; min-height: 28px; max-height: 80px; overflow-y: auto; }
+.focus-style-color { display: flex; align-items: center; gap: 4px; font-size: 11px; }
+.focus-style-hint { margin: 0; color: var(--muted); font-size: 10px; }

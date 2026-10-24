@@ -1,0 +1,84 @@
+/* Melon has independent light/dark palettes and a unique control language. */
+.theme-melon.tone-light {
+  --app-bg: #effaf4;
+  --title-bg: #e4f6eb;
+  --panel-bg: #fafffc;
+  --context-bg: #d7efe4;
+  --tabbar-bg: #e6f8f1;
+  --status-bg: #d8f4e5;
+  --text: #183e37;
+  --muted: #487168;
+  --border: #b6d9ce;
+  --accent: #127c66;
+  --on-accent: #fff;
+  --accent-soft: #c6f1dd;
+  --accent-line: #5cbe9d;
+  --active-bg: #d1f4e4;
+  --good: #31a58a;
+  --thumb-bg: #cfeddd;
+}
+.theme-melon.tone-dark {
+  --app-bg: #112521;
+  --title-bg: #182f2a;
+  --panel-bg: #182d27;
+  --context-bg: #214137;
+  --tabbar-bg: #1e352f;
+  --status-bg: #142921;
+  --text: #e6fff3;
+  --muted: #94bdb0;
+  --border: #32574b;
+  --accent: #66dbac;
+  --on-accent: #062b21;
+  --accent-soft: #254b3f;
+  --accent-line: #519f81;
+  --active-bg: #294c41;
+  --good: #44a982;
+  --thumb-bg: #18382c;
+}
+.theme-melon {
+  --control-bg: var(--panel-bg);
+  --logo-bg: linear-gradient(135deg, var(--accent), var(--accent-line));
+  --logo-radius: 14px;
+  --radius-sm: 14px;
+  --radius-lg: 22px;
+  --selected-shadow: inset 0 0 0 1px var(--accent-line);
+  --window-shadow: 0 10px 38px #17131c26;
+  background: var(--app-bg);
+}
+.theme-melon .toolrail,
+.theme-melon .inspector,
+.theme-melon .titlebar {
+  background: var(--panel-bg);
+}
+.theme-melon .titlebar {
+  background-image: linear-gradient(115deg, var(--title-bg), var(--panel-bg));
+}
+.theme-melon .canvas-host {
+  background-color: var(--app-bg);
+  background-image: linear-gradient(150deg, transparent 42%, #55cda311 43%, transparent 52%);
+  background-size: 38px 38px;
+}
+.theme-melon .brand-mark,
+.theme-melon .toolrail .MuiIconButton-root.selected {
+  border-radius: 13px 3px 13px 3px;
+}
+.theme-melon .doc-tab.active {
+  box-shadow: inset 0 2px var(--accent-line);
+}
+.theme-melon .layer-row.active {
+  background: var(--active-bg);
+  border-color: var(--accent-line);
+}
+.theme-melon .fx-launcher {
+  border-radius: 14px;
+  background: linear-gradient(105deg, var(--accent-soft), var(--panel-bg));
+}
+.theme-melon .fx-overlay {
+  border-radius: 18px;
+}
+
+
+/* Animation interface personality, independent of document pixels. */
+.theme-melon .animation-timeline { background-image: linear-gradient(145deg, #64dcb311, transparent 35%); }
+.theme-melon .timeline-frame-card.selected { border-radius: 8px 16px; border-width: 2px; }
+.theme-melon .timeline-options button { border-radius: 12px 6px; }

@@ -1,0 +1,61 @@
+name: Spectrum 0.1 checks
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  frontend:
+    name: Frontend typecheck, tests and build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install packages
+        run: npm install --no-audit --no-fund
+      - name: Verify Spectrum frontend
+        run: npm run verify
+
+  browser:
+    name: Chromium pixel and theme regressions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install frontend test dependencies
+        run: npm install --no-audit --no-fund
+      - name: Install Chromium and Playwright
+        run: |
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
+      - name: Browser rendering and theme tests
+        run: npm run test:browser
+      - name: Spectrum Originals rendering and keyframe assertions
+        run: npm run test:originals
+      - name: Compact timeline, themes and FX motion
+        run: npm run test:timeline
+      - name: Full React editor UI interactions
+        run: python tests/ui-e2e.py
+
+  desktop:
+    name: Tauri Rust check (Windows)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install desktop dependencies
+        run: npm install --no-audit --no-fund
+      - name: Verify native Rust crate
+        run: cargo check --manifest-path src-tauri/Cargo.toml
+      - name: Build real Windows desktop application
+        run: npm run desktop:build
