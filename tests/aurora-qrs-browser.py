@@ -101,7 +101,7 @@ with sync_playwright() as p:
           for(const branch of [0,23]){const setting={...neon,parameters:{...neon.parameters,branching:branch}};
             check(equal(pixels(fx.applyEffect(transparent,setting)),pixels(referenceNeon(transparent,setting))),`Neon Edge exact legacy parity (branches=${branch})`);}
           const larger=canvas(960,540),t=larger.getContext('2d');
-          t.fillStyle='#12345b';t.fillRect(0,0,960,540);t.fillStyle='#ff48bc';t.font='bold 140px sans-serif';t.fillText('SPECTRUM',30,280);
+          t.fillStyle='#12345b';t.fillRect(0,0,960,540);t.fillStyle='#ff48bc';t.font='bold 140px sans-serif';t.fillText('HUELITH',30,280);
           const timings=[],legacyTimings=[];
           for(let i=0;i<3;i++){
             const changed={...neon,amount:72+i*7};
@@ -111,7 +111,7 @@ with sync_playwright() as p:
           const hd=canvas(1920,1080),hdContext=hd.getContext('2d');
           hdContext.fillStyle='#152b54';hdContext.fillRect(0,0,1920,1080);
           hdContext.fillStyle='#e65aff';hdContext.font='bold 215px sans-serif';
-          hdContext.fillText('Spectrum 0.1',105,540);
+          hdContext.fillText('Huelith 0.1',105,540);
           const hdStart=performance.now();const hdOutput=fx.applyEffect(hd,neon);
           const fullHdMs=Math.round(performance.now()-hdStart);
           check(hdOutput.width===1920&&hdOutput.height===1080,'1080p full-resolution fidelity lost');

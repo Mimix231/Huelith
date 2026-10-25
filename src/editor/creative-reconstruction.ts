@@ -229,7 +229,7 @@ export function applyCreativeEffect(source: HTMLCanvasElement, effect: Effect): 
   return source;
 }
 
-/** Dedicated Spectrum FX algorithms: a single editable effect object per signature. */
+/** Dedicated Huelith FX algorithms: a single editable effect object per signature. */
 export function applySignatureFX(source: HTMLCanvasElement, effect: Effect): HTMLCanvasElement {
   const which = Number(effect.kind.slice(4));
   if (!Number.isInteger(which) || which < 0 || which > 14) return copy(source);

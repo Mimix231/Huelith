@@ -1,4 +1,4 @@
-# Spectrum 0.1 — Stage A–J FPS regression investigation
+# Huelith 0.1 — Stage A–J FPS regression investigation
 
 **Investigated:** 2026-10-22. **Project version remains:** `0.1.0`.
 
@@ -6,13 +6,13 @@
 
 The source trees were extracted and compared (not just their release notes):
 
-1. `Spectrum-0.1-Window-Close-Fix.zip` — pre-A–J baseline.
-2. `Spectrum-0.1-Stages-A-B-C.zip` — Studio workflow rewrite.
-3. `Spectrum-0.1-Stages-D-H-Creative-Engine.zip` — heavier new processors and standalone signature FX.
-4. `Spectrum-0.1-Stages-I-J-Performance-Stabilization.zip` — first asynchronous effect-preview worker.
-5. `Spectrum-0.1-Full-Resolution-FX-Performance-Fix.zip` — no image downsampling; higher per-job cost.
-6. `Spectrum-0.1-Live-Slider-Sync-Performance-Fix.zip` — separates temporary preview from persisted React/Zustand document state.
-7. `Spectrum-0.1-Live-FX-Frame-Sync-Rendering-Fix.zip` — resident worker sources and frame scheduling (base for this correction).
+1. `Huelith-0.1-Window-Close-Fix.zip` — pre-A–J baseline.
+2. `Huelith-0.1-Stages-A-B-C.zip` — Studio workflow rewrite.
+3. `Huelith-0.1-Stages-D-H-Creative-Engine.zip` — heavier new processors and standalone signature FX.
+4. `Huelith-0.1-Stages-I-J-Performance-Stabilization.zip` — first asynchronous effect-preview worker.
+5. `Huelith-0.1-Full-Resolution-FX-Performance-Fix.zip` — no image downsampling; higher per-job cost.
+6. `Huelith-0.1-Live-Slider-Sync-Performance-Fix.zip` — separates temporary preview from persisted React/Zustand document state.
+7. `Huelith-0.1-Live-FX-Frame-Sync-Rendering-Fix.zip` — resident worker sources and frame scheduling (base for this correction).
 
 ## What actually regressed
 
@@ -30,7 +30,7 @@ I–J introduced a single in-flight worker render per queue, which means full-qu
 
 ```ts
 if (layerId && effects && queueLayerEffectPreview(layerId, effects)) return;
-window.dispatchEvent(new Event('spectrum-studio-preview'));
+window.dispatchEvent(new Event('huelith-studio-preview'));
 ```
 
 When the worker accepted a job, this **returned before invalidating the canvas**. During a drag the canvas therefore often retained the previous bitmap until the worker completed an entire expensive full-resolution effect. Continuous movement appeared to update only on release. Changing debounce timing or `requestAnimationFrame` alone cannot fix this.

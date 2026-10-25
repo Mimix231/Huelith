@@ -1,4 +1,4 @@
-# Spectrum 0.1 — Filter and FX implementation inventory
+# Huelith 0.1 — Filter and FX implementation inventory
 
 **Version:** 0.1.0. These are actual source-registered effects, not a proposed feature wishlist.
 
@@ -91,7 +91,7 @@ Each effect retains a primary intensity or width control plus the additional par
 | Shadow forge | 0–100px | Independent shadow entries |
 | Backdrop | 0–100% | Backdrop X, Backdrop Y, Backdrop scale, Backdrop opacity |
 
-## Signature Spectrum FX (15)
+## Signature Huelith FX (15)
 
 A preset is an editable stack of the individual filters above; this version does not have a separate node-graph editor. Each included stage remains independently adjustable after applying the preset.
 
@@ -121,5 +121,5 @@ A preset is an editable stack of the individual filters above; this version does
 - **Icons:** `src/assets/effect-icons/` has 85 checked-in SVG icons; `EffectIcon.tsx` maps each catalog item or preset to its own asset.
 - **Thumbnails:** `EffectPreview.tsx` renders previews through the same production Canvas2D effects pipeline when their cards come into view.
 - **Performance:** UI color selection is locally buffered; complex effects use bounded-resolution interactive previews with final recomputation on commit. Actual Windows responsiveness still needs profiling.
-- **Compatibility:** `effect-migration.ts` upgrades old saved effect structures when a `.spectrum` document is opened. The document format version stays at 1.
+- **Compatibility:** `effect-migration.ts` upgrades old saved effect structures when a `.huelith` document is opened. The document format version stays at 1.
 - **Limitations:** simple uniform-background removal is not generalized AI segmentation; paint and analog-media effects are deterministic procedural approximations. SVG export cannot preserve arbitrary raster-only FX. Large composite previews remain CPU bound.

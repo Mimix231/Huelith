@@ -1,4 +1,4 @@
-# Spectrum 0.1 — Stage I / Stage J: measured verification and release gates
+# Huelith 0.1 — Stage I / Stage J: measured verification and release gates
 
 This is **source stabilization work, not a certified Windows production release**. The application version deliberately stays at `0.1.0`. No one has yet verified a complete native Windows build and UI end-to-end session for this package.
 
@@ -15,8 +15,8 @@ This is **source stabilization work, not a certified Windows production release*
 ## Stage J — effect correctness and release readiness
 
 - **Hyper Outline:** uses alpha when present, removes only *connected flat-color background in a temporary matte* on simple opaque subjects, or offers high-contrast edge mode on detailed opaque photographs. `Auto`, `Transparency only`, and `Image edges` can be selected in Studio. It does **not** claim to be automatic semantic segmentation of complicated photographs.
-- **Colorized distortion:** the existing VHS, Chromatic Split, Digital Glitch, plus signature Glitch Matrix, Prism Split, and Retro Vision accept two independently editable channel colors and a colorization slider. All parameters serialize into `.spectrum` documents and legacy files lacking them load with defaults.
-- **Compatibility:** existing `.spectrum` projects and previous multi-node FX chains remain valid. New optional fields are validated, including color hex strings and the subject-detection mode.
+- **Colorized distortion:** the existing VHS, Chromatic Split, Digital Glitch, plus signature Glitch Matrix, Prism Split, and Retro Vision accept two independently editable channel colors and a colorization slider. All parameters serialize into `.huelith` documents and legacy files lacking them load with defaults.
+- **Compatibility:** existing `.huelith` projects and previous multi-node FX chains remain valid. New optional fields are validated, including color hex strings and the subject-detection mode.
 - **Windows CI:** the desktop GitHub Actions job now performs `cargo check` **and** a real `npm run desktop:build`, rather than just a Rust check.
 
 ## Checks actually executed
@@ -30,7 +30,7 @@ This is **source stabilization work, not a certified Windows production release*
 - `npm run clean:obsolete:dry`: **passed**, no obsolete files found.
 - Packaging ZIP CRC and configuration parsing: see the final packaging check output.
 
-## Important unverified gates — do not call this Spectrum 1.0
+## Important unverified gates — do not call this Huelith 1.0
 
 1. `npm install` / full `npm run verify` / `npm run build`: **not completed here** because npm registry packages could not be fetched and the cache is empty. `npm run check` consequently reports missing React/MUI/Zustand modules; this does **not** establish that a dependency-based build passes.
 2. Windows Tauri compile, custom close button, save/discard prompts, actual integrated Studio rendering: **not desktop-tested here** because Cargo/Rust is unavailable and the host is not Windows.

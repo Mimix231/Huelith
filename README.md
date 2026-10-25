@@ -1,18 +1,18 @@
-![Spectrum artwork](DrawingArtwork.png)
+![Huelith artwork](DrawingArtwork.png)
 
-# 🌈 Spectrum
+# 🌈 Huelith
 
 [Watch the YouTube demo](https://www.youtube.com/watch?v=NJN9pCHdxZ4)
 
-Spectrum is my free and open-source image editor. I’m building it to bring visual effects and creative tools to image editing, and to make it usable on both CPU-only systems and machines with a compatible GPU.
+Huelith is my free and open-source image editor. I’m building it to bring visual effects and creative tools to image editing, and to make it usable on both CPU-only systems and machines with a compatible GPU.
 
-I’ve always believed people should be able to explore their creativity without worrying about subscriptions or cancellation fees. AI-assisted edits can be useful, but generated results can still have visible artifacts. I want Spectrum to make it easier to create a YouTube thumbnail, edit a selfie, or make an image your own.
+I’ve always believed people should be able to explore their creativity without worrying about subscriptions or cancellation fees. AI-assisted edits can be useful, but generated results can still have visible artifacts. I want Huelith to make it easier to create a YouTube thumbnail, edit a selfie, or make an image your own.
 
 I also included an Animation Studio for frame-by-frame projects alongside the image editor. I first implemented animation by accident, then decided to keep it.
 
 **Have fun using my app!**
 
-![Spectrum’s editing workspace with artwork on the canvas, tool rail, layers, and inspector](docs/screenshots/editor-overview.jpg)
+![Huelith’s editing workspace with artwork on the canvas, tool rail, layers, and inspector](docs/screenshots/editor-overview.jpg)
 
 ## What you can do
 
@@ -26,7 +26,7 @@ I also included an Animation Studio for frame-by-frame projects alongside the im
 
 The editor groups its image tools into **Creativity**, **Effects**, and **FX**. Creativity contains image adjustments and stylized filters. Effects includes layer tools such as outlines, glows, shadows, and backdrops. The FX library includes options such as Aurora Flow and Neon Pulse.
 
-![Spectrum FX showing Aurora Flow controls and a live artwork preview](docs/screenshots/spectrum-studio.jpg)
+![Huelith FX showing Aurora Flow controls and a live artwork preview](docs/screenshots/huelith-studio.jpg)
 
 Effect controls vary by tool. The FX editor can preview changes before applying them and keeps applied FX in the layer’s editable effect stack.
 
@@ -48,7 +48,7 @@ Animation export supports animated PNG (APNG), a PNG sprite sheet, or a ZIP of P
 
 ## Project files and export
 
-Spectrum saves editable documents in its versioned `.spectrum` project format. It can import PNG, JPEG, WebP, GIF, and BMP images, and export PNG, JPEG, WebP, and SVG. SVG export preserves vector shapes and embeds raster image content; effects are not represented as editable SVG effects.
+Huelith saves editable documents in its versioned `.Huelith` project format. It can import PNG, JPEG, WebP, GIF, and BMP images, and export PNG, JPEG, WebP, and SVG. SVG export preserves vector shapes and embeds raster image content; effects are not represented as editable SVG effects.
 
 ## CPU and GPU processing
 
@@ -79,10 +79,10 @@ npm run build
 
 ## Project status
 
-Spectrum is in early public alpha. Features and performance are still evolving, and bugs or unfinished workflows are expected.
+Huelith is in early public alpha. Features and performance are still evolving, and bugs or unfinished workflows are expected.
 
-If you notice something wrong, please post it in [Issues](https://github.com/Mimix231/Spectrum/issues). Reports and observations are helpful.
+If you notice something wrong, please post it in [Issues](https://github.com/Mimix231/Huelith/issues). Reports and observations are helpful.
 
 ## License
 
-Spectrum is distributed under the GNU General Public License, version 3. See [LICENSE](LICENSE).
+Huelith is distributed under the GNU General Public License, version 3. See [LICENSE](LICENSE).

@@ -123,7 +123,7 @@ export default function AnimationTimeline() {
             {playing ? <Pause fontSize="small" /> : <PlayArrow fontSize="small" />}
           </button>
           <button type="button" title="Next frame" aria-label="Next frame" onClick={() => select(Math.min(frames.length - 1, currentFrame + 1))}><SkipNext fontSize="small" /></button>
-          <button type="button" title="Open keyframe editor for Spectrum Originals" onClick={() => useEditor.getState().setCreativePanelOpen(true)}>◇ Keys</button>
+          <button type="button" title="Open keyframe editor for Huelith Originals" onClick={() => useEditor.getState().setCreativePanelOpen(true)}>◇ Keys</button>
           <span className="timeline-position" aria-live="off">{String(currentFrame + 1).padStart(2, '0')} / {String(frames.length).padStart(2, '0')}</span>
         </div>
         <div className="timeline-options">
@@ -182,10 +182,10 @@ export default function AnimationTimeline() {
                   aria-pressed={index === currentFrame} aria-label={`Frame ${index + 1}, ${frame.durationMs} milliseconds`}
                   title={`Frame ${index + 1} · ${frame.durationMs}ms · drag to reorder`}
                   draggable={!draggingPlayhead}
-                  onDragStart={event => { event.dataTransfer.setData('application/x-spectrum-frame', String(index)); event.dataTransfer.effectAllowed = 'move'; }}
-                  onDragOver={event => { if (event.dataTransfer.types.includes('application/x-spectrum-frame')) event.preventDefault(); }}
+                  onDragStart={event => { event.dataTransfer.setData('application/x-huelith-frame', String(index)); event.dataTransfer.effectAllowed = 'move'; }}
+                  onDragOver={event => { if (event.dataTransfer.types.includes('application/x-huelith-frame')) event.preventDefault(); }}
                   onDrop={event => {
-                    const source = Number(event.dataTransfer.getData('application/x-spectrum-frame'));
+                    const source = Number(event.dataTransfer.getData('application/x-huelith-frame'));
                     if (Number.isInteger(source)) {
                       event.preventDefault();
                       setPlaying(false);
@@ -201,7 +201,7 @@ export default function AnimationTimeline() {
                   <FramePreview doc={doc} frame={frame} index={index} />
                   {doc.creative?.some(item => item.id === selectedCreativeId &&
                     Object.values(item.tracks ?? {}).some(keys => keys.some(key => key.frame === index))) &&
-                    <span className="timeline-creative-key" title="Spectrum Originals keyframe">◆</span>}
+                    <span className="timeline-creative-key" title="Huelith Originals keyframe">◆</span>}
                   <span className="timeline-frame-duration">{index + 1} · {frame.durationMs}ms</span>
                 </button>
               ))}

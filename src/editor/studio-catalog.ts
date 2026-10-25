@@ -24,11 +24,11 @@ export function createStudioFilter(kind: EffectKind): Effect {
 }
 
 /** Each new signature FX is one independent non-destructive processor. Legacy
- * multi-step FX chains still load and render from existing .spectrum documents. */
+ * multi-step FX chains still load and render from existing .huelith documents. */
 export function createStudioPreset(name: string): Effect[] {
   const names = Object.keys(FX_PRESETS);
   const index = names.indexOf(name);
-  if (index < 0) throw new Error(`Unknown Spectrum FX: ${name}`);
+  if (index < 0) throw new Error(`Unknown Huelith FX: ${name}`);
   const recipe = FX_PRESETS[name][0];
   const effect = newEffect(recipe.kind, recipe.amount, recipe.color, recipe.parameters);
   effect.studioCategory = 'fx';

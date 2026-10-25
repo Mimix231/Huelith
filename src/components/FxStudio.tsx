@@ -218,15 +218,15 @@ export default function FxStudio({ state, active, activeShape, onClose }: Props)
   const groupNames = ['Color & light', 'Detail & texture', 'Stylize'];
 
   return (
-    <div className="fx-overlay spectrum-studio-v3" id="spectrum-fx-studio" role="dialog"
-      aria-modal="false" aria-label="Spectrum Studio">
+    <div className="fx-overlay huelith-studio-v3" id="huelith-fx-studio" role="dialog"
+      aria-modal="false" aria-label="Huelith Studio">
       <div className="fx-overlay-header">
         <div className="fx-overlay-title">
           {editing ? (
             <button type="button" className="studio-icon-button" aria-label="Cancel and return to Studio"
               onClick={cancel}><ArrowBack fontSize="small" /></button>
           ) : <span className="fx-overlay-symbol"><AutoAwesome fontSize="small" /></span>}
-          <div><strong>{editing?.title ?? 'Spectrum Studio'}</strong>
+          <div><strong>{editing?.title ?? 'Huelith Studio'}</strong>
             <small>{editing ? `${STUDIO_CATEGORIES[editing.category]} · non-destructive editor`
               : 'Create, refine, and revisit'}</small></div>
         </div>
@@ -286,7 +286,7 @@ export default function FxStudio({ state, active, activeShape, onClose }: Props)
                     unit={descriptor.unit}
                     onPreview={amount => change(effect.id, { amount }, true)}
                     onFinish={amount => finishSlider(effect.id, { amount })} />
-                  {showAdvanced && <EffectAdvancedEditors effect={effect} preview={parameters => change(effect.id, { parameters }, true)} commit={commitEditor} />}
+                  {showAdvanced && <EffectAdvancedEditors effect={effect} sourceLayer={active} preview={parameters => change(effect.id, { parameters }, true)} commit={commitEditor} />}
                   {(EFFECT_PARAMETERS[effect.kind] ?? []).filter((control, controlIndex) =>
                     (showAdvanced || controlIndex < 3) &&
                     !(effect.kind === 'glow' && control.key === 'threshold' && effect.parameters?.glowMode !== 'bloom') &&
@@ -302,7 +302,7 @@ export default function FxStudio({ state, active, activeShape, onClose }: Props)
                         onFinish={amount => finishSlider(effect.id, { parameters: { [control.key]: amount } })} />
                     );
                   })}
-                  {showAdvanced && (['chromatic', 'glitch', 'vhs', 'sig_4', 'sig_8', 'sig_13'].includes(effect.kind)) && (
+                  {showAdvanced && (['sig_4', 'sig_8', 'sig_13'].includes(effect.kind)) && (
                     <div className="studio-color-pair" aria-label="Distortion color palette">
                       <label>First channel
                         <PreviewColorInput label={`${effect.kind} first channel color`}
@@ -343,7 +343,7 @@ export default function FxStudio({ state, active, activeShape, onClose }: Props)
         </div>
       ) : (
         <>
-          <div className="fx-studio-tabs" role="tablist" aria-label="Spectrum Studio categories">
+          <div className="fx-studio-tabs" role="tablist" aria-label="Huelith Studio categories">
             {(['creativity', 'effects', 'fx'] as const).map(tab => (
               <button key={tab} type="button" role="tab" aria-selected={category === tab}
                 className={category === tab ? 'active' : ''} onClick={() => { setCategory(tab); setQuery(''); }}>
@@ -380,8 +380,8 @@ export default function FxStudio({ state, active, activeShape, onClose }: Props)
                 </section>;
               })}
             </div>}
-            {category === 'fx' && <div className="fx-presets"><h3>Spectrum signature FX</h3>
-              <p className="fx-subtle">Dedicated Spectrum FX renderers with independently editable parameters. Old chain-based projects still work.</p>
+            {category === 'fx' && <div className="fx-presets"><h3>Huelith signature FX</h3>
+              <p className="fx-subtle">Dedicated Huelith FX renderers with independently editable parameters. Old chain-based projects still work.</p>
               <div className="fx-preset-grid">
                 {Object.keys(FX_PRESETS).filter(matches).map(name => <button type="button"
                   className="fx-preset-card" key={name}

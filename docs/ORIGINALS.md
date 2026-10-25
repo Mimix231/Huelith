@@ -1,10 +1,10 @@
-# Spectrum Originals — integrated creative tools (0.1 development build)
+# Huelith Originals — integrated creative tools (0.1 development build)
 
-Spectrum Originals are **not** 10 presets for ordinary image filters. They are retained, non-destructive creative objects that can be edited after saving and reopening `.spectrum` documents. They use the same renderer in the canvas and in PNG/APNG/PNG-sequence exports.
+Huelith Originals are **not** 10 presets for ordinary image filters. They are retained, non-destructive creative objects that can be edited after saving and reopening `.huelith` documents. They use the same renderer in the canvas and in PNG/APNG/PNG-sequence exports.
 
 ## Opening the tools
 
-Use **Creative → Open Spectrum Originals**, select an individual entry under **Creative**, or press the sparkle icon in Spectrum's compact titlebar. The dock floats over the canvas and can be closed. Use the library to add creative objects; click an applied object to edit it. Select the crosshair marker on the canvas and drag it to move the object's center. For Living Ink, use **Draw an editable path**; afterward drag individual path vertices directly on the canvas.
+Use **Creative → Open Huelith Originals**, select an individual entry under **Creative**, or press the sparkle icon in Huelith's compact titlebar. The dock floats over the canvas and can be closed. Use the library to add creative objects; click an applied object to edit it. Select the crosshair marker on the canvas and drag it to move the object's center. For Living Ink, use **Draw an editable path**; afterward drag individual path vertices directly on the canvas.
 
 All controls update their corresponding retained object. Numeric changes have live previews during dragging and commit when released. With animation enabled, editing numeric/color controls automatically creates a keyframe at the current timeline frame. Click the ◆ control beside a property to add an explicit keyframe. Existing keyframe values interpolate across frames. Animation's existing drag playhead selects the current frame, and frame thumbnails indicate selected Original keyframes.
 
@@ -31,7 +31,7 @@ All controls update their corresponding retained object. Numeric changes have li
 - `src/components/Canvas.tsx`: exact document-space crosshair, editable ink nodes and consistent preview composition.
 - `src/components/AnimationTimeline.tsx`: existing scrubber, keyframe markers and direct access to the creative editor.
 - `src/editor/animation.ts`: frame exports retain a reference to animation cels so Motion Echo can sample preceding frames.
-- `.spectrum` version **remains 1**, with optional `creative` objects and optional transient `creativeFrame`; old documents without those fields remain valid. No destructive migration is required.
+- `.huelith` version **remains 1**, with optional `creative` objects and optional transient `creativeFrame`; old documents without those fields remain valid. No destructive migration is required.
 
 ## Known limitations / truthful release status
 
@@ -39,7 +39,7 @@ This is a usable **development implementation**, not a claim of ten fully profes
 
 **SVG export:** Original procedural fields are drawn by Canvas2D. Use PNG or animation image exports for faithful appearance; the SVG-only exporter cannot encode the procedural results as editable native SVG constructs.
 
-**Unverified:** Full dependency-aware TypeScript, Vite/Tauri production builds, installed-font/native controls, Windows UI performance and complete React E2E. Do not label this build Spectrum 1.0 until these succeed.
+**Unverified:** Full dependency-aware TypeScript, Vite/Tauri production builds, installed-font/native controls, Windows UI performance and complete React E2E. Do not label this build Huelith 1.0 until these succeed.
 
 ## Verification
 

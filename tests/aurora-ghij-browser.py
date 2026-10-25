@@ -25,7 +25,7 @@ with sync_playwright() as playwright:
             g.fillStyle='#916be2';g.fillRect(c.width*.14,c.height*.2,c.width*.53,c.height*.44);
             g.fillStyle='#ffaf25';g.fillRect(c.width*.48,c.height*.45,c.width*.25,c.height*.42);
             g.fillStyle='#4bd5ff';g.font=`bold ${Math.max(12,Math.floor(c.width/8))}px Arial`;
-            g.fillText('Spectrum',c.width*.05,c.height*.71);
+            g.fillText('Huelith',c.width*.05,c.height*.71);
           };
           const clone=source=>{const c=canvas(source.width,source.height);c.getContext('2d').drawImage(source,0,0);return c;};
           const bytes=source=>source.getContext('2d').getImageData(0,0,source.width,source.height).data;

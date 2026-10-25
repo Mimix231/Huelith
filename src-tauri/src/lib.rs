@@ -44,5 +44,5 @@ pub fn run() {
             aurora::aurora_render_graph,
         ])
         .run(tauri::generate_context!())
-        .expect("error while running Spectrum");
+        .expect("error while running Huelith");
 }

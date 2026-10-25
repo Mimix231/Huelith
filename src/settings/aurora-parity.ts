@@ -5,7 +5,7 @@
  * premultiplied alpha and rounding must also match.
  *
  * This diagnostic runs only on explicit request. It tests both the selected
- * native backend and Spectrum's current full-quality Studio processor.
+ * native backend and Huelith's current full-quality Studio processor.
  */
 import { newEffect, processEffects } from '../editor/fx';
 import { registerCpuImage, releaseCpuImage, nativeAvailable, type CpuEffect } from './native-cpu';
@@ -64,7 +64,7 @@ export function compareNativeRgba(expected: Uint8ClampedArray, actual: readonly 
 }
 
 export async function certifyNativeEffectParity(settings: AuroraPreferences): Promise<EffectParityReport> {
-  if (!nativeAvailable()) throw new Error('Native parity certification requires the Spectrum desktop application.');
+  if (!nativeAvailable()) throw new Error('Native parity certification requires the Huelith desktop application.');
   const selected = await nativeBackendStatus();
   const width = 19, height = 13;
   const reference = referencePattern(width, height);

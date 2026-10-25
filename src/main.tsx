@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client';
 import App from './App';
 
 const root = document.getElementById('root');
-if (!root) throw new Error('Spectrum could not find the application root.');
+if (!root) throw new Error('Huelith could not find the application root.');
 
 installEffectsWorker();
 

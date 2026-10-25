@@ -1,4 +1,4 @@
-/** Spectrum preferences are local application configuration, never document data. */
+/** Huelith preferences are local application configuration, never document data. */
 export interface AuroraPreferences {
   gpuAcceleration: boolean;
   /** Resource/scheduling policy; NEVER downscales image or downgrades an algorithm. */
@@ -29,8 +29,9 @@ export const DEFAULT_PREFERENCES: AuroraPreferences = {
   canvasCheckerSize: 16,
   brushStabilization: 72,
 };
-const STORAGE = 'spectrum-aurora-preferences-v1';
-export const PREFERENCES_EVENT = 'spectrum-aurora-preferences-changed';
+const STORAGE = 'huelith-aurora-preferences-v1';
+const LEGACY_STORAGE = 'spectrum-aurora-preferences-v1';
+export const PREFERENCES_EVENT = 'huelith-aurora-preferences-changed';
 const finite = (value: unknown, min: number, max: number, fallback: number): number =>
   typeof value === 'number' && Number.isFinite(value) ? Math.max(min, Math.min(max, Math.round(value))) : fallback;
 
@@ -54,19 +55,24 @@ export function normalizePreferences(input: unknown): AuroraPreferences {
 }
 
 export function loadPreferences(): AuroraPreferences {
-  try { return normalizePreferences(JSON.parse(localStorage.getItem(STORAGE) ?? 'null')); }
+  try {
+    const previous = localStorage.getItem(LEGACY_STORAGE);
+    const value = localStorage.getItem(STORAGE) ?? previous;
+    if (value !== null && localStorage.getItem(STORAGE) === null) localStorage.setItem(STORAGE, value);
+    return normalizePreferences(JSON.parse(value ?? 'null'));
+  }
   catch { return normalizePreferences(null); }
 }
 
 export function applyPreferences(preferences: AuroraPreferences): void {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
-  root.dataset.spectrumDensity = preferences.interfaceDensity;
-  root.dataset.spectrumTransparency = String(preferences.interfaceTransparency);
-  root.dataset.spectrumReduceMotion = String(preferences.reduceMotion);
+  root.dataset.huelithDensity = preferences.interfaceDensity;
+  root.dataset.huelithTransparency = String(preferences.interfaceTransparency);
+  root.dataset.huelithReduceMotion = String(preferences.reduceMotion);
   root.style.setProperty('--aurora-checker-size', `${preferences.canvasCheckerSize}px`);
   root.style.setProperty('--aurora-solid-surface', root.classList.contains('tone-light') ? '#f8f8fe' : '#242738');
-  try { localStorage.setItem('spectrum:perf', preferences.diagnostics ? '1' : '0'); } catch { /* private mode */ }
+  try { localStorage.setItem('huelith:perf', preferences.diagnostics ? '1' : '0'); } catch { /* private mode */ }
 }
 
 export function savePreferences(value: AuroraPreferences): AuroraPreferences {

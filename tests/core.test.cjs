@@ -63,12 +63,20 @@ function reset() {
   return useEditor.getState();
 }
 
-test('new Spectrum 0.1 documents have a valid stable format and raster layer', () => {
+test('new Huelith 0.2 documents have a valid stable format and raster layer', () => {
   const doc = model.createDocument('Drawing', 1024, 768, 'transparent');
-  assert.equal(doc.format, 'spectrum');
+  assert.equal(doc.format, 'huelith');
   assert.equal(doc.version, 1);
   assert.equal(doc.layers[0].type, 'raster');
   assert.ok(model.isDocument(doc));
+});
+
+test('legacy Spectrum-format documents remain readable after the Huelith rename', () => {
+  const doc = model.createDocument('Legacy artwork', 32, 32);
+  assert.equal(doc.format, 'huelith');
+  const legacy = { ...doc, format: 'spectrum' };
+  assert.equal(model.isDocument(legacy), true);
+  assert.equal(model.isDocument({ ...doc, format: 'not-a-project' }), false);
 });
 
 test('dimension limits reject NaN, fractional sizes and oversized canvases', () => {
@@ -117,9 +125,9 @@ test('save is tied to a document ID and revision, even after a tab change', () =
   const revision = changed.revision;
   useEditor.getState().addLayer('vector');
   useEditor.getState().newDoc('Other tab');
-  useEditor.getState().markSaved(changed.doc.id, revision, 'example.spectrum');
+  useEditor.getState().markSaved(changed.doc.id, revision, 'example.huelith');
   const target = useEditor.getState().tabs.find(tab => tab.doc.id === changed.doc.id);
-  assert.equal(target.path, 'example.spectrum');
+  assert.equal(target.path, 'example.huelith');
   assert.equal(target.dirty, true, 'saving an older revision cannot mark newer edits clean');
   assert.equal(activeTab(useEditor.getState()).doc.name, 'Other tab');
 });

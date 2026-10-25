@@ -1,4 +1,4 @@
-"""Pixel-tested Spectrum Originals on actual Chromium Canvas2D."""
+"""Pixel-tested Huelith Originals on actual Chromium Canvas2D."""
 import os
 import sys
 from playwright.sync_api import sync_playwright

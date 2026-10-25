@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { activeTab, useEditor } from '../editor/store';
 import {
   CREATIVE_DEFINITIONS, evaluatedCreative, setCreativeKeyframe,
@@ -59,6 +59,17 @@ export default function CreativeLab() {
     }
     state.commitCreativePreview();
   }
+  function movePosition(event: ReactPointerEvent<HTMLDivElement>, finish = false): void {
+    if (!displayed) return;
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const x = Math.max(0, Math.min(doc.width, (event.clientX - bounds.left) / bounds.width * doc.width));
+    const y = Math.max(0, Math.min(doc.height, (event.clientY - bounds.top) / bounds.height * doc.height));
+    // One immutable preview avoids mutating the saved Original until release.
+    const next = updateValue(updateValue(displayed, 'x', x), 'y', y);
+    if (doc.animation) { setCreativeKeyframe(next, 'x', frame); setCreativeKeyframe(next, 'y', frame); }
+    useEditor.getState().previewCreative(next);
+    if (finish) commit();
+  }
   function addKeyframe(key: string): void {
     if (!displayed || !evaluated || !doc.animation) return;
     const updated = structuredClone(displayed);
@@ -76,9 +87,9 @@ export default function CreativeLab() {
 
   if (!open) return null;
   return (
-    <aside className="creative-lab" aria-label="Spectrum Originals Creative Lab">
+    <aside className="creative-lab" aria-label="Huelith Originals Studio">
       <div className="creative-head">
-        <div><strong>◈ Spectrum Originals</strong><small>Editable artwork · keyframed in animations</small></div>
+        <div><strong>◈ Huelith Originals</strong><small>Editable artwork · keyframed in animations</small></div>
         <button type="button" title="Close Creative Lab" onClick={() => useEditor.getState().setCreativePanelOpen(false)}>×</button>
       </div>
       <div className="creative-content">
@@ -111,6 +122,29 @@ export default function CreativeLab() {
           <p>{definition.description}</p>
           <label className="creative-switch"><input type="checkbox" checked={displayed.enabled}
             onChange={(event: { target: HTMLInputElement }) => useEditor.getState().updateCreative(displayed.id, { enabled: event.target.checked })} /> Enabled</label>
+          <div className="creative-section-label">Placement · {displayed.kind === 'lightSculptor' ? 'Light source' : displayed.kind === 'shockDesigner' ? 'Impact center' : 'Canvas position'}</div>
+          <div className="creative-position">
+            <div className="creative-position-pad" role="slider" tabIndex={0} aria-label="Original position on canvas"
+              aria-valuetext={`${Math.round(evaluated.x)}, ${Math.round(evaluated.y)}`}
+              aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(evaluated.x / Math.max(1, doc.width) * 100)}
+              onPointerDown={event => { event.currentTarget.setPointerCapture(event.pointerId); movePosition(event); }}
+              onPointerMove={event => { if (event.currentTarget.hasPointerCapture(event.pointerId)) movePosition(event); }}
+              onPointerUp={event => { movePosition(event, true); event.currentTarget.releasePointerCapture(event.pointerId); }}
+              onPointerCancel={() => commit()}
+              onKeyDown={event => {
+                const step = event.shiftKey ? 20 : 4;
+                const x = evaluated.x + (event.key === 'ArrowRight' ? step : event.key === 'ArrowLeft' ? -step : 0);
+                const y = evaluated.y + (event.key === 'ArrowDown' ? step : event.key === 'ArrowUp' ? -step : 0);
+                if (x !== evaluated.x || y !== evaluated.y) {
+                  event.preventDefault();
+                  const next = updateValue(updateValue(displayed, 'x', Math.max(0, Math.min(doc.width, x))), 'y', Math.max(0, Math.min(doc.height, y)));
+                  useEditor.getState().previewCreative(next); commit();
+                }
+              }}>
+              <span className="creative-position-handle" style={{ left: `${evaluated.x / Math.max(1, doc.width) * 100}%`, top: `${evaluated.y / Math.max(1, doc.height) * 100}%` }} />
+            </div>
+            <div className="creative-position-info"><strong>Drag to position</strong><span>X {Math.round(evaluated.x)} · Y {Math.round(evaluated.y)}</span><small>Drag the handle or use arrow keys. Shift + arrows moves 20 px.</small></div>
+          </div>
           {(displayed.kind === 'livingInk') && <button type="button" className={drawMode ? 'creative-action active' : 'creative-action'}
             onClick={() => useEditor.getState().setCreativeDrawMode(!drawMode)}>
             {drawMode ? 'Finish drawing' : '✎ Draw an editable path on canvas'}
@@ -124,25 +158,13 @@ export default function CreativeLab() {
               {doc.layers.map(layer => <option key={layer.id} value={layer.id}>{layer.name}</option>)}
             </select>
           </label>}
-          {(['x', 'y', 'radius', 'intensity', ...Object.keys(definition.controls)] as const).map(key => {
+          <div className="creative-section-label">Main controls</div>
+          {(['radius', 'intensity'] as const).map(key => {
             const def = definition.controls[key];
             const min = def?.min ?? (key === 'intensity' ? 0 : key === 'radius' ? 5 : -2000);
             const max = def?.max ?? (key === 'intensity' ? 100 : key === 'radius' ? Math.max(doc.width, doc.height) : 2000);
             const step = def?.step ?? 1;
             const v = key in evaluated.controls ? evaluated.controls[key] : evaluated[key as 'x' | 'y' | 'radius' | 'intensity'];
-            const variants = key === 'material' || key === 'mode' ? variantLabels[displayed.kind] : undefined;
-            if (variants) return <label className="creative-field" key={key}>
-              <span>{key === 'mode' ? 'Distortion mode' : 'Material'}
-                {doc.animation && <button type="button" title={`Keyframe ${key}`} onClick={() => addKeyframe(key)}>◆</button>}
-              </span>
-              <select value={Math.round(Number(v))} onChange={(event: { target: HTMLSelectElement }) => {
-                preview(key, Number(event.target.value));
-                // preview commits on next microtask to avoid stale Zustand state
-                queueMicrotask(() => useEditor.getState().commitCreativePreview());
-              }}>
-                {variants.map((label, index) => <option key={label} value={index}>{label}</option>)}
-              </select>
-            </label>;
             return <label className="creative-field" key={key}>
               <span>{key.replace(/[A-Z]/g, match => ` ${match}`).replace(/^./, char => char.toUpperCase())}
                 {doc.animation && <button type="button" title={`Add ${key} keyframe at frame ${frame + 1}`}
@@ -154,6 +176,25 @@ export default function CreativeLab() {
               <output>{Math.round(Number(v) * 10) / 10}</output>
             </label>;
           })}
+          {Object.keys(definition.controls).length > 0 && <details className="creative-advanced" open>
+            <summary>{definition.name} · Specialized controls</summary>
+            {Object.keys(definition.controls).map(key => {
+              const def = definition.controls[key];
+              const v = evaluated.controls[key] ?? def.default;
+              const variants = key === 'material' || key === 'mode' ? variantLabels[displayed.kind] : undefined;
+              if (variants) return <label className="creative-field" key={key}><span>{key === 'mode' ? 'Distortion mode' : 'Material'}</span>
+                <select value={Math.round(v)} onChange={event => { preview(key, Number(event.target.value)); queueMicrotask(() => useEditor.getState().commitCreativePreview()); }}>
+                  {variants.map((name, index) => <option value={index} key={name}>{name}</option>)}
+                </select></label>;
+              return <label className="creative-field" key={key}><span>{key.replace(/[A-Z]/g, match => ` ${match}`).replace(/^./, char => char.toUpperCase())}
+                {doc.animation && <button type="button" title={`Keyframe ${key}`} onClick={() => addKeyframe(key)}>◆</button>}</span>
+                <input type="range" min={def.min} max={def.max} step={def.step} value={v}
+                  onChange={event => preview(key, Number(event.target.value))}
+                  onPointerUp={() => commit(key)} onKeyUp={() => commit(key)} onBlur={() => commit(key)} />
+                <output>{Math.round(v * 10) / 10}</output></label>;
+            })}
+          </details>}
+          <div className="creative-section-label">Colors</div>
           {(['color', 'secondary'] as const).map(key => (
             <label className="creative-field" key={key}><span>{key === 'color' ? 'Primary color' : 'Secondary color'}
               {doc.animation && <button type="button" title={`Keyframe ${key}`} onClick={() => addKeyframe(key)}>◆</button>}</span>

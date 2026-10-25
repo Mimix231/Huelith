@@ -126,7 +126,7 @@ function makeTheme(workspace: Workspace, appearanceMode: AppearanceMode) {
         styleOverrides: { root: { borderRadius: material ? 11 : classic || studio ? 3 : midnight ? 5 : 8 } },
       },
       MuiSlider: { styleOverrides: { root: { paddingTop: 11, paddingBottom: 11 } } },
-      MuiMenu: { defaultProps: { slotProps: { paper: { className: 'spectrum-popup' } } } },
+      MuiMenu: { defaultProps: { slotProps: { paper: { className: 'huelith-popup' } } } },
     },
   });
 }
@@ -289,7 +289,7 @@ function ContextToolbar({ state }: { state: EditorStore }) {
         </span>
       )}
       {state.tool === 'pen' && <Button size="small" variant="contained"
-        onClick={() => window.dispatchEvent(new Event('spectrum-finish-pen'))}>Finish path (Enter)</Button>}
+        onClick={() => window.dispatchEvent(new Event('huelith-finish-pen'))}>Finish path (Enter)</Button>}
       {state.tool === 'line' && <span className="context-instruction">After drawing: press A and drag any of the four points</span>}
       {typing && (
         <div className="inline-typography" aria-label="Typography controls">
@@ -344,14 +344,14 @@ function DocumentTabs({ state, openNew }: { state: EditorStore; openNew: () => v
           <div className={`doc-tab ${tab.doc.id === state.activeId ? 'active' : ''}`} key={tab.doc.id}
             draggable={editingId !== tab.doc.id}
             onDragStart={event => {
-              event.dataTransfer.setData('application/x-spectrum-tab', tab.doc.id);
+              event.dataTransfer.setData('application/x-huelith-tab', tab.doc.id);
               event.dataTransfer.effectAllowed = 'move';
             }}
             onDragOver={event => {
-              if (event.dataTransfer.types.includes('application/x-spectrum-tab')) event.preventDefault();
+              if (event.dataTransfer.types.includes('application/x-huelith-tab')) event.preventDefault();
             }}
             onDrop={event => {
-              const source = event.dataTransfer.getData('application/x-spectrum-tab');
+              const source = event.dataTransfer.getData('application/x-huelith-tab');
               if (source) {
                 event.preventDefault();
                 state.reorderTabs(source, tab.doc.id);
@@ -501,8 +501,8 @@ function Inspector({ state }: { state: EditorStore }) {
   const [fxOpen, setFxOpen] = useState(false);
   useEffect(() => {
     const openFx = (): void => { setPanel('layers'); setFxClosing(false); setFxOpen(true); };
-    window.addEventListener('spectrum-open-fx', openFx);
-    return () => window.removeEventListener('spectrum-open-fx', openFx);
+    window.addEventListener('huelith-open-fx', openFx);
+    return () => window.removeEventListener('huelith-open-fx', openFx);
   }, []);
   const [fxClosing, setFxClosing] = useState(false);
   const closeFx = (): void => {
@@ -638,13 +638,13 @@ function Inspector({ state }: { state: EditorStore }) {
             ))}
           </div>
           <button type="button" className={`fx-launcher ${fxOpen ? 'active' : ''}`}
-            aria-expanded={fxOpen} aria-haspopup="dialog" aria-controls="spectrum-fx-studio"
+            aria-expanded={fxOpen} aria-haspopup="dialog" aria-controls="huelith-fx-studio"
             onClick={() => {
               if (fxOpen) closeFx();
               else { setFxClosing(false); setFxOpen(true); }
             }}>
             <span className="fx-launcher-glyph"><AutoAwesome fontSize="small" /></span>
-            <span className="fx-launcher-copy"><strong>Spectrum FX</strong><small>Creativity · Effects · FX</small></span>
+            <span className="fx-launcher-copy"><strong>Huelith FX</strong><small>Creativity · Effects · FX</small></span>
             <span className="fx-launcher-count">{active?.effects?.length ?? 0}</span>
             <span aria-hidden="true">{fxOpen ? '‹' : '›'}</span>
           </button>
@@ -823,7 +823,7 @@ export default function App() {
   const [errorText, setErrorText] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   useEffect(() => {
-    // Backend preferences are application-wide and never written to .spectrum
+    // Backend preferences are application-wide and never written to .huelith
     // documents. The existing FX editor remains the trusted renderer until the
     // exact kernels are individually migrated and validated in Aurora H.
     const initial = loadPreferences();
@@ -838,7 +838,7 @@ export default function App() {
     return () => window.removeEventListener(PREFERENCES_EVENT, onPreferences);
   }, []);
   const [shortcuts, setShortcuts] = useState<Record<string, string>>(() => {
-    try { return JSON.parse(localStorage.getItem('spectrum-shortcuts') ?? '{}') as Record<string, string>; }
+    try { return JSON.parse(localStorage.getItem('huelith-shortcuts') ?? localStorage.getItem('spectrum-shortcuts') ?? '{}') as Record<string, string>; }
     catch { return {}; }
   });
 
@@ -860,7 +860,7 @@ export default function App() {
       if (target?.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target?.tagName ?? '')) return;
       const items = event.clipboardData?.items;
       const hasImage = Boolean(items && [...items].some(item => item.type.startsWith('image/')));
-      const hasInternal = Boolean(event.clipboardData?.types.includes('application/x-spectrum-object'));
+      const hasInternal = Boolean(event.clipboardData?.types.includes('application/x-huelith-object'));
       if (hasImage || hasInternal) {
         event.preventDefault();
         void handlePaste(event).then(ok => { if (ok) setNotice('Pasted as editable layer'); }).catch(handleError);
@@ -906,7 +906,7 @@ export default function App() {
     function handleKey(event: KeyboardEvent): void {
       const target = event.target as HTMLElement | null;
       if (target && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))) return;
-      if (document.querySelector('[role="dialog"]:not(#spectrum-fx-studio), [role="menu"]')) return;
+      if (document.querySelector('[role="dialog"]:not(#huelith-fx-studio), [role="menu"]')) return;
       const modifier = event.ctrlKey || event.metaKey;
       const key = event.key.toLowerCase();
       const current = useEditor.getState();
@@ -1045,7 +1045,7 @@ export default function App() {
       }
       case 'fx':
         if (!state.inspectorOpen) state.setInspectorOpen(true);
-        window.setTimeout(() => window.dispatchEvent(new Event('spectrum-open-fx')), 0);
+        window.setTimeout(() => window.dispatchEvent(new Event('huelith-open-fx')), 0);
         break;
       case 'convert-animation': state.makeAnimation(); break;
       case 'previous-frame': if (doc.animation) state.setActiveFrame(Math.max(0, doc.animation.currentFrame - 1)); break;
@@ -1054,7 +1054,7 @@ export default function App() {
       case 'focus': state.setFocusMode(!state.focusMode); break;
       case 'settings': setSettingsOpen(true); break;
       case 'theme': if (anchor) setThemeAnchor(anchor); break;
-      case 'help': setNotice('Spectrum 0.1 · Free and open source · Keyboard shortcuts in Preferences'); break;
+      case 'help': setNotice('Huelith 0.2 · Free and open source · Keyboard shortcuts in Preferences'); break;
     }
   }
 
@@ -1076,11 +1076,11 @@ export default function App() {
         <header className="titlebar" data-tauri-drag-region>
           <div className="brand" data-tauri-drag-region>
             <div className="brand-mark">✦</div>
-            <span>Spectrum</span>
+            <span>Huelith</span>
             <span className="badge">0.1</span>
           </div>
           <div className="title-actions">
-            <nav className="spectrum-command-bar" aria-label="Spectrum commands">
+            <nav className="huelith-command-bar" aria-label="Huelith commands">
               {Object.keys(MENUS).map(category => (
                 <button type="button" className={`command-menu-trigger ${menuAnchor?.category === category ? 'active' : ''}`}
                   aria-expanded={menuAnchor?.category === category} key={category}
@@ -1110,7 +1110,7 @@ export default function App() {
             <ActionIcon title="Choose appearance"  onClick={event => {
               setThemeAnchor(event.currentTarget);
             }}><Palette fontSize="small" /></ActionIcon>
-            <ActionIcon title="Spectrum Originals · Create and animate" onClick={() => state.setCreativePanelOpen(!state.creativePanelOpen)}>
+            <ActionIcon title="Huelith Originals · Create and animate" onClick={() => state.setCreativePanelOpen(!state.creativePanelOpen)}>
               <AutoAwesome fontSize="small" />
             </ActionIcon>
             <WindowControls />
@@ -1133,7 +1133,7 @@ export default function App() {
                 {doc.width} × {doc.height} px
                 <span className="status-sep">|</span>{doc.layers.length} layers
                 <span className="status-sep">|</span>{state.workspace} theme
-                <span className="status-sep">|</span>Spectrum 0.1
+                <span className="status-sep">|</span>Huelith 0.2
               </div>
             </footer>
           </main>

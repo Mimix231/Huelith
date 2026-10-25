@@ -7,7 +7,7 @@
 | Node regression suite including new D/E/F tests | 165/165 PASS |
 | Existing Chromium canvas/theme tests | 275/275 PASS |
 | Existing authoritative FX pixel checks | 17/17 PASS |
-| Existing Spectrum Originals Chromium pixel checks | 18/18 PASS |
+| Existing Huelith Originals Chromium pixel checks | 18/18 PASS |
 | Chromium animation/timeline checks | 9/9 PASS |
 | All TS/TSX source files parse | 58 PASS |
 | Strict native frontend API TypeScript (external minimal Tauri declaration) | PASS |

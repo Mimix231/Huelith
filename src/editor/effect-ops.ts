@@ -19,7 +19,7 @@ function surface(width: number, height: number): HTMLCanvasElement {
 
 function context(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
-  if (!ctx) throw new Error('Spectrum requires Canvas 2D.');
+  if (!ctx) throw new Error('Huelith requires Canvas 2D.');
   return ctx;
 }
 
@@ -56,7 +56,7 @@ function fromPixels(image: ImageData): HTMLCanvasElement {
 function copyImage(source: HTMLCanvasElement): HTMLCanvasElement {
   const output = surface(source.width, source.height);
   const painter = output.getContext('2d');
-  if (!painter) throw new Error('Spectrum requires Canvas 2D.');
+  if (!painter) throw new Error('Huelith requires Canvas 2D.');
   painter.drawImage(source, 0, 0);
   return output;
 }
@@ -66,7 +66,7 @@ function filtered(source: HTMLCanvasElement, filter: string): HTMLCanvasElement 
   // Let Chromium's compositor accelerate genuine native CSS filter kernels;
   // requesting willReadFrequently here unnecessarily forces a slow readback path.
   const ctx = output.getContext('2d');
-  if (!ctx) throw new Error('Spectrum requires Canvas 2D.');
+  if (!ctx) throw new Error('Huelith requires Canvas 2D.');
   ctx.filter = filter;
   ctx.drawImage(source, 0, 0);
   return output;
@@ -685,34 +685,90 @@ function silhouetteEffect(source: HTMLCanvasElement, effect: Effect): HTMLCanvas
   return output;
 }
 
-/** Flood-fill only corners' connected background; opaque subjects remain intact. */
+/** Conservative auto-selection: require one dominant BORDER color cluster.
+ * Never treat unrelated corners as four independent background colors, which
+ * previously removed similarly-colored subjects touching the image edges. */
 function removeCornerBackground(source: HTMLCanvasElement, tolerance: number): HTMLCanvasElement {
   const image = pixels(source);
-  const { width, height, data } = image;
-  const seen = new Uint8Array(width * height);
-  const queue = new Int32Array(width * height);
-  const seeds = [0, width - 1, (height - 1) * width, width * height - 1];
-  let head = 0, tail = 0;
-  const colors = seeds.map(index => [data[index * 4], data[index * 4 + 1], data[index * 4 + 2]]);
-  const similar = (index: number): boolean => colors.some(([r, g, b]) => {
+  const { width: w, height: h, data } = image;
+  if (!w || !h) return fromPixels(image);
+  const swatches = new Map<number, { count: number; r: number; g: number; b: number }>();
+  const step = Math.max(1, Math.floor(Math.min(w, h) / 80));
+  const consider = (x: number, y: number): void => {
+    const i = (y * w + x) * 4;
+    if (data[i + 3] < 220) return;
+    const r = data[i], g = data[i + 1], b = data[i + 2];
+    const key = (r >> 5) * 64 + (g >> 5) * 8 + (b >> 5);
+    const entry = swatches.get(key) ?? { count: 0, r: 0, g: 0, b: 0 };
+    entry.count++; entry.r += r; entry.g += g; entry.b += b;
+    swatches.set(key, entry);
+  };
+  for (let x = 0; x < w; x += step) { consider(x, 0); consider(x, h - 1); }
+  for (let y = 0; y < h; y += step) { consider(0, y); consider(w - 1, y); }
+  let total = 0;
+  let dominant: { count: number; r: number; g: number; b: number } | undefined;
+  for (const entry of swatches.values()) {
+    total += entry.count;
+    if (!dominant || dominant.count < entry.count) dominant = entry;
+  }
+  // Ambiguous borders (busy photos, subject across edges): do not guess and
+  // accidentally erase the subject. Keep/Remove brushes remain available.
+  if (!dominant || dominant.count / Math.max(1, total) < 0.24) return fromPixels(image);
+  const [r, g, b] = [dominant.r, dominant.g, dominant.b].map(v => v / dominant!.count);
+  const threshold = Math.max(6, Math.min(150, tolerance * 1.5));
+  const similar = (index: number): boolean => {
     const i = index * 4;
-    return Math.hypot(data[i] - r, data[i + 1] - g, data[i + 2] - b) <= tolerance;
-  });
-  for (const index of seeds) {
-    if (!seen[index] && similar(index)) { seen[index] = 1; queue[tail++] = index; }
-  }
+    return data[i + 3] > 0 && Math.hypot(data[i] - r, data[i + 1] - g, data[i + 2] - b) <= threshold;
+  };
+  const visited = new Uint8Array(w * h);
+  const queue = new Int32Array(w * h);
+  let head = 0, tail = 0;
+  const enqueue = (index: number): void => {
+    if (visited[index] || !similar(index)) return;
+    visited[index] = 1; queue[tail++] = index;
+  };
+  for (let x = 0; x < w; x++) { enqueue(x); enqueue((h - 1) * w + x); }
+  for (let y = 0; y < h; y++) { enqueue(y * w); enqueue(y * w + w - 1); }
   while (head < tail) {
-    const index = queue[head++];
-    const x = index % width;
-    const next = [index - width, index + width, x > 0 ? index - 1 : -1, x < width - 1 ? index + 1 : -1];
-    for (const candidate of next) {
-      if (candidate < 0 || candidate >= width * height || seen[candidate] || !similar(candidate)) continue;
-      seen[candidate] = 1;
-      queue[tail++] = candidate;
-    }
-    data[index * 4 + 3] = 0;
+    const index = queue[head++], x = index % w;
+    if (index >= w) enqueue(index - w);
+    if (index + w < w * h) enqueue(index + w);
+    if (x > 0) enqueue(index - 1);
+    if (x + 1 < w) enqueue(index + 1);
   }
+  // A completely uniform opaque image contains no detectable foreground, so
+  // do not erase the whole document. A small but contrasting subject is valid
+  // even when its background occupies more than 92% of the image.
+  if (tail >= w * h - 1) return fromPixels(image);
+  for (let i = 0; i < tail; i++) data[queue[i] * 4 + 3] = 0;
   return fromPixels(image);
+}
+
+/** Editable mask strokes are evaluated after automatic selection and can
+ * restore ORIGINAL source alpha as well as remove it. Stored in effect params,
+ * so undo, save, replay, and export remain non-destructive. */
+function applyBackgroundMask(source: HTMLCanvasElement, removed: HTMLCanvasElement, effect: Effect): HTMLCanvasElement {
+  const strokes = effect.parameters?.maskStrokes ?? [];
+  if (!strokes.length) return removed;
+  const w = source.width, h = source.height;
+  const marks = surface(w, h), painter = context(marks);
+  for (const stroke of strokes) {
+    if (!Number.isFinite(stroke.x) || !Number.isFinite(stroke.y) || !Number.isFinite(stroke.radius)) continue;
+    painter.beginPath();
+    painter.fillStyle = stroke.mode === 'keep' ? '#ff0000' : '#0000ff';
+    painter.arc(clamp(stroke.x, 0, 1) * w, clamp(stroke.y, 0, 1) * h,
+      clamp(stroke.radius, 1, 500), 0, Math.PI * 2);
+    painter.fill();
+  }
+  const mark = pixels(marks).data, input = pixels(source).data, matte = pixels(removed);
+  for (let i = 0; i < mark.length; i += 4) {
+    if (!mark[i + 3]) continue;
+    matte.data[i + 3] = mark[i] > mark[i + 2] ? input[i + 3] : 0;
+    if (mark[i] > mark[i + 2]) {
+      for (let c = 0; c < 3; c++) matte.data[i + c] = input[i + c];
+    }
+  }
+  return fromPixels(matte);
 }
 
 function distort(source: HTMLCanvasElement, effect: Effect): HTMLCanvasElement {
@@ -766,53 +822,83 @@ function distort(source: HTMLCanvasElement, effect: Effect): HTMLCanvasElement {
   return fromPixels(out);
 }
 
-function scanDistortion(source: HTMLCanvasElement, effect: Effect): HTMLCanvasElement {
-  const output = surface(source.width, source.height);
-  const ctx = context(output);
-  const amount = effect.amount;
-  if (amount <= 0) {
-    ctx.drawImage(source, 0, 0);
-    return output;
+/** True channel separation. Sampling one source channel per destination channel avoids
+ * screen-blended duplicate sprites and keeps source colors within their original
+ * gamut. Transparent pixels retain their transparency (no illuminated ghosts). */
+function chromaticShift(source: HTMLCanvasElement, effect: Effect): HTMLCanvasElement {
+  const input = pixels(source), { width: w, height: h, data: src } = input;
+  const out = new ImageData(w, h);
+  if (effect.amount <= 0) return copyImage(source);
+  const shift = Math.min(w * 0.14, Math.max(0, effect.amount) * 0.32) *
+    clamp(effect.parameters?.colorMix ?? 65, 0, 100) / 100;
+  const angle = (effect.parameters?.angle ?? 0) * Math.PI / 180;
+  const dx = Math.round(shift * Math.cos(angle)), dy = Math.round(shift * Math.sin(angle) + (effect.parameters?.shiftY ?? 0));
+  const channel = (x: number, y: number, component: number, fallback: number): number =>
+    x < 0 || y < 0 || x >= w || y >= h ? fallback : src[(y * w + x) * 4 + component];
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const at = (y * w + x) * 4;
+    out.data[at] = channel(x - dx, y - dy, 0, src[at]);
+    out.data[at + 1] = src[at + 1];
+    out.data[at + 2] = channel(x + dx, y + dy, 2, src[at + 2]);
+    out.data[at + 3] = src[at + 3];
   }
+  return fromPixels(out);
+}
+
+/** VHS moves complete scanline segments as an analog tape signal. It does not
+ * layer tinted copies over the original or alter exposure behind the user's back. */
+function vhsTracking(source: HTMLCanvasElement, effect: Effect): HTMLCanvasElement {
+  const input = pixels(source), { width: w, height: h, data: src } = input;
+  const out = new ImageData(w, h);
+  if (effect.amount <= 0) return copyImage(source);
+  const strength = Math.max(0, effect.amount) / 100;
   const seed = effect.parameters?.seed ?? 7;
-  const density = clamp(effect.parameters?.density ?? amount, 0, 100);
-  // Keep both color channels inside the canvas at the maximum slider value.
-  // Previously chromatic shift could move the entire tinted layer off-screen.
-  const shift = Math.min(source.width * 0.14, Math.max(0, amount) * (effect.kind === 'chromatic' ? 0.32 : 0.2));
-  const stripe = Math.max(2, Math.round(5 - amount / 45));
-  ctx.drawImage(source, 0, 0);
-  ctx.save();
-  for (let y = 0; y < source.height; y += stripe) {
-    const rand = noise(0, y, seed);
-    if (rand * 100 >= density) continue;
-    ctx.drawImage(source, 0, y, source.width, Math.min(stripe, source.height - y),
-      (rand - 0.5) * shift * 2, y + (effect.parameters?.shiftY ?? 0), source.width, Math.min(stripe, source.height - y));
-  }
-  if (effect.kind === 'chromatic' || effect.kind === 'vhs' || effect.kind === 'glitch') {
-    const colors = [effect.parameters?.colorA ?? '#ff2856', effect.parameters?.colorB ?? '#238bff'];
-    const colorMix = clamp(effect.parameters?.colorMix ?? 65, 0, 100) / 100;
-    for (const [dx, fill] of [[-shift, colors[0]], [shift, colors[1]]] as const) {
-      const channel = surface(source.width, source.height);
-      const layer = context(channel);
-      layer.drawImage(source, 0, 0);
-      layer.globalCompositeOperation = 'source-in';
-      layer.fillStyle = fill;
-      layer.fillRect(0, 0, channel.width, channel.height);
-      ctx.globalCompositeOperation = 'screen';
-      ctx.globalAlpha = 0.62 * colorMix;
-      ctx.drawImage(channel, dx, effect.parameters?.shiftY ?? 0);
+  const density = clamp(effect.parameters?.density ?? 50, 0, 100) / 100;
+  const scan = clamp(effect.parameters?.scanlines ?? 0, 0, 100) / 100;
+  const band = Math.max(2, Math.round(h / 46));
+  for (let y = 0; y < h; y++) {
+    const block = Math.floor(y / band);
+    const unstable = noise(3, block, seed) < density;
+    const tracking = unstable ? Math.round((noise(block, 71, seed) - 0.5) * 2 * strength * Math.min(w * .13, 44) * clamp(effect.parameters?.colorMix ?? 65, 0, 100) / 65) : 0;
+    const wobble = Math.round(Math.sin(y * .14 + seed) * strength * 2);
+    const scanDarken = y % 3 === 0 ? 1 - scan * .18 : 1;
+    for (let x = 0; x < w; x++) {
+      const sx = Math.max(0, Math.min(w - 1, x + tracking + wobble));
+      const i = (y * w + x) * 4, from = (y * w + sx) * 4;
+      out.data[i] = Math.round(src[from] * scanDarken);
+      out.data[i + 1] = Math.round(src[from + 1] * scanDarken);
+      out.data[i + 2] = Math.round(src[from + 2] * scanDarken);
+      out.data[i + 3] = src[from + 3];
     }
   }
-  ctx.restore();
-  const scanlines = clamp(effect.parameters?.scanlines ?? (effect.kind === 'chromatic' ? 0 : amount), 0, 100);
-  if (scanlines) {
-    ctx.save();
-    ctx.globalCompositeOperation = 'source-atop';
-    ctx.fillStyle = `rgba(3,4,16,${scanlines / 220})`;
-    for (let y = 0; y < source.height; y += 3) ctx.fillRect(0, y, source.width, 1);
-    ctx.restore();
+  return fromPixels(out);
+}
+
+/** Digital corruption moves coherent rectangular pixel blocks and their true
+ * RGBA samples. It intentionally has no tape scanlines or fake RGB overlays. */
+function digitalGlitch(source: HTMLCanvasElement, effect: Effect): HTMLCanvasElement {
+  const input = pixels(source), { width: w, height: h, data: src } = input;
+  const out = new ImageData(w, h);
+  out.data.set(src);
+  if (effect.amount <= 0) return fromPixels(out);
+  const strength = Math.max(0, effect.amount) / 100;
+  const seed = effect.parameters?.seed ?? 21;
+  const density = clamp(effect.parameters?.density ?? 55, 0, 100) / 100;
+  const bw = Math.max(3, Math.round(8 + w / 32));
+  const bh = Math.max(2, Math.round(4 + h / 64));
+  for (let by = 0; by < h; by += bh) for (let bx = 0; bx < w; bx += bw) {
+    const cx = Math.floor(bx / bw), cy = Math.floor(by / bh);
+    if (noise(cx, cy, seed) > density * strength) continue;
+    const dx = Math.round((noise(cx + 30, cy, seed) - .5) * 2 * Math.min(w * .18, 70) * strength * clamp(effect.parameters?.colorMix ?? 65, 0, 100) / 65);
+    const dy = Math.round((noise(cx, cy + 31, seed) - .5) * 2 * Math.min(h * .04, 12) * strength + (effect.parameters?.shiftY ?? 0) * strength);
+    for (let y = by; y < Math.min(h, by + bh); y++) for (let x = bx; x < Math.min(w, bx + bw); x++) {
+      const sx = Math.max(0, Math.min(w - 1, x + dx));
+      const sy = Math.max(0, Math.min(h - 1, y + dy));
+      const dst = (y * w + x) * 4, from = (sy * w + sx) * 4;
+      for (let c = 0; c < 4; c++) out.data[dst + c] = src[from + c];
+    }
   }
-  return output;
+  return fromPixels(out);
 }
 
 /** Render each shadow independently; inner/contact/long are real spatial variations. */
@@ -991,7 +1077,8 @@ export function applyEffect(source: HTMLCanvasElement, effect: Effect): HTMLCanv
     case 'oilpaint': case 'watercolor': return applyPainterly(source, effect);
     case 'mosaic': return applyMosaic(source, effect);
     case 'cutout': {
-      const removed = removeCornerBackground(source, effect.amount);
+      const removed = applyBackgroundMask(source,
+        effect.parameters?.backgroundAuto === 0 ? copyImage(source) : removeCornerBackground(source, effect.amount), effect);
       const spill = clamp(effect.parameters?.decontaminate ?? 0, 0, 100) / 100;
       if (spill > 0) {
         const src = pixels(source);
@@ -1021,11 +1108,13 @@ export function applyEffect(source: HTMLCanvasElement, effect: Effect): HTMLCanv
       }
       const feather = effect.parameters?.feather ?? 0;
       if (feather <= 0) return removed;
-      const output = copyImage(removed);
-      const ctx = context(output);
-      ctx.globalCompositeOperation = 'destination-in';
-      ctx.drawImage(softened(removed, Math.min(feather, 80)), 0, 0);
-      return output;
+      const output = pixels(removed);
+      const alpha = pixels(softened(removed, Math.min(feather, 80))).data;
+      const originalAlpha = pixels(source).data;
+      for (let i = 3; i < output.data.length; i += 4) {
+        output.data[i] = Math.min(originalAlpha[i], alpha[i]);
+      }
+      return fromPixels(output);
     }
     case 'outline': return effect.parameters?.outlineStyle && effect.parameters.outlineStyle !== 'classic'
       ? renderSubjectOutline(source, effect) : silhouetteEffect(source, effect);
@@ -1034,7 +1123,9 @@ export function applyEffect(source: HTMLCanvasElement, effect: Effect): HTMLCanv
     case 'aurora': return auroraEffect(source, effect);
     case 'burst': return burstEffect(source, effect);
     case 'backdrop': return backdropEffect(source, effect);
-    case 'chromatic': case 'glitch': case 'vhs': return scanDistortion(source, effect);
+    case 'chromatic': return chromaticShift(source, effect);
+    case 'vhs': return vhsTracking(source, effect);
+    case 'glitch': return digitalGlitch(source, effect);
     case 'swirl': case 'ripple': case 'wave': case 'glass': return distort(source, effect);
     case 'vignette': {
       const output = copyImage(source);

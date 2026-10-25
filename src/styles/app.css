@@ -1,4 +1,4 @@
-/* Spectrum 0.1 shared geometry. All visual identity belongs in theme-specific files. */
+/* Huelith 0.1 shared geometry. All visual identity belongs in theme-specific files. */
 * {
   box-sizing: border-box;
 }
@@ -37,6 +37,27 @@ button {
   background: var(--app-bg);
   font-size: 12px;
   transition: background-color 180ms ease;
+}
+
+/* Single semantic palette shared by every themed tool and dialog.
+ * Theme classes own --text / --panel-bg / --border; dependent tokens
+ * must NEVER silently fall back to a light-theme palette in dark mode. */
+.app {
+  --surface-panel: var(--panel-bg);
+  --surface-raised: var(--context-bg, var(--panel-bg));
+  --surface-input: color-mix(in srgb, var(--panel-bg) 84%, var(--text) 16%);
+  --content-primary: var(--text);
+  --content-secondary: var(--muted, var(--text));
+  --stroke-subtle: var(--border);
+  --surface-selected: var(--active-bg, var(--accent-soft));
+  --focus-ring: var(--accent-line, var(--accent));
+  color-scheme: light;
+}
+.app.tone-dark { color-scheme: dark; }
+.app :is(input, select, textarea) { accent-color: var(--accent); }
+.app :is(button, input, select, textarea):focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 
 .app button {

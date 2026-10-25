@@ -1,4 +1,4 @@
-"""Real Spectrum UI interaction test. Requires npm dependencies and Python Playwright + Chromium.
+"""Real Huelith UI interaction test. Requires npm dependencies and Python Playwright + Chromium.
 
 Starts the Vite server automatically. Unlike the renderer smoke suite, this drives React/MUI.
 """
@@ -74,8 +74,8 @@ def main():
                 text = page.locator('textarea.focus-text-input')
                 text.wait_for()
                 assert text.evaluate('(element) => document.activeElement === element'), 'Text caret did not receive focus'
-                text.fill('Hello Spectrum\nSecond line')
-                page.locator('.spectrum-focus-text').get_by_role('button', name='Font family').click()
+                text.fill('Hello Huelith\nSecond line')
+                page.locator('.huelith-focus-text').get_by_role('button', name='Font family').click()
                 page.get_by_role('textbox', name='Search fonts').fill('Georgia')
                 page.get_by_role('option', name='Georgia', exact=True).click()
                 assert text.evaluate('(element) => document.activeElement === element'), 'Font choice lost caret focus'
@@ -131,7 +131,7 @@ def main():
                 assert len(page.locator('.inspector-tabs button').all()) == 3
                 page.locator('.inspector-tabs button').filter(has_text='Layers').click()
                 page.locator('.fx-launcher').click()
-                studio = page.locator('#spectrum-fx-studio')
+                studio = page.locator('#huelith-fx-studio')
                 assert studio.is_visible()
                 assert studio.get_by_role('tab', name='Filters').count() == 1
                 studio.locator('.fx-filter-card').filter(has_text='Spectrum glow').click()
@@ -189,7 +189,7 @@ def main():
                 }''')
                 page.wait_for_function('(before) => document.querySelectorAll(".layer-row").length > before', arg=before)
                 print('PASS: real paste event inserts a new image layer')
-                print('Spectrum 0.1 interactive UI scenarios: 10 passed')
+                print('Huelith 0.1 interactive UI scenarios: 10 passed')
             finally:
                 browser.close()
     finally:

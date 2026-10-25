@@ -1,4 +1,4 @@
-# Spectrum 0.1 — Spectrum Originals: verification and release gates
+# Huelith 0.1 — Huelith Originals: verification and release gates
 
 Verification completed against the **actual source in this ZIP**. This is a source development handoff, not a certified Windows installer.
 
@@ -43,7 +43,7 @@ Verification completed against the **actual source in this ZIP**. This is a sour
 
 ## User acceptance checklist
 
-- Open a previously saved `.spectrum` project; confirm existing artwork is unchanged before adding a new creative object.
+- Open a previously saved `.huelith` project; confirm existing artwork is unchanged before adding a new creative object.
 - Add each of the ten tools via **Creative** menu and via the titlebar button; switch, edit, close/reopen panel, undo and redo.
 - With Living Ink selected, choose Draw, paint a path, and drag a vertex; save/reopen and verify editable point geometry remains.
 - With static artwork, add a Light Sculptor and drag its crosshair; check localized placement without moving the original layer.
@@ -54,4 +54,4 @@ Verification completed against the **actual source in this ZIP**. This is a sour
 - Open FX Studio on a large imported image and investigate existing quality/slider-FPS problems separately before a public 1.0 release.
 - Run `npm install`, `npm run verify`, `npm run test:originals`, `npm run test:browser`, `npm run test:timeline`, `npm run test:ui`, `npm run desktop:build` on an environment with the full Windows prerequisites.
 
-**No claimed 1.0 readiness. This remains Spectrum 0.1.0.**
+**No claimed 1.0 readiness. This remains Huelith 0.1.0.**

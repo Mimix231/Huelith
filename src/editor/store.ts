@@ -3,7 +3,7 @@ import { create } from 'zustand';
 import { clampEffectAmount, forgetLayerEffectPreview, newEffect, queueLayerEffectPreview } from './fx';
 import { boundedNumber } from './effect-schema';
 import { setInteractiveEffectPreview } from './preview-quality';
-import { syncActiveCel, enableAnimation, insertFrame, deleteFrame, reorderFrame, changeFps, changeOnion, changeFrameDuration } from './animation';
+import { syncActiveCel, enableAnimation, insertFrame, deleteFrame, reorderFrame, changeFps, changeOnion, changeFrameDuration, inheritLayerTrackEffects } from './animation';
 import { DEFAULT_TEXT_FORMAT, normalizeTextFormat, reflowTextShape, type TextDraft, type TextFormat } from './typography';
 import {
   createDocument, layerById, makeRaster, makeVector, uid,
@@ -51,8 +51,8 @@ function savedWorkspace(): WorkspaceSettings {
     inspectorWidth: 236,
   };
   try {
-    const theme = localStorage.getItem('spectrum-theme');
-    const raw = localStorage.getItem('spectrum-layout');
+    const theme = (localStorage.getItem('huelith-theme') ?? localStorage.getItem('spectrum-theme'));
+    const raw = (localStorage.getItem('huelith-layout') ?? localStorage.getItem('spectrum-layout'));
     const layout = raw ? JSON.parse(raw) as Partial<WorkspaceSettings> : {};
     return {
       theme: ['glass', 'material', 'classic', 'midnight', 'studio', 'strawberry', 'melon', 'peach', 'lemon', 'mango', 'sakura', 'blossom', 'shadow'].includes(theme ?? '') ? theme as Workspace : defaults.theme,
@@ -69,7 +69,7 @@ function savedWorkspace(): WorkspaceSettings {
 function persistLayout(settings: Partial<WorkspaceSettings>): void {
   try {
     const previous = savedWorkspace();
-    localStorage.setItem('spectrum-layout', JSON.stringify({ ...previous, ...settings }));
+    localStorage.setItem('huelith-layout', JSON.stringify({ ...previous, ...settings }));
   } catch { /* Offline and private mode remain usable. */ }
 }
 
@@ -259,7 +259,7 @@ function announceStudioPreview(layerId?: string, effects?: readonly Effect[]): v
   // and all non-worker fallbacks still paint immediately.
   const submitted = layerId && effects ? queueLayerEffectPreview(layerId, effects) : false;
   if (!submitted && typeof window !== 'undefined') {
-    window.dispatchEvent(new Event('spectrum-studio-preview'));
+    window.dispatchEvent(new Event('huelith-studio-preview'));
   }
 }
 
@@ -288,6 +288,20 @@ interface FxPreviewSession {
 }
 let fxPreviewSession: FxPreviewSession | null = null;
 
+/** Effects are properties of the animation layer/track, not disposable pixels
+ * of the active cel. Commit changes across matching layer IDs on every frame;
+ * each cel retains its own raster/vector artwork. */
+function shareLayerEffectsAcrossFrames(doc: Document, layerId: string): void {
+  if (!doc.animation) return;
+  const current = layerById(doc, layerId);
+  if (!current) return;
+  const snapshot = structuredClone(current.effects ?? []);
+  for (const frame of doc.animation.frames) {
+    const counterpart = layerById({ ...doc, layers: frame.layers }, layerId);
+    if (counterpart) counterpart.effects = structuredClone(snapshot);
+  }
+}
+
 function applyEffectChanges(doc: Document, layerId: string, effectId: string, changes: Partial<Effect>): void {
   const layer = layerById(doc, layerId);
   if (!layer || layer.locked) return;
@@ -309,6 +323,13 @@ function applyEffectChanges(doc: Document, layerId: string, effectId: string, ch
         parameters.curvePoints = structuredClone(value);
       } else if (key === 'shadows' && Array.isArray(value) && value.length <= 12) {
         parameters.shadows = structuredClone(value);
+      } else if (key === 'maskStrokes' && Array.isArray(value) && value.length <= 4000) {
+        // Never deserialize arbitrary or unbounded editable mask payloads.
+        parameters.maskStrokes = value.filter(item => item && typeof item === 'object'
+          && (item.mode === 'keep' || item.mode === 'remove')
+          && Number.isFinite(item.x) && item.x >= 0 && item.x <= 1
+          && Number.isFinite(item.y) && item.y >= 0 && item.y <= 1
+          && Number.isFinite(item.radius) && item.radius >= 1 && item.radius <= 500);
       } else if (typeof value === 'number') {
         const bounded = boundedNumber(effect.kind, key, value);
         if (bounded !== undefined) (parameters as unknown as Record<string, number>)[key] = bounded;
@@ -569,7 +590,7 @@ export const useEditor = create<EditorStore>((set, get) => ({
   },
 
   setWorkspace: workspace => {
-    try { localStorage.setItem('spectrum-theme', workspace); } catch { /* Keep working offline. */ }
+    try { localStorage.setItem('huelith-theme', workspace); } catch { /* Keep working offline. */ }
     set({ workspace });
   },
   setGrid: grid => set({ grid }),
@@ -690,8 +711,12 @@ export const useEditor = create<EditorStore>((set, get) => ({
           ...frames[track.currentFrame], layers: tab.doc.layers, activeLayerId: tab.doc.activeLayerId,
         };
         const selected = frames[index];
+        const inheritedLayers = inheritLayerTrackEffects(selected.layers, frames);
+        if (inheritedLayers.some((layer, i) => layer !== selected.layers[i])) {
+          frames[index] = { ...selected, layers: inheritedLayers };
+        }
         const doc: Document = {
-          ...tab.doc, layers: selected.layers, activeLayerId: selected.activeLayerId,
+          ...tab.doc, layers: inheritedLayers, activeLayerId: selected.activeLayerId,
           animation: { ...track, frames, currentFrame: index },
         };
         // Scrubbing changes the visible cel but does not pollute undo history.
@@ -827,8 +852,10 @@ export const useEditor = create<EditorStore>((set, get) => ({
           if (doc.animation) {
             doc.animation = {
               ...doc.animation,
-              frames: doc.animation.frames.map((frame, index) => index === doc.animation!.currentFrame
-                ? { ...frame, layers } : frame),
+              frames: doc.animation.frames.map((frame, index) => ({
+                ...frame, layers: index === doc.animation!.currentFrame ? layers
+                  : frame.layers.map(layer => studioEffectPath(layer, layerId, effects)),
+              })),
             };
           }
           return {
@@ -853,6 +880,7 @@ export const useEditor = create<EditorStore>((set, get) => ({
     const layer = layerById(doc, id);
     if (layer && !layer.locked) {
       layer.effects = [...(layer.effects ?? []), newEffect(kind)].slice(0, 64);
+      shareLayerEffectsAcrossFrames(doc, id);
     }
   }),
 
@@ -860,12 +888,16 @@ export const useEditor = create<EditorStore>((set, get) => ({
     const layer = layerById(doc, id);
     if (layer && !layer.locked) {
       layer.effects = [...(layer.effects ?? []), ...effects.map(effect => ({ ...effect, id: uid() }))].slice(0, 64);
+      shareLayerEffectsAcrossFrames(doc, id);
     }
   }),
 
   updateEffect: (layerId, effectId, changes) => {
     get().finishEffectPreview();
-    get().mutate(doc => applyEffectChanges(doc, layerId, effectId, changes));
+    get().mutate(doc => {
+      applyEffectChanges(doc, layerId, effectId, changes);
+      shareLayerEffectsAcrossFrames(doc, layerId);
+    });
   },
 
   previewEffect: (layerId, effectId, changes) => {
@@ -909,7 +941,12 @@ export const useEditor = create<EditorStore>((set, get) => ({
         return {
           ...tab, past: trimHistory([...tab.past, session.original]), future: [],
           dirty: true, revision: tab.revision + 1,
-          doc: { ...tab.doc, updatedAt: new Date().toISOString() },
+          doc: (() => {
+            const updated = structuredClone(tab.doc);
+            shareLayerEffectsAcrossFrames(updated, session.layerId);
+            updated.updatedAt = new Date().toISOString();
+            return updated;
+          })(),
         };
       }),
     }));

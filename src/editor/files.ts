@@ -18,7 +18,7 @@ function safeName(name: string): string {
 }
 
 function fileStem(name: string): string {
-  return safeName(name).replace(/\.(spectrum|png|jpeg|jpg|webp|svg)$/i, '');
+  return safeName(name).replace(/\.(huelith|spectrum|png|jpeg|jpg|webp|svg)$/i, '');
 }
 
 function download(bytes: Uint8Array, name: string, mime: string): void {
@@ -82,8 +82,8 @@ export async function saveProject(saveAs = false): Promise<boolean> {
     return true;
   }
 
-  const chosen = await saveBytes(bytes, `${fileStem(tab.doc.name)}.spectrum`, 'application/json', [
-    { name: 'Spectrum project', extensions: ['spectrum'] },
+  const chosen = await saveBytes(bytes, `${fileStem(tab.doc.name)}.huelith`, 'application/json', [
+    { name: 'Huelith project', extensions: ['huelith', 'spectrum'] },
   ]);
   if (!chosen) return false;
   useEditor.getState().markSaved(id, revision, isDesktop() ? chosen : undefined);
@@ -116,9 +116,9 @@ export async function saveAllProjects(): Promise<boolean> {
     } else {
       const selectedPath = await saveBytes(
         bytes,
-        `${fileStem(tab.doc.name)}.spectrum`,
+        `${fileStem(tab.doc.name)}.huelith`,
         'application/json',
-        [{ name: 'Spectrum project', extensions: ['spectrum'] }],
+        [{ name: 'Huelith project', extensions: ['huelith', 'spectrum'] }],
       );
       if (!selectedPath) return false;
       path = isDesktop() ? selectedPath : undefined;
@@ -142,18 +142,18 @@ export async function openProject(): Promise<boolean> {
     const fs = await import('@tauri-apps/plugin-fs');
     const selected = await dialog.open({
       multiple: false,
-      filters: [{ name: 'Spectrum project', extensions: ['spectrum'] }],
+      filters: [{ name: 'Huelith project', extensions: ['huelith', 'spectrum'] }],
     });
     if (typeof selected !== 'string') return false;
     path = selected;
     value = JSON.parse(await fs.readTextFile(selected));
   } else {
-    const file = await pickFile('.spectrum,application/json');
+    const file = await pickFile('.huelith,.spectrum,application/json');
     if (!file) return false;
     value = JSON.parse(await file.text());
   }
 
-  if (!isDocument(value)) throw new Error('Invalid or unsupported .spectrum document.');
+  if (!isDocument(value)) throw new Error('Invalid or unsupported Huelith project (.huelith or legacy .spectrum).');
   useEditor.getState().openDoc(migrateLegacyEffects(value), path);
   return true;
 }

@@ -16,7 +16,7 @@ with sync_playwright() as playwright:
           function sample(mode){const x=c(),p=x.getContext('2d');
             if(mode==='opaque'){p.fillStyle='#142038';p.fillRect(0,0,120,96);}
             p.fillStyle='#ff73d4';p.fillRect(28,20,42,42);
-            p.fillStyle='#5ee8ff';p.font='bold 20px sans-serif';p.fillText('SPECTRUM',4,82);
+            p.fillStyle='#5ee8ff';p.font='bold 20px sans-serif';p.fillText('HUELITH',4,82);
             if(mode==='photo'){const g=p.createLinearGradient(0,0,120,96);g.addColorStop(0,'#d14b5a');g.addColorStop(1,'#2149ad');p.globalAlpha=.25;p.fillStyle=g;p.fillRect(0,0,120,96);p.globalAlpha=1;}
             return x;
           }

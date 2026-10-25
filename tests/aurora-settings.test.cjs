@@ -20,7 +20,7 @@ test('safe defaults and local persistence without touching project documents', (
   savePreferences({ ...DEFAULT_PREFERENCES, gpuAcceleration: false, cpuThreads: 8, canvasCheckerSize: 32 });
   assert.equal(loadPreferences().gpuAcceleration, false);
   assert.equal(loadPreferences().cpuThreads, 8);
-  assert.equal(doc.documentElement.dataset.spectrumDensity, 'compact');
+  assert.equal(doc.documentElement.dataset.huelithDensity, 'compact');
   assert.equal(doc.documentElement.style.values['--aurora-checker-size'], '32px');
   assert.equal(resetPreferences().gpuAcceleration, true);
   assert.equal(loadPreferences().canvasCheckerSize, 16);
@@ -34,15 +34,15 @@ test('malformed values do not corrupt settings or crash startup', () => {
   assert.equal(value.canvasCheckerSize, 16);
   assert.equal(value.interfaceDensity, 'compact');
   assert.equal(value.gpuAcceleration, true);
-  data.set('spectrum-aurora-preferences-v1', '{not-json');
+  data.set('huelith-aurora-preferences-v1', '{not-json');
   assert.deepEqual(loadPreferences(), DEFAULT_PREFERENCES);
 });
 
 test('diagnostics preference drives the existing FPS monitor', () => {
   savePreferences({ ...DEFAULT_PREFERENCES, diagnostics: true });
-  assert.equal(data.get('spectrum:perf'), '1');
+  assert.equal(data.get('huelith:perf'), '1');
   savePreferences({ ...DEFAULT_PREFERENCES, diagnostics: false });
-  assert.equal(data.get('spectrum:perf'), '0');
+  assert.equal(data.get('huelith:perf'), '0');
 });
 
 test('native API is explicit, retains sources, and never silently replaces legacy effects', () => {

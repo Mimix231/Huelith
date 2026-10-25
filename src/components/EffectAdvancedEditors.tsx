@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
-import type { Effect, EffectParameters, GradientStop, CurvePoint, ShadowEntry } from '../editor/types';
+import type { Effect, EffectParameters, GradientStop, CurvePoint, ShadowEntry, Layer, BackgroundMaskStroke } from '../editor/types';
+import { activeTab, useEditor } from '../editor/store';
 import { DEFAULT_CURVE_POINTS, DEFAULT_DUOTONE_STOPS, DEFAULT_GRADIENT_STOPS, DEFAULT_GLOW_STOPS, DEFAULT_SHADOWS } from '../editor/effect-schema';
 
 interface EditorProps {
   effect: Effect;
   preview: (parameters: EffectParameters) => void;
   commit: () => void;
+  sourceLayer?: Layer;
 }
 
 const hex = /^#[\da-f]{6}$/i;
@@ -308,7 +310,78 @@ function OutlineEditor({ effect, preview, commit }: EditorProps) {
   </div>;
 }
 
+/** Non-destructive manual corrections are stored as normalized positions,
+ * independent of zoom and editor panel size. This does not mutate the image. */
+function CutoutEditor({ effect, preview, commit, sourceLayer }: EditorProps) {
+  const doc = useEditor(state => activeTab(state).doc);
+  const [mode, setMode] = useState<'keep' | 'remove'>('keep');
+  const [size, setSize] = useState(effect.parameters?.maskBrushSize ?? 24);
+  const latest = useRef(effect.parameters?.maskStrokes ?? []);
+  const [marks, setMarks] = useState(effect.parameters?.maskStrokes ?? []);
+  const pointer = useRef<number | null>(null);
+  const last = useRef<{x: number; y: number} | null>(null);
+  useEffect(() => {
+    latest.current = effect.parameters?.maskStrokes ?? [];
+    setMarks(latest.current);
+  }, [effect.id]);
+  const publish = (strokes: BackgroundMaskStroke[]): void => {
+    latest.current = strokes;
+    setMarks(strokes);
+    preview({ maskStrokes: strokes });
+  };
+  const paint = (event: ReactPointerEvent<HTMLDivElement>): void => {
+    if (pointer.current !== event.pointerId) return;
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const x = number((event.clientX - bounds.left) / bounds.width, 0, 1);
+    const y = number((event.clientY - bounds.top) / bounds.height, 0, 1);
+    const prev = last.current;
+    if (prev && Math.hypot((x - prev.x) * doc.width, (y - prev.y) * doc.height) < Math.max(2, size / 3)) return;
+    last.current = { x, y };
+    if (latest.current.length >= 4000) return;
+    publish([...latest.current, { x, y, radius: size, mode }]);
+  };
+  const raster = sourceLayer?.type === 'raster' ? sourceLayer : null;
+  return <div className="fx-complex-editor cutout-editor">
+    <div className="fx-complex-header"><strong>Subject isolation · editable mask</strong><span>Original kept</span></div>
+    <p className="fx-subtle">Automatic removal only targets a dominant, border-connected background. Paint corrections below: Keep restores original artwork, Remove masks unwanted regions.</p>
+    <label className="fx-customize-row"><span>Automatic background selection</span>
+      <input type="checkbox" aria-label="Automatic background selection"
+        checked={effect.parameters?.backgroundAuto !== 0}
+        onChange={event => { preview({ backgroundAuto: event.target.checked ? 1 : 0 }); commit(); }} />
+    </label>
+    <div className="cutout-toolbar" role="group" aria-label="Mask correction brush">
+      <button type="button" className={mode === 'keep' ? 'active' : ''} onClick={() => setMode('keep')}>✓ Keep subject</button>
+      <button type="button" className={mode === 'remove' ? 'active' : ''} onClick={() => setMode('remove')}>✕ Remove background</button>
+      <button type="button" onClick={() => { publish([]); commit(); }}>Clear marks</button>
+    </div>
+    <label className="fx-level"><span>Brush radius <output>{size}px</output></span>
+      <input aria-label="Mask brush radius" type="range" min={1} max={160} step={1} value={size}
+        onChange={event => setSize(Number(event.target.value))} />
+    </label>
+    <div className="cutout-paintboard" style={{ aspectRatio: `${doc.width} / ${doc.height}` }}
+      role="img" aria-label="Paint a non-destructive subject mask; keep or remove"
+      onPointerDown={event => { pointer.current = event.pointerId; last.current = null; event.currentTarget.setPointerCapture(event.pointerId); paint(event); }}
+      onPointerMove={paint}
+      onPointerUp={event => { paint(event); pointer.current = null; last.current = null; if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); commit(); }}
+      onPointerCancel={() => { pointer.current = null; last.current = null; commit(); }}>
+      {raster?.image && <img src={raster.image} draggable={false} alt="" style={{
+        left: `${raster.x / doc.width * 100}%`, top: `${raster.y / doc.height * 100}%`,
+        width: `${(raster.imageWidth ?? doc.width) * (raster.scaleX ?? 1) / doc.width * 100}%`,
+        height: `${(raster.imageHeight ?? doc.height) * (raster.scaleY ?? 1) / doc.height * 100}%`,
+        transform: `rotate(${raster.rotation ?? 0}deg)`,
+      }} />}
+      <svg aria-hidden="true" viewBox={`0 0 ${doc.width} ${doc.height}`} preserveAspectRatio="none">
+        {marks.slice(-700).map((stroke, index) => <circle key={index}
+          cx={stroke.x * doc.width} cy={stroke.y * doc.height} r={stroke.radius}
+          fill={stroke.mode === 'keep' ? '#36db9180' : '#ff4c7090'} />)}
+      </svg>
+    </div>
+    <p className="fx-subtle">Green = protected • Pink = removed • {marks.length} brush marks. Changes can be undone; the original layer is never erased. Complex photographs may require manual corrections.</p>
+  </div>;
+}
+
 export default function EffectAdvancedEditors(props: EditorProps) {
+  if (props.effect.kind === 'cutout') return <CutoutEditor {...props} />;
   if (props.effect.kind === 'gradientmap' || props.effect.kind === 'duotone') return <GradientEditor {...props} />;
   if (props.effect.kind === 'curves') return <CurveEditor {...props} />;
   if (props.effect.kind === 'shadow') return <ShadowEditor {...props} />;

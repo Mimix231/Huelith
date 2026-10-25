@@ -1,5 +1,6 @@
 import { isDocument, type Document } from './types';
 
+// This legacy IndexedDB key intentionally stays stable so pre-rename recovery data survives.
 const DATABASE_NAME = 'spectrum-recovery';
 const STORE = 'documents';
 

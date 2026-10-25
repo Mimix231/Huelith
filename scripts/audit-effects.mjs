@@ -44,11 +44,11 @@ const boundaries = [
   ['Stage H: Standalone signature FX', 'Signature FX'],
 ];
 const lines = [
-  '# Spectrum 0.1 — Engine Inventory after Stages D–H', '',
+  '# Huelith 0.1 — Engine Inventory after Stages D–H', '',
   'Generated from the actual effect registry and signature-name list. **A source inventory is not a release certificate.**',
   '', '## Architecture and compatibility', '',
   '- New signature FX use `sig_0` through `sig_14`, each dispatched to `applySignatureFX` and rendered independently of Creativity filters.',
-  '- Previous `.spectrum` projects containing legacy grouped filter recipes remain loadable through their original effect kinds and Studio metadata.',
+  '- Previous `.huelith` projects containing legacy grouped filter recipes remain loadable through their original effect kinds and Studio metadata.',
   '- Layer effects (glow, outline, shadow, backdrop) and new Radiance/Miasma have separate parameter schemes.',
   '- Stages D–H do not complete performance benchmarking, GPU compositing, real UI build verification, or advanced professional color management.',
   '- Some sophisticated styles are deterministic approximations, not physically modeled fluid or light simulations.', '',

@@ -38,11 +38,11 @@ export default function AuroraSettings({ open, onClose, shortcuts, setShortcuts,
     shortcuts: <ShortcutsSection {...props} />,
     about: <AboutSection />,
   };
-  return <Dialog open={open} onClose={onClose} fullWidth maxWidth="md" aria-labelledby="spectrum-settings-title"
+  return <Dialog open={open} onClose={onClose} fullWidth maxWidth="md" aria-labelledby="huelith-settings-title"
     className="aurora-settings-dialog" PaperProps={{ className: 'aurora-settings-surface' }}>
     <div className="aurora-settings-title">
       <div className="aurora-settings-brand"><span className="aurora-settings-emblem">✦</span>
-        <span><strong id="spectrum-settings-title">Spectrum Settings</strong><small>Project Aurora · Your workspace, your hardware</small></span>
+        <span><strong id="huelith-settings-title">Huelith Settings</strong><small>Performance & appearance · Your workspace, your hardware</small></span>
       </div>
       <button type="button" aria-label="Close settings" className="aurora-settings-close" onClick={onClose}>×</button>
     </div>
@@ -59,7 +59,7 @@ export default function AuroraSettings({ open, onClose, shortcuts, setShortcuts,
       </section>
     </div>
     <footer className="aurora-settings-footer">
-      <button type="button" onClick={() => { setSettings(resetPreferences()); }} className="aurora-reset">Reset Aurora preferences</button>
+      <button type="button" onClick={() => { setSettings(resetPreferences()); }} className="aurora-reset">Reset preferences</button>
       <span>Preferences save automatically</span>
       <Button variant="contained" size="small" onClick={onClose}>Done</Button>
     </footer>

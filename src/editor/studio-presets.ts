@@ -10,7 +10,8 @@ export interface StudioRecipe {
   color?: string;
   parameters?: Effect['parameters'];
 }
-const STORAGE = 'spectrum-studio-user-presets-v1';
+const STORAGE = 'huelith-studio-user-presets-v1';
+const LEGACY_STORAGE = 'spectrum-studio-user-presets-v1';
 const MAX_RECIPES = 64;
 const HEX = /^#[a-f\d]{6}$/i;
 
@@ -26,7 +27,7 @@ function valid(recipe: unknown): recipe is StudioRecipe {
 
 export function studioRecipes(kind?: EffectKind): StudioRecipe[] {
   try {
-    const raw = JSON.parse(localStorage.getItem(STORAGE) ?? '[]') as unknown;
+    const raw = JSON.parse(localStorage.getItem(STORAGE) ?? localStorage.getItem(LEGACY_STORAGE) ?? '[]') as unknown;
     if (!Array.isArray(raw)) return [];
     return raw.slice(0, MAX_RECIPES).filter(valid).filter(recipe => !kind || recipe.kind === kind);
   } catch { return []; }

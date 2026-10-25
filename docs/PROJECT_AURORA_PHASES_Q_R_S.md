@@ -1,4 +1,4 @@
-# Project Aurora II — Phases Q, R and S (Spectrum 0.1.0)
+# Project Aurora II — Phases Q, R and S (Huelith 0.1.0)
 
 The rendering target remains **one authoritative effect algorithm** for interactive editing, saved documents and export, with no slider-time lookalike substitution and no image downsampling. **A responsive UI does not guarantee 60 finished full-resolution frames per second** on every CPU/GPU.
 
@@ -54,6 +54,6 @@ The live worker picks up a changed preference without discarding source artwork.
 
 - Complete React/MUI/Vite production build: npm dependencies not cached in this environment (`npm ci --offline` failed).
 - Native Rust cargo build, Windows `wgpu` hardware validation, 4K memory stress and interactive Windows slider FPS: not run.
-- Full native GPU port / certification of every Spectrum effect: **not complete**.
+- Full native GPU port / certification of every Huelith effect: **not complete**.
 
-All source code, effect IDs and old projects remain under **Spectrum version 0.1.0**. Original effects are not removed or intentionally downgraded.
+All source code, effect IDs and old projects remain under **Huelith version 0.1.0**. Original effects are not removed or intentionally downgraded.

@@ -37,7 +37,7 @@ export function installEffectsWorker(): () => void {
   let profile: Profile = 'balanced';
   function updateBudget(): void {
     try {
-      const saved = JSON.parse(localStorage.getItem('spectrum-aurora-preferences-v1') ?? 'null');
+      const saved = JSON.parse(localStorage.getItem('huelith-aurora-preferences-v1') ?? 'null');
       profile = saved?.budgetProfile === 'economy' || saved?.budgetProfile === 'responsive'
         ? saved.budgetProfile : 'balanced';
     } catch { profile = 'balanced'; }
@@ -46,7 +46,7 @@ export function installEffectsWorker(): () => void {
   updateBudget();
   // A setting change is also applied to the resident worker without closing
   // the source images, losing the document, or compromising exact pixels.
-  if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') window.addEventListener('spectrum-aurora-preferences-changed', updateBudget);
+  if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') window.addEventListener('huelith-aurora-preferences-changed', updateBudget);
   let nextId = 1;
   let nextSourceId = 1;
   let running: Job | null = null;
@@ -62,7 +62,7 @@ export function installEffectsWorker(): () => void {
 
   function fail(): void {
     if (disposed) return;
-    if (typeof window !== 'undefined' && typeof window.removeEventListener === 'function') window.removeEventListener('spectrum-aurora-preferences-changed', updateBudget);
+    if (typeof window !== 'undefined' && typeof window.removeEventListener === 'function') window.removeEventListener('huelith-aurora-preferences-changed', updateBudget);
     disposed = true;
     latest.clear();
     running = null;
@@ -71,7 +71,7 @@ export function installEffectsWorker(): () => void {
     supersededRunning.clear();
     worker.terminate();
     setAsyncEffectsProcessor(null);
-    if (typeof window !== 'undefined') window.dispatchEvent(new Event('spectrum-worker-fallback'));
+    if (typeof window !== 'undefined') window.dispatchEvent(new Event('huelith-worker-fallback'));
   }
 
   async function dispatch(): Promise<void> {
@@ -123,7 +123,7 @@ export function installEffectsWorker(): () => void {
     }
     if (event.data.aborted) {
       if (typeof window !== 'undefined')
-        window.dispatchEvent(new CustomEvent('spectrum-aurora-render-metric', { detail: {
+        window.dispatchEvent(new CustomEvent('huelith-aurora-render-metric', { detail: {
           aborted: true, latencyMs: performance.now() - finished.queuedAt,
           processingMs: event.data.processingMs ?? 0,
           metrics: event.data.metrics, queueDepth: latest.size,
@@ -145,8 +145,8 @@ export function installEffectsWorker(): () => void {
         finished.complete(event.data.result);
         if (isInteractiveEffectPreview(finished.layer)) recentlyDisplayed.set(finished.layer, performance.now());
         if (typeof window !== 'undefined') {
-          window.dispatchEvent(new Event('spectrum-exact-fx-frame'));
-          window.dispatchEvent(new CustomEvent('spectrum-aurora-render-metric', { detail: {
+          window.dispatchEvent(new Event('huelith-exact-fx-frame'));
+          window.dispatchEvent(new CustomEvent('huelith-aurora-render-metric', { detail: {
             aborted: false, latencyMs: performance.now() - finished.queuedAt,
             processingMs: event.data.processingMs ?? 0,
             metrics: event.data.metrics, queueDepth: latest.size,
@@ -201,7 +201,7 @@ export function installEffectsWorker(): () => void {
 
   setAsyncEffectsProcessor(process);
   return () => {
-    if (typeof window !== 'undefined' && typeof window.removeEventListener === 'function') window.removeEventListener('spectrum-aurora-preferences-changed', updateBudget);
+    if (typeof window !== 'undefined' && typeof window.removeEventListener === 'function') window.removeEventListener('huelith-aurora-preferences-changed', updateBudget);
     disposed = true;
     latest.clear();
     residentSources.clear();

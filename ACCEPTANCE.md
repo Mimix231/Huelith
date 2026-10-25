@@ -1,8 +1,56 @@
+# Huelith 0.2 — Release Acceptance Checklist
+
+This checklist covers **Huelith 0.2.0**, the first post-rename alpha. All unchecked items require hands-on verification; the included automated tests do **not** certify the Windows installer or all editing workflows.
+
+## Version, branding and backward compatibility
+
+- [ ] Confirm `package.json`, `package-lock.json`, `src-tauri/Cargo.toml`, `src-tauri/Cargo.lock`, and `src-tauri/tauri.conf.json` identify version **0.2.0** and the Huelith application where appropriate.
+- [ ] Check all visible application branding, window captions, dialogs, help/about text, tooltips, and Settings panels say **Huelith**. Retain explicitly named effects or styles such as **Spectrum Glow** and **Spectrum Burst**.
+- [ ] Save a new project as `.huelith`, close and reopen it; verify layers, effects, masks, animations and document metadata survive unchanged.
+- [ ] Open a project saved by the original **0.1 (formerly named Spectrum)** release in `.spectrum` format, make an edit and reopen. Do **not** require users to convert before opening.
+- [ ] Verify saved legacy Glow palette values continue to render identically after rebranding.
+- [ ] Check that old workspace preferences, effect presets and IndexedDB recovery data are still accessible.
+- [ ] Because the native bundle identifier changed, test installation alongside 0.1, installer upgrade/uninstall behavior, and file association handling before distributing a public setup.
+- [ ] Compare the supplied `README.md` against the project owner's replacement copy. Its referenced artwork/screenshots must be added separately to the repository if not present in the archive.
+
+## Phase T — distinct effects and animation
+
+- [ ] VHS shows tape tracking/scanlines, Chromatic Shift separates RGB channels, and Digital Glitch shifts pixel blocks. Their output must not collapse into the same effect.
+- [ ] At neutral or distortion-only settings, verify the RGB brightness of unaffected regions is preserved and no `screen` blend unexpectedly brightens the artwork.
+- [ ] Apply each effect over a transparent character and dense text. Check smooth/fast dragging, stacked combinations, undo/redo and exported output.
+- [ ] Apply Glow, VHS or Miasma to an animation layer track. Play, pause, scrub, change FPS, duplicate/reorder frames, save/reopen and export APNG/PNG frames: effects must not disappear.
+- [ ] Open a legacy animation with FX stored on only one cel; verify inherited track behavior does not corrupt unrelated layer artwork.
+
+## Phase U — themes and Originals
+
+- [ ] Open Originals in all themes and both appearances. Verify contrast of primary/secondary text, buttons, inputs, selects, menus, dialogs, selected/disabled states and hover tooltips.
+- [ ] In dark mode, verify the Originals editor's values and labels remain clearly readable, not merely the main catalog.
+- [ ] Place and reposition each applicable Original using the mouse pad and keyboard. Verify undo/redo, saving and effect preview.
+
+## Phase V — background removal
+
+- [ ] Test transparent art, characters on uniform backgrounds, multicolor images, subject touching an edge, low-contrast foreground/background, and photographs.
+- [ ] In the checkerboard mask editor, add Keep Subject and Remove Background strokes, change brush size, undo, reset marks, save/reopen and export PNG.
+- [ ] Verify the original subject can be restored and the raster source is not destroyed when the Remove Background effect is disabled or removed.
+- [ ] Confirm previews match the final processed image and that large images do not freeze the interface.
+
+## Build and regression gate
+
+- [ ] Run `npm ci`, `npm run check`, `npm test`, `npm run build`, and `cargo check --manifest-path src-tauri/Cargo.toml` with real dependencies.
+- [ ] Build and install the Tauri Windows package with `npm run desktop:build -- --bundles nsis`. Verify launch, uninstall, file dialogs, native CPU mode and compatible GPU mode.
+- [ ] Test real 1080p and 4K projects with multiple enabled effects and compare exact preview with exported pixels.
+
+---
+
+## Historical acceptance coverage (adapted from the 0.1 checklist)
+
+The checks below remain useful for regression coverage. They are historical scenarios updated to use current Huelith branding; some describe original alpha workflows and are not assertions that those workflows are finished. `.spectrum` and `format: 'spectrum'` references above are retained solely for legacy compatibility.
+
 ## Stage A/B/C desktop acceptance (manual; NOT YET CERTIFIED)
 
-1. Launch `npm run desktop:dev` in a real Windows/Tauri environment. Open Spectrum Studio and verify tabs Creativity / Effects / FX, group labels, search, and app-like applied icons.
+1. Launch `npm run desktop:dev` in a real Windows/Tauri environment. Open Huelith Studio and verify tabs Creativity / Effects / FX, group labels, search, and app-like applied icons.
 2. Choose Gradient Map, change two stops and the middle stop; verify canvas preview changes. Press Cancel. Confirm settings/artwork revert, undo history unchanged.
-3. Reopen Gradient Map, change settings and press Apply. Reopen its icon and verify all settings persisted. Undo once; confirm the entire edit disappears. Save and reopen `.spectrum`.
+3. Reopen Gradient Map, change settings and press Apply. Reopen its icon and verify all settings persisted. Undo once; confirm the entire edit disappears. Save and reopen `.huelith`.
 4. Add a signature FX preset; verify a single applied FX icon controls the grouped processing chain. Apply and reload. Move it earlier/later as a group, then undo the reordering.
 5. Select the Brush tool, click existing text: **no paint must occur** and text must be selected. Drag the selected text; move only text. Double-click to open Focus Text.
 6. Use Type/Paragraph/Decorate/Shadow/Transform actions, including casing, underline, backing, padding, shadow and font weight. Apply with Enter, then reopen and verify the text and style. Test Esc cancellation.
@@ -11,21 +59,21 @@
 9. Open an animation document, switch frames, edit text and effects, then save/reopen to verify cels remain separate and layer effects persist.
 10. Test large documents and rapid editing against UI freeze; benchmark true Windows FPS separately. Run a genuine `npm run verify` and `npm run desktop:build` before distribution.
 
-# Spectrum 0.1 Studio Experience: new acceptance cases (2026-10-21)
+# Huelith 0.2 Studio Experience: new acceptance cases (2026-10-21)
 
 - [ ] Select Text, click an empty canvas, verify centered Focus Text appears with a blinking caret and legible temporary editing background for both black and white text.
 - [ ] Type text; **Shift+Enter** inserts a paragraph break; ordinary **Enter** commits without adding a newline; Escape cancels edits. Verify the overlay blurs in/out without changing the real text's X/Y.
-- [ ] Single-click an existing text object selects it, drag moves it, and double-click opens Focus Text. Undo/reopen `.spectrum` preserves everything.
+- [ ] Single-click an existing text object selects it, drag moves it, and double-click opens Focus Text. Undo/reopen `.huelith` preserves everything.
 - [ ] Choose an installed font inside Focus Text, then continue typing in the same caret session. Check IME input and font picker focus on Windows.
 - [ ] Apply Glow as Outer, Inner, Both and Bloom. Adjust radius, spread, falloff, threshold (Bloom only) and opacity. Confirm actual differences in the canvas and exported PNG.
 - [ ] Add multiple Shadow Forge layers, choose Drop/Inner/Contact/Long styles, and verify interior vs exterior placement independently.
 - [ ] Apply Backdrop with Solid and editable Gradient modes; change both gradient stops and X/Y, scale, angle, blur and opacity. Check that the artwork always remains above the backdrop.
-- [ ] Scrub an expensive effect slider quickly on 1080p/4K artwork; it must not record hundreds of undo steps. Releasing must render the final selected value (even if previews temporarily downgrade quality). Benchmark actual frame time; do not infer FPS from synthetic tests.
+- [ ] Scrub an expensive effect slider quickly on 1080p/4K artwork; it must not record hundreds of undo steps. Releasing must render the final selected value (while keeping the existing accurate effect algorithm). Benchmark actual frame time; do not infer FPS from synthetic tests.
 - [ ] Confirm standard image projects and animation frame timeline, project saving, exports, native window controls, and old project files still behave.
 
 **Note:** Older sections below describe historical behavior. Focus Text replaces the old inline `Ctrl+Enter` workflow. The checklist is not a claim these scenarios were desktop-tested here.
 
-## Window close regression — Spectrum 0.1
+## Window close regression — Huelith 0.2
 
 After `npm install`, `npm run verify`, and `npm run desktop:dev` succeed:
 
@@ -34,12 +82,12 @@ After `npm install`, `npm run verify`, and `npm run desktop:dev` succeed:
 3. Choose **Cancel**: document and unsaved changes remain.
 4. Choose **Discard & Close**: window closes without showing the dialog again.
 5. Create two dirty tabs, choose **Save All & Close**: save both to unique
-   `.spectrum` files, then close only when all saves succeed.
+   `.huelith` files, then close only when all saves succeed.
 6. Cancel a save-file picker: the window must remain open.
 7. Type into an uncommitted text draft and press **Alt+F4**: the same prompt
    appears; Cancel keeps text editable.
 8. Click Maximize, Restore, Minimize; check these still work after changes.
-9. Simulate a write error or inaccessible save location: Spectrum stays open
+9. Simulate a write error or inaccessible save location: Huelith stays open
    and shows an error instead of losing work.
 
 # Highest-priority Windows release checks — 2026-10-20
@@ -52,20 +100,20 @@ After `npm install`, `npm run verify`, and `npm run desktop:dev` succeed:
 - [ ] In Gradient Map add/reposition/remove/edit four colors, then verify preview/export and save/load retain *all* stops (not one shared picker).
 - [ ] Change curve points, Color Balance tonal channels, RGB mixer coefficients, and Levels endpoints; confirm expected previews and round-trip.
 - [ ] Add/remove/enable and individually recolor/position Shadow Forge entries. Undo each edit and reload document.
-- [ ] Browse all 70 filters and 15 Spectrum FX, inspect each dedicated icon and generated thumbnail; ensure thumbnails are distinct when intended and UI doesn't stutter on scroll.
+- [ ] Browse all all available filters and signature FX, inspect each dedicated icon and generated thumbnail; ensure thumbnails are distinct when intended and UI doesn't stutter on scroll.
 - [ ] Compare Oil Painting versus Watercolor, Mosaic versus Pixelate, and Holographic versus a simple single-color tint on several real photographs.
-- [ ] Open an older `.spectrum` document containing Gradient Map and Shadow Forge; verify migration preserves visible output as closely as possible and saves new structured settings.
+- [ ] Open an older `.huelith` document containing Gradient Map and Shadow Forge; verify migration preserves visible output as closely as possible and saves new structured settings.
 - [ ] Run full React UI end-to-end and native packaged Windows application tests before any public 1.0 claim.
 
 ---
 
-# Spectrum 0.1 — Effects/brush manual release acceptance
+# Huelith 0.2 — Effects/brush manual release acceptance
 
 These checks are **required on Windows before any v1.0 tag**. They have not been executed in a native desktop application in this build environment.
 
-1. Open an existing `.spectrum` project; verify no document data changes merely from opening. Save and reopen it.
+1. Open an existing `.huelith` project; verify no document data changes merely from opening. Save and reopen it.
 2. Confirm the canvas has no unsolicited vertical stripes. Toggle View → Grid intentionally, then switch it off.
-3. Paste a photo on a white background. In Spectrum FX, add **Remove corner background** before Hyper Outline. Inspect the subject boundary; manually mask difficult regions.
+3. Paste a photo on a white background. In Huelith FX, add **Remove Background** before Hyper Outline. Inspect the subject boundary; manually mask difficult regions.
 4. Drag Hyper Outline thickness through small, medium and large values while observing the preview. Confirm one undo restores the previous thickness.
 5. For Spectrum Glow, change falloff, solid spread, amount, opacity and color independently. Verify each is visible and export matches canvas.
 6. For Shadow Forge, change X and Y offsets separately and confirm actual shadow movement.
@@ -79,7 +127,7 @@ These checks are **required on Windows before any v1.0 tag**. They have not been
 
 ---
 
-# Spectrum 0.1 — Desktop Acceptance Checklist
+# Huelith 0.2 — Desktop Acceptance Checklist
 
 These tasks require a machine with `npm install`, `npm run verify`, `npm run desktop:dev`, and a functioning Tauri OS toolchain. This checklist is a **test plan**, not a record of passing UI tests.
 
@@ -89,7 +137,7 @@ These tasks require a machine with `npm install`, `npm run verify`, `npm run des
 - [ ] `npm run check` completes without TypeScript errors using **real** dependency typings.
 - [ ] `npm test` passes all behavior/source tests.
 - [ ] `npm run build` creates a working `dist/` frontend bundle.
-- [ ] `npm run desktop:dev` launches Spectrum in a native window.
+- [ ] `npm run desktop:dev` launches Huelith in a native window.
 - [ ] No errors appear in the browser/WebView console or Tauri native logs.
 
 ## Phase 1 — Stabilization
@@ -151,9 +199,9 @@ These tasks require a machine with `npm install`, `npm run verify`, `npm run des
 
 **Release gate:** Not ready until all relevant build/runtime acceptance checks pass. Do not label it stable based only on isolated source or Canvas2D tests.
 
-## Creative tools, clipboard and Spectrum FX acceptance (2026-10-17)
+## Creative tools, clipboard and Huelith FX acceptance (2026-10-17)
 
-- [ ] Copy a screenshot from Windows/your browser, focus Spectrum and press Ctrl+V; image lands on a centered separate raster layer.
+- [ ] Copy a screenshot from Windows/your browser, focus Huelith and press Ctrl+V; image lands on a centered separate raster layer.
 - [ ] Save, close, reopen; pasted image survives with correct dimensions and transparency.
 - [ ] Ctrl+Z removes a pasted image and Ctrl+Y restores it.
 - [ ] Copy/cut a selected vector object, switch documents and paste; editable shape geometry remains intact.
@@ -165,7 +213,7 @@ These tasks require a machine with `npm install`, `npm run verify`, `npm run des
 - [ ] Apply Glow and Outline together in FX; change the order, disable an effect, undo a change, export PNG and compare with canvas.
 - [ ] Apply each thumbnail FX preset and verify that it creates editable stack entries.
 - [ ] Check all five palette themes in dark/light environments and confirm they have different control shapes and finishes.
-- [ ] Customize a keyboard shortcut in the gear menu; restart Spectrum and confirm it persists.
+- [ ] Customize a keyboard shortcut in the gear menu; restart Huelith and confirm it persists.
 - [ ] Test 1280×720 thumbnail and a large layered project for stalls, memory growth, lost brush strokes and crashed previews.
 - [ ] Run `npm run verify`, `npm run test:browser`, `python tests/ui-e2e.py`, and `npm run desktop:build` without errors before public release.
 
@@ -174,12 +222,12 @@ These tasks require a machine with `npm install`, `npm run verify`, `npm run des
 - [ ] Open theme palette and verify all **13 names** render correctly in the menu. Switch each theme through Light and Dark; controls, active tabs, backgrounds and popup menus change consistently without shifting document pixels.
 - [ ] Restart app; chosen theme and brightness mode persist.
 - [ ] At 1280×720 window dimensions, the compact titlebar, tab strip, context toolbar, toolrail and inspector remain usable without overlapping the artboard.
-- [ ] Ensure the **Spectrum FX** button is **directly below the layer list, above the layer-management icons**; it must not be in the inspector tab row.
+- [ ] Ensure the **Huelith FX** button is **directly below the layer list, above the layer-management icons**; it must not be in the inspector tab row.
 - [ ] Click FX button, observe a floating searchable panel with exactly **Filters / Customize / FX** tabs. Close via Escape, X, and click-outside.
 - [ ] In Filters, search and apply brightness, invert, pixelate, posterize and vignette on an image layer. Verify exported PNG matches preview within renderer precision.
 - [ ] In Customize, select a vector rectangle and adjust fill/stroke/width; select a raster layer and adjust blend mode and opacity. Disabled controls must make sense when a layer is locked.
 - [ ] In FX, apply Neon Pulse and Golden Hour; toggle/reorder/adjust an effect; hold Compare and confirm original image is temporarily shown but document history is unchanged.
-- [ ] Save and reopen `.spectrum`; effect orders, kinds, intensity, enablement and colors remain editable.
+- [ ] Save and reopen `.huelith`; effect orders, kinds, intensity, enablement and colors remain editable.
 - [ ] Rename document by double click, reorder tabs by dragging, reorder with Alt+arrows, duplicate with right-click menu; close other tabs with appropriate unsaved-work warning.
 - [ ] Edit multiline text using the canvas overlay and the inspector content field. Ctrl+Enter commits inspector text; Ctrl+Z undoes the change once.
 - [ ] Draw with zero smoothing and with increased smoothing; both strokes finish precisely under pointer-up position. If available, test with a stylus and coalesced pointer events.
@@ -188,11 +236,11 @@ These tasks require a machine with `npm install`, `npm run verify`, `npm run des
 - [ ] Test various window resolutions and Windows display scaling (100%, 125%, 150%), keyboard focus visibility and OS reduced-motion behavior.
 - [ ] Run `npm run check`, `npm test`, `npm run test:browser`, `npm run test:ui`, `npm run build`, and both Tauri dev/build with no errors; record any defects and write regression coverage for each.
 
-**Not yet satisfied by synthetic tests:** genuine Windows desktop installation, sophisticated selection and mask workflows, high-load performance, complex typography, vector boolean operations, color management and GPU rendering. These need dedicated engineering and acceptance before Spectrum can be called professional-grade.
+**Not yet satisfied by synthetic tests:** genuine Windows desktop installation, sophisticated selection and mask workflows, high-load performance, complex typography, vector boolean operations, color management and GPU rendering. These need dedicated engineering and acceptance before Huelith can be called professional-grade.
 
 ## Typography & custom window bar — 2026-10-19 (not executed on Windows)
 
-- [ ] Start Spectrum in **Tauri** (not just the browser preview) and confirm there is no double/native Windows caption bar; move the window by dragging the Spectrum header.
+- [ ] Start Huelith in **Tauri** (not just the browser preview) and confirm there is no double/native Windows caption bar; move the window by dragging the Huelith header.
 - [ ] Verify Minimize, Maximize, Restore and Close buttons; press Alt+F4 with unsaved work and confirm the cancel option prevents closing.
 - [ ] Activate **Text (T)**: the top context bar must already show the installed-font picker, size, bold, italic and color.
 - [ ] Open font picker, search several fonts installed on this Windows account (including recently installed fonts), refresh, select one and verify it is used on canvas.
@@ -200,22 +248,22 @@ These tasks require a machine with `npm install`, `npm run verify`, `npm run des
 - [ ] While still typing, change font family and size via the context bar. The text must remain uncommitted, the caret must be restored after selection, and typing must continue in the same editor.
 - [ ] Enter must commit *one* document history entry in Focus Text; Shift+Enter inserts a line. Ctrl+Z undoes that session; Ctrl+Y restores it.
 - [ ] With Text (T) or Move (V), single-click existing text to select and drag it; double-click to enter Focus Text. Esc cancels without altering the existing object.
-- [ ] Change color, weight, italic and letter spacing; save `.spectrum`, reopen, and verify all properties remain editable; export PNG/SVG and inspect output.
+- [ ] Change color, weight, italic and letter spacing; save `.huelith`, reopen, and verify all properties remain editable; export PNG/SVG and inspect output.
 - [ ] Switch document tabs mid-typing; text must commit to the original document, not the next tab. Save or export while typing should include the latest text.
 - [ ] Inspect layout at Windows display scaling 100%, 125% and 150%, including all Strawberry, Shadow and Glass themes and narrow window sizes.
 
 **Release gate:** These are manual Windows acceptance tests, **not passed tests**. Record failures and add a regression test for each bug.
 
-## Animation acceptance (Spectrum 0.1 — new)
+## Animation acceptance (Huelith 0.2 — new)
 
 Check these scenarios in the **real desktop application** after installing dependencies and passing the build:
 
-1. Launch Spectrum with no saved state. The canvas should be usable immediately, without a blurred blocking modal. Create a new animation from File → New animation and confirm the timeline appears below the canvas. Switch to a static project and confirm its timeline is hidden.
+1. Launch Huelith with no saved state. The canvas should be usable immediately, without a blurred blocking modal. Create a new animation from File → New animation and confirm the timeline appears below the canvas. Switch to a static project and confirm its timeline is hidden.
 2. On Frame 1, draw a red rectangle. Add a **blank** frame. Confirm Frame 1's rectangle is visible only as a translucent ghost, not as actual Frame 2 pixels. Paint a blue object on Frame 2; return to Frame 1 and confirm its red rectangle was preserved.
 3. Duplicate Frame 1 and move an object on the duplicate. The original should remain unchanged. Reorder the duplicate by dragging its thumbnail. Scrub back and forth by dragging the timeline's downward playhead marker.
 4. Set previous ghost frames to 2, next frames to 1 and opacity to 50%. Confirm ghosts appear at the intended positions and **do not** appear in PNG/APNG or frame-sequence export.
 5. Change playback from 12 to 24 FPS. Set one frame's duration independently. Play, pause, and confirm the playhead moves with the saved timing and wraps from the last frame to the first.
-6. Save the animation to `.spectrum`, close and reopen it. Confirm the selected frame, all independently edited cels, order, FPS, durations and onion-skin settings survive round trip. Verify ordinary static `.spectrum` projects still open.
+6. Save the animation to `.huelith`, close and reopen it. Confirm the selected frame, all independently edited cels, order, FPS, durations and onion-skin settings survive round trip. Verify ordinary static `.huelith` projects still open.
 7. Export APNG and verify frame count and timing with an APNG-capable viewer. Export a sprite sheet and a PNG-sequence ZIP; compare transparent regions and frame content to the originals.
 8. Open the FX overlay and close it with its button, clicking outside, and Escape. Verify the exit transition finishes before unmounting, that controls remain usable, and that Reduced Motion eliminates transitions. Apply Shadow with custom offsets and blur, save/reopen and export.
 9. Run `npm run clean:obsolete:dry`, verify it only reports identified files; run `npm run clean:obsolete`, verify no current `.ts`, `.tsx`, `.css` files are deleted. Keep a backup or commit before applying cleanup.
@@ -230,7 +278,7 @@ The items here are **not marked as passed** until executed on the real React/MUI
 - [ ] Draw each new rounded rectangle, triangle, polygon, star, arrow, heart and ring; select, scale, rotate, undo, save/reopen, export SVG. Confirm ring center is transparent.
 - [ ] Hover each selected shape handle, check expected cursor orientation; leave the handle and confirm cursor resets. Drag, scale, rotate at 50% and 400% zoom.
 - [ ] Single-click text with Move and Text tools: select only. Drag to move. Double-click: blinking text insertion cursor. Save text without changing its position on subsequent edits.
-- [ ] Open Spectrum FX, add Blur and change radius while dragging its slider; verify the *canvas changes continuously*, releasing drag creates one history action, Undo restores original radius.
+- [ ] Open Huelith FX, add Blur and change radius while dragging its slider; verify the *canvas changes continuously*, releasing drag creates one history action, Undo restores original radius.
 - [ ] Add Grayscale and Hue effects and compare distant values; their maximum values must not create a hidden plateau within advertised ranges.
 - [ ] Add Glitch Matrix preset; change seed, density and scanlines independently; validate reproducible pixel results and PNG export matching preview.
 - [ ] In an animation document, switch frames, apply FX to one frame, scrub to another, return and verify the effect history did not modify a different frame.
@@ -250,5 +298,5 @@ These tests must be performed in the actual Tauri desktop application. Source an
 - [ ] Add Drop, Inner, Contact and Long shadows. Adjust their X/Y offsets, blur, spread and colors, save/reopen, then export PNG/WebP and compare against the canvas.
 - [ ] Add a gradient Backdrop, move it with X/Y, rotate it, alter opacity/scale/blur and multiple gradient stops. Ensure it stays behind the selected artwork.
 - [ ] Stress-test sliders and color-wheel changes on multi-layer 1080p and 4K artwork. Record UI frame times, main-thread blocking, peak memory and export duration. Adapt preview quality to avoid UI stalls; do not equate throttling with proven 60 FPS.
-- [ ] Verify every advertised filter and signature FX parameter changes its intended output; compare editor/export output, exercise old `.spectrum` projects, animation onion skins, undo/redo and custom window close.
+- [ ] Verify every advertised filter and signature FX parameter changes its intended output; compare editor/export output, exercise old `.huelith` projects, animation onion skins, undo/redo and custom window close.
 - [ ] Run actual `npm install`, `npm run check`, `npm run build`, `npm run test:ui` and native Windows `npm run desktop:build` with successful results before publishing v1.0.

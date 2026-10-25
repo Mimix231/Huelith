@@ -1,4 +1,4 @@
-# Spectrum 0.1 · Project Aurora — Phases D, E, F
+# Huelith 0.1 · Project Aurora — Phases D, E, F
 
 **Status:** source implementation complete; native Windows build and GPU execution remain **unverified** in this environment. These are *Phases*, not stages. Prior A–C remain included and compatible.
 
@@ -7,7 +7,7 @@
 - Added `wgpu 0.19` native GPU dependency, `bytemuck` and `pollster` to `src-tauri/Cargo.toml`.
 - `src-tauri/src/aurora/gpu.rs` initializes a real high-performance adapter; it refuses to mislabel a software CPU adapter as hardware GPU acceleration. GPU detection/init runs in a blocking-background task; it cannot freeze the React window.
 - `color.wgsl` implements **five actual pointwise operations**: Brightness, Contrast, Saturation, Grayscale, Invert. These use the same specified channel formulas and amount ranges as the Aurora A–C Rust CPU reference. GPU output is read back without modifying the source; transparent alpha channels are preserved.
-- `Blur` remains the **same native CPU blur** even when GPU mode is enabled. It is **not** replaced with a fake GPU shadow or a weaker blur. Other Spectrum FX stay in the current proven TypeScript pipeline until per-effect migration in Phase H.
+- `Blur` remains the **same native CPU blur** even when GPU mode is enabled. It is **not** replaced with a fake GPU shadow or a weaker blur. Other Huelith FX stay in the current proven TypeScript pipeline until per-effect migration in Phase H.
 - GPU processing failures explicitly fall back to the CPU reference. A real GPU device failure disables further GPU graph work until the user retries; saved artwork and the existing editor remain intact.
 - GPU/CPU parity unit tests are included in Rust. They run when a compatible GPU is available and compare all five kernels at 0/35/100/175/200 with up to 2/255 channel tolerance. **The tests were not executable in this environment**; run them on Windows before trusting GPU output.
 
@@ -16,7 +16,7 @@
 - `Settings → Performance → GPU acceleration` now controls the **native Aurora graph**, rather than being merely a saved, nonfunctional preference.
 - CPU mode uses the Rust CPU backend and preserves all six migrated algorithms. Enabling GPU initializes real `wgpu` compute; if unavailable, the graph reports a fallback reason and continues on CPU. It does not silently reduce image quality.
 - The Settings panel displays the **active native device**, GPU/CPU status, fallback reason, and available native operations. CPU thread settings remain available.
-- The preference persists separately from `.spectrum` project files. Backend changes are serialized in the frontend and guarded by a Rust read/write lock so graph jobs from one backend finish before the other backend invalidates its caches.
+- The preference persists separately from `.huelith` project files. Backend changes are serialized in the frontend and guarded by a Rust read/write lock so graph jobs from one backend finish before the other backend invalidates its caches.
 - `aurora_backend_status`, `aurora_select_backend`, `aurora_set_graph_budget`, and `aurora_render_graph` are registered as real Tauri commands.
 - The browser's own drawing/compositing may still use GPU even when Aurora compute acceleration is disabled. The toggle is for **effect compute**, not a global OS driver switch.
 
@@ -31,7 +31,7 @@
 
 ## **Strict architectural boundary: no downgrade of user-visible effects**
 
-**Aurora Phases D–F do not replace the full FX Studio / drawing / text / animation pipeline.** The GPU has five reference operations; Rust CPU has six. Existing Spectrum effect algorithms (including Miasma, Glow, VHS, Hyper Outline, and signature FX) continue using the established TypeScript effect renderer. It would be inaccurate to claim all 87+ effects now run on wgpu or that the current slider-FPS issue has been solved in D–F. Effects will be migrated in **Phase H** only after visual-equivalence tests and performance certification.
+**Aurora Phases D–F do not replace the full FX Studio / drawing / text / animation pipeline.** The GPU has five reference operations; Rust CPU has six. Existing Huelith effect algorithms (including Miasma, Glow, VHS, Hyper Outline, and signature FX) continue using the established TypeScript effect renderer. It would be inaccurate to claim all 87+ effects now run on wgpu or that the current slider-FPS issue has been solved in D–F. Effects will be migrated in **Phase H** only after visual-equivalence tests and performance certification.
 
 This strategy protects the no-nerf quality requirement and avoids reintroducing the earlier glitch-style inaccurate previews.
 

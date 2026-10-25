@@ -37,7 +37,8 @@ test('project metadata and Tauri capability JSON are valid', () => {
     assert.doesNotThrow(() => JSON.parse(fs.readFileSync(path.join(project, name), 'utf8')), name);
   }
   const packageData = JSON.parse(fs.readFileSync(path.join(project, 'package.json'), 'utf8'));
-  assert.equal(packageData.version, '0.1.0');
+  assert.equal(packageData.version, '0.2.0');
+  assert.equal(packageData.name, 'huelith-editor');
   assert.ok(packageData.scripts.check);
   assert.ok(packageData.scripts.build);
 });

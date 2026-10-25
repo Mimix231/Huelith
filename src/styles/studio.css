@@ -39,7 +39,7 @@
 .theme-studio select { border-radius: 2px !important; }
 .theme-studio .doc-tab.active { border-top: 2px solid #177c9c; background: white; }
 .theme-studio .canvas-host { background-color: #b9c3ca; background-image: radial-gradient(#aab5bc 0.6px, transparent 0.8px); background-size: 15px 15px; }
-.theme-studio .spectrum-popup { border: 1px solid #b8c5d1; box-shadow: 1px 3px 8px #2d424c29; }
+.theme-studio .huelith-popup { border: 1px solid #b8c5d1; box-shadow: 1px 3px 8px #2d424c29; }
 
 /* Readable dark counterpart retaining the studio component geometry. */
 .theme-studio.tone-dark {

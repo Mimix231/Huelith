@@ -31,7 +31,7 @@ test('E native backend switching exposes actual device and CPU fallback', () => 
   assert.match(frontend,/selection\.catch\(\(\) => null\)\.then/);
   assert.match(app,/configureNativeBackend\(initial\.gpuAcceleration\)/);
   assert.match(app,/PREFERENCES_EVENT/);
-  assert.match(read('src/components/settings/SettingsSections.tsx'),/Active Aurora device:/);
+  assert.match(read('src/components/settings/SettingsSections.tsx'),/Active rendering device:/);
 });
 
 test('F effect graph uses precise ordered signatures, retained source identity and bounded cache', () => {

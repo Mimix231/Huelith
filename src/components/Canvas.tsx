@@ -120,7 +120,7 @@ export default function Canvas({ onError }: CanvasProps) {
     if (!diagnostics) return;
     const node = document.createElement('div');
     node.setAttribute('role', 'status');
-    node.setAttribute('aria-label', 'Spectrum rendering performance');
+    node.setAttribute('aria-label', 'Huelith rendering performance');
     Object.assign(node.style, {
       position: 'fixed', right: '12px', bottom: '12px', zIndex: '10000',
       background: '#141325ed', color: '#c8f5ee', padding: '8px 12px',
@@ -149,8 +149,8 @@ export default function Canvas({ onError }: CanvasProps) {
       }
       perf.current.queueDepth = data.queueDepth ?? 0;
     };
-    window.addEventListener('spectrum-exact-fx-frame', completed);
-    window.addEventListener('spectrum-aurora-render-metric', metric);
+    window.addEventListener('huelith-exact-fx-frame', completed);
+    window.addEventListener('huelith-aurora-render-metric', metric);
     let frameId = 0;
     const sampleInterfaceFrame = (): void => {
       perf.current.uiFrames++;
@@ -170,8 +170,8 @@ export default function Canvas({ onError }: CanvasProps) {
     return () => {
       window.clearInterval(timer);
       cancelAnimationFrame(frameId);
-      window.removeEventListener('spectrum-exact-fx-frame', completed);
-      window.removeEventListener('spectrum-aurora-render-metric', metric);
+      window.removeEventListener('huelith-exact-fx-frame', completed);
+      window.removeEventListener('huelith-aurora-render-metric', metric);
       perf.current.node = null;
       node.remove();
     };
@@ -214,11 +214,11 @@ export default function Canvas({ onError }: CanvasProps) {
   // A failed OffscreenCanvas worker must trigger a complete synchronous repaint
   // instead of leaving the preview frozen on the previous bitmap.
   useEffect(() => {
-    window.addEventListener('spectrum-worker-fallback', invalidate);
-    window.addEventListener('spectrum-studio-preview', invalidate);
+    window.addEventListener('huelith-worker-fallback', invalidate);
+    window.addEventListener('huelith-studio-preview', invalidate);
     return () => {
-      window.removeEventListener('spectrum-worker-fallback', invalidate);
-      window.removeEventListener('spectrum-studio-preview', invalidate);
+      window.removeEventListener('huelith-worker-fallback', invalidate);
+      window.removeEventListener('huelith-studio-preview', invalidate);
     };
   }, [invalidate]);
 
@@ -1070,10 +1070,10 @@ export default function Canvas({ onError }: CanvasProps) {
       }
     };
     window.addEventListener('keydown', keyHandler);
-    window.addEventListener('spectrum-finish-pen', finalizePen);
+    window.addEventListener('huelith-finish-pen', finalizePen);
     return () => {
       window.removeEventListener('keydown', keyHandler);
-      window.removeEventListener('spectrum-finish-pen', finalizePen);
+      window.removeEventListener('huelith-finish-pen', finalizePen);
     };
   }, []);
 
@@ -1113,7 +1113,7 @@ export default function Canvas({ onError }: CanvasProps) {
       <canvas
         ref={canvasRef}
         className="artboard-canvas"
-        aria-label="Spectrum artwork canvas"
+        aria-label="Huelith artwork canvas"
         tabIndex={0}
         style={{ cursor: gesture.current?.kind === 'pan' ? 'grabbing'
           : gesture.current?.kind === 'move' ? 'grabbing' : hoverCursor }}
@@ -1124,7 +1124,7 @@ export default function Canvas({ onError }: CanvasProps) {
         onPointerCancel={() => { gesture.current = null; useEditor.getState().previewCreative(null); setDraft(null); setDrawing(null); invalidate(); }}
         onDoubleClick={event => {
           if (selectableShape(position(event), doc.layers, zoom, true)) editText(event);
-          else if (tool === 'pen') window.dispatchEvent(new Event('spectrum-finish-pen'));
+          else if (tool === 'pen') window.dispatchEvent(new Event('huelith-finish-pen'));
         }}
         onContextMenu={event => event.preventDefault()}
       />

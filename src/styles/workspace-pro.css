@@ -1,5 +1,5 @@
-/* Spectrum 0.1 workspace polishing; animation and artboard share neutral chrome. */
-.spectrum-command-bar {
+/* Huelith 0.1 workspace polishing; animation and artboard share neutral chrome. */
+.huelith-command-bar {
   display: flex;
   align-items: center;
   min-width: 0;
@@ -7,7 +7,7 @@
   overflow-x: auto;
   scrollbar-width: none;
 }
-.spectrum-command-bar::-webkit-scrollbar { display: none; }
+.huelith-command-bar::-webkit-scrollbar { display: none; }
 .command-menu-trigger {
   color: var(--text);
   font-size: 11px;

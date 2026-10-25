@@ -1,8 +1,8 @@
-# Spectrum 0.1 — Consistent FX/Filter/Effect Live Preview (October 22, 2026)
+# Huelith 0.1 — Consistent FX/Filter/Effect Live Preview (October 22, 2026)
 
 ## What was wrong
 
-Spectrum rendered two **different algorithms** for the same effect. During pointer movement, `fx.ts` called `paintGpuEffectDraft` or `paintCanvasEffectDraft`, whose shared approximate effect groups converted operations such as Miasma into offset shadows, and made Brightness behave like Contrast in the Canvas fallback. On release, the renderer switched back to `processEffects`, which executes the actual ordered effect stack. Artwork therefore shifted/glitched/recolored while moving the slider and snapped to its intended appearance on release.
+Huelith rendered two **different algorithms** for the same effect. During pointer movement, `fx.ts` called `paintGpuEffectDraft` or `paintCanvasEffectDraft`, whose shared approximate effect groups converted operations such as Miasma into offset shadows, and made Brightness behave like Contrast in the Canvas fallback. On release, the renderer switched back to `processEffects`, which executes the actual ordered effect stack. Artwork therefore shifted/glitched/recolored while moving the slider and snapped to its intended appearance on release.
 
 This was not a broken Miasma parameter. **Every multi-effect stack could exhibit the incorrect preview**, and the issue existed with fewer than five filters too. Raising or removing the preview shader's effect-count cap did not fix mismatched algorithms.
 
@@ -37,4 +37,4 @@ The full React/MUI/Tauri production build and Windows WebView2 FPS profiling sti
 4. Apply, undo, redo, reopen the document, and compare again. Repeat with effect positions at beginning, middle, and end of the stack.
 5. Measure **control FPS**, **preview update latency**, and **exact worker processing throughput** separately. These are not interchangeable metrics.
 
-Version stays **Spectrum 0.1.0**.
+Version stays **Huelith 0.1.0**.

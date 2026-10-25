@@ -53,9 +53,9 @@ export const MENUS: Record<string, MenuSection[]> = {
     { id: 'move', label: 'Move & transform', shortcut: 'V' }, { id: 'pen', label: 'Precision pen', shortcut: 'P' },
     { id: 'text', label: 'Text', shortcut: 'T' },
   ] }],
-  Effects: [{ heading: 'Creative workspace', entries: [{ id: 'fx', label: 'Open Spectrum FX Studio' }] }],
+  Effects: [{ heading: 'Creative workspace', entries: [{ id: 'fx', label: 'Open Huelith FX Studio' }] }],
   Creative: [
-    { heading: 'Originals Studio', entries: [{ id: 'creative-lab', label: 'Open Spectrum Originals' }] },
+    { heading: 'Originals Studio', entries: [{ id: 'creative-lab', label: 'Open Huelith Originals' }] },
     { heading: 'Place an editable creative object', entries: CREATIVE_DEFINITIONS.map(item => ({
       id: `creative-${item.kind}` as MenuAction, label: item.name,
     })) },
@@ -68,5 +68,5 @@ export const MENUS: Record<string, MenuSection[]> = {
     { heading: 'Canvas', entries: [{ id: 'grid', label: 'Toggle grid' }, { id: 'focus', label: 'Focus mode', shortcut: 'Tab' }] },
     { heading: 'Interface', entries: [{ id: 'theme', label: 'Change theme' }, { id: 'settings', label: 'Preferences' }] },
   ],
-  Help: [{ heading: 'Learn', entries: [{ id: 'help', label: 'About Spectrum & shortcuts' }] }],
+  Help: [{ heading: 'Learn', entries: [{ id: 'help', label: 'About Huelith & shortcuts' }] }],
 };

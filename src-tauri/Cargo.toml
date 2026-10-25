@@ -1,12 +1,12 @@
 [package]
-name = "spectrum"
-version = "0.1.0"
-description = "Spectrum: free and open creative editor"
-authors = ["Spectrum Contributors"]
+name = "huelith"
+version = "0.2.0"
+description = "Huelith: free and open creative editor"
+authors = ["Huelith Contributors"]
 edition = "2021"
 
 [lib]
-name = "spectrum_lib"
+name = "huelith_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

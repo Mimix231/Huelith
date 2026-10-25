@@ -1,4 +1,4 @@
-# Spectrum 0.1 — Project Aurora II, Phases N, O, P
+# Huelith 0.1 — Project Aurora II, Phases N, O, P
 
 **Date:** 2026-10-23  
 **Scope:** Effects-tab reconstruction, professional controls, visual/rendering regression checks.  
@@ -28,9 +28,9 @@ All improvements are **non-destructive** and use the same `applyEffect` implemen
 
 - Responsive **Basic / Advanced** tabs in the FX Studio effect editor; Basic shows primary controls, Advanced shows the complete parameter set and specialist editors.
 - Independent **Enable**, **Reset**, and **Save / Load** user presets for each effect. Recipes are stored in application-local settings, not embedded as mutated project effect IDs; loading a recipe preserves existing effect ID, order, Studio group identity, and non-destructive editability.
-- Press-and-hold **Before / After** comparison button uses Spectrum's existing layer-effects bypass and safely clears bypass on release, pointer-cancel, pointer leave and panel exit.
+- Press-and-hold **Before / After** comparison button uses Huelith's existing layer-effects bypass and safely clears bypass on release, pointer-cancel, pointer leave and panel exit.
 - Existing gradient-stop, glow palette/mode, curve, and multi-shadow editors remain available in Advanced mode.
-- Additional renderer parameters are valid in document serialization and validated when loading `.spectrum` documents.
+- Additional renderer parameters are valid in document serialization and validated when loading `.huelith` documents.
 
 ## Phase P — Regression and compatibility tests
 

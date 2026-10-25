@@ -2,7 +2,7 @@ import { activeTab, useEditor } from './store';
 import { decodeImage, prepareImages, exportCanvas } from './render';
 import { makeRaster, makeVector, uid, type VectorShape } from './types';
 
-const INTERNAL_TYPE = 'application/x-spectrum-object';
+const INTERNAL_TYPE = 'application/x-huelith-object';
 let localClipboard: VectorShape | null = null;
 
 function fileAsDataUrl(file: Blob): Promise<string> {
@@ -86,7 +86,8 @@ export async function handlePaste(event: ClipboardEvent): Promise<boolean> {
   const image = items.find(item => item.kind === 'file' && item.type.startsWith('image/'))?.getAsFile();
   if (image) return insertImage(image);
   if (localClipboard && (
-    clipboard.getData('text/plain').startsWith('Spectrum vector:') ||
+    (clipboard.getData('text/plain').startsWith('Huelith vector:') ||
+    clipboard.getData('text/plain').startsWith('Spectrum vector:')) ||
     !clipboard.types.includes('text/plain') && !clipboard.types.includes('text/html')
   )) {
     pasteVector(localClipboard);
@@ -137,7 +138,7 @@ export async function copySelected(event?: ClipboardEvent, cut = false): Promise
     localClipboard = structuredClone(shape);
     if (event?.clipboardData) {
       event.clipboardData.setData(INTERNAL_TYPE, JSON.stringify(shape));
-      event.clipboardData.setData('text/plain', `Spectrum vector: ${shape.kind}`);
+      event.clipboardData.setData('text/plain', `Huelith vector: ${shape.kind}`);
     }
     if (cut && !layer?.locked) state.removeShape(shape.id);
     return true;

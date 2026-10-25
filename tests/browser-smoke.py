@@ -20,7 +20,7 @@ with sync_playwright() as playwright:
         page.goto('about:blank')
         page.add_script_tag(content=bundle)
         checks = page.evaluate(r'''async () => {
-          const engine = window.SpectrumTest;
+          const engine = window.HuelithTest;
           const results = [];
           function assert(name, condition) {
             if (!condition) throw new Error(`Canvas pixel assertion failed: ${name}`);
@@ -326,7 +326,7 @@ with sync_playwright() as playwright:
           assert('vector copy stores editable clipboard geometry', await engine.copySelected(copyEvent));
           editState.newDoc('Vector target', 80, 80, '#ffffff');
           const vectorPaste = new ClipboardEvent('paste', { clipboardData: copyTransfer });
-          assert('internal Spectrum vector format can be pasted', await engine.handlePaste(vectorPaste));
+          assert('internal Huelith vector format can be pasted', await engine.handlePaste(vectorPaste));
           const pastedVector = engine.useEditor.getState().tabs.find(tab => tab.doc.id === engine.useEditor.getState().activeId).doc;
           assert('pasted vector geometry is editable in new document',
             pastedVector.layers.at(-1).type === 'vector' && pastedVector.layers.at(-1).shapes[0].width === 20);
@@ -440,7 +440,7 @@ with sync_playwright() as playwright:
           assert('Spectrum Glow multi-stop palette differs from monochrome glow', rainbow.toDataURL() !== singleGlow.toDataURL());
           const project = engine.createDocument('Signature FX saves');
           project.layers[0].effects = [engine.newEffect('sig_12'), engine.newEffect('radiance'), gradientGlow];
-          assert('Signature FX, Holy Radiance and spectral glow survive .spectrum validation',
+          assert('Signature FX, Holy Radiance and spectral glow survive .huelith validation',
             engine.isDocument(JSON.parse(JSON.stringify(project))));
 
           // Multi-stop gradient map: low/middle/high luminance must follow independently chosen stops.
@@ -674,7 +674,7 @@ with sync_playwright() as playwright:
           if (typeof OffscreenCanvas === 'undefined' || typeof Worker === 'undefined') {
             throw new Error('OffscreenCanvas worker is required for Stage I acceptance');
           }
-          const sources = window.SpectrumBundledModules;
+          const sources = window.HuelithBundledModules;
           const workerSource = `
             const sources = ${JSON.stringify(sources)};
             const modules = {};
@@ -699,7 +699,7 @@ with sync_playwright() as playwright:
           const url = URL.createObjectURL(new Blob([workerSource], {type:'text/javascript'}));
           const worker = new Worker(url);
           try {
-            const effect = window.SpectrumTest.newEffect('sig_0', 85, '#ff3344', {
+            const effect = window.HuelithTest.newEffect('sig_0', 85, '#ff3344', {
               silhouetteMode:'auto',radius:10,softness:4,silhouetteTolerance:35,
             });
             const testImage = document.createElement('canvas');
@@ -707,7 +707,7 @@ with sync_playwright() as playwright:
             const ctx=testImage.getContext('2d');
             ctx.fillStyle='#fafafa';ctx.fillRect(0,0,90,60);
             ctx.fillStyle='#212839';ctx.fillRect(20,10,46,35);
-            const main = window.SpectrumTest.processEffects(testImage,[effect]);
+            const main = window.HuelithTest.processEffects(testImage,[effect]);
             const original = main.getContext('2d').getImageData(0,0,90,60).data;
             const expected=Array.from(original);
             const actual = await Promise.race([
@@ -730,7 +730,7 @@ with sync_playwright() as playwright:
         # This catches stale source buffers, neutral-effect buffer detachment and
         # worker vs export divergence when a slider sends parameter-only updates.
         cached_worker_checks = page.evaluate(r'''async () => {
-          const bundled = window.SpectrumBundledModules;
+          const bundled = window.HuelithBundledModules;
           const program = `
             const compiled = ${JSON.stringify(bundled)};
             const modules = {};
@@ -780,24 +780,24 @@ with sync_playwright() as playwright:
               if (result.error) throw Error(result.error);
               const data=pixelData(result.result);
               result.result.close();
-              const expected = pixelData(window.SpectrumTest.processEffects(source,stack));
+              const expected = pixelData(window.HuelithTest.processEffects(source,stack));
               if (!data.every((value,index) => value===expected[index])) {
                 throw Error(`Slider preview/export pixel mismatch at request ${id}`);
               }
               return data;
             }
-            const first=await render(1,window.SpectrumTest.newEffect('brightness',130),true);
-            const second=await render(2,window.SpectrumTest.newEffect('brightness',170),false);
+            const first=await render(1,window.HuelithTest.newEffect('brightness',130),true);
+            const second=await render(2,window.HuelithTest.newEffect('brightness',170),false);
             if (first.every((value,index)=>value===second[index])) throw Error('Changed slider amount produced identical preview');
-            const neutral={...window.SpectrumTest.newEffect('brightness',100),enabled:false};
+            const neutral={...window.HuelithTest.newEffect('brightness',100),enabled:false};
             const unchanged=await render(3,neutral,false);
             if (!unchanged.every((value,index)=>value===pixelData(source)[index])) throw Error('Neutral processor damaged source');
-            const restored=await render(4,window.SpectrumTest.newEffect('brightness',130),false);
+            const restored=await render(4,window.HuelithTest.newEffect('brightness',130),false);
             if (!restored.every((value,index)=>value===first[index])) throw Error('Cached source changed after neutral processor');
             // A two-effect stack catches reusing an intermediate whose backing
             // OffscreenCanvas was accidentally detached by transferToImageBitmap.
-            const initial = window.SpectrumTest.newEffect('grayscale',73);
-            const adjustment = window.SpectrumTest.newEffect('brightness',125);
+            const initial = window.HuelithTest.newEffect('grayscale',73);
+            const adjustment = window.HuelithTest.newEffect('brightness',125);
             await render(5,[initial,adjustment],false);
             await render(6,[initial,{...adjustment,amount:186}],false);
             await render(7,[initial,{...adjustment,amount:186}],false);
@@ -815,7 +815,7 @@ with sync_playwright() as playwright:
         # Single-color filters have an instant, native-resolution Canvas2D
         # path. It must match the ordinary (export) processor pixel-for-pixel.
         instant_checks = page.evaluate(r'''() => {
-          const { newEffect, processEffects, renderWithEffects, realtimeFilter } = window.SpectrumTest;
+          const { newEffect, processEffects, renderWithEffects, realtimeFilter } = window.HuelithTest;
           const fast = ['brightness','contrast','saturate','hue','grayscale','sepia','invert'];
           const source = document.createElement('canvas');
           source.width = 112; source.height = 76;
@@ -844,7 +844,7 @@ with sync_playwright() as playwright:
             'Heavy and multi-filter stacks remain isolated from the UI thread'];
         }''')
         checks.extend(instant_checks)
-        # Load the *actual* Spectrum stylesheets into Chromium and compare computed
+        # Load the *actual* Huelith stylesheets into Chromium and compare computed
         # visual properties, rather than trusting that theme names merely exist.
         project = Path(__file__).resolve().parents[1]
         styles = '\n'.join((project / 'src' / 'styles' / name).read_text()
@@ -853,7 +853,7 @@ with sync_playwright() as playwright:
                                         'sakura.css', 'blossom.css', 'shadow.css', 'polish.css', 'typography.css', 'workspace-pro.css'))
         page.set_content(f'<style>{styles}</style><div class="app theme-glass">'
                          '<header class="titlebar"><div class="titlebar-drag-space"></div>'
-                         '<div class="spectrum-window-controls"><button>−</button></div></header>'
+                         '<div class="huelith-window-controls"><button>−</button></div></header>'
                          '<div class="contextbar"><div class="font-picker-trigger"></div></div>'
                          '<div class="toolrail"></div><div class="canvas-host"></div></div>')
         appearances = {}
@@ -920,7 +920,7 @@ with sync_playwright() as playwright:
             titlebar: css('.titlebar').height,
             contextbar: css('.contextbar').height,
             rail: css('.toolrail').width,
-            windowButton: css('.spectrum-window-controls button').width,
+            windowButton: css('.huelith-window-controls button').width,
             fontTrigger: css('.font-picker-trigger').height,
           };
         }''')

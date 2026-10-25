@@ -116,7 +116,7 @@ test('rotation is reversible around the chosen center', () => {
   assert.ok(Math.hypot(recovered.x - original.x, recovered.y - original.y) < 1e-9);
 });
 
-test('validated .spectrum documents preserve cubic nodes, masks and raster transforms', () => {
+test('validated .huelith documents preserve cubic nodes, masks and raster transforms', () => {
   const doc = model.createDocument();
   doc.layers[0].mask = { x: 1, y: 2, width: 40, height: 50 };
   doc.layers[0].scaleX = 0.5;
@@ -206,7 +206,7 @@ test('undo back to last saved document returns to clean status', () => {
   const id = activeTab(state).doc.activeLayerId;
   state.renameLayer(id, 'First');
   const saved = activeTab(useEditor.getState());
-  state.markSaved(saved.doc.id, saved.revision, 'drawing.spectrum');
+  state.markSaved(saved.doc.id, saved.revision, 'drawing.huelith');
   state.renameLayer(id, 'Second');
   assert.equal(activeTab(useEditor.getState()).dirty, true);
   state.undo();
@@ -229,8 +229,8 @@ test('theme selection and layout settings persist without affecting documents', 
   state.setInspectorOpen(false);
   state.setInspectorWidth(313);
   state.saveInspectorWidth();
-  assert.equal(storage.get('spectrum-theme'), 'material');
-  const layout = JSON.parse(storage.get('spectrum-layout'));
+  assert.equal(storage.get('huelith-theme'), 'material');
+  const layout = JSON.parse(storage.get('huelith-layout'));
   assert.equal(layout.toolsOpen, false);
   assert.equal(layout.inspectorOpen, false);
   assert.equal(layout.inspectorWidth, 313);
@@ -382,7 +382,7 @@ test('new independent signature FX can be reordered with traditional filter, bou
   assert.equal(layer.effects.length, 2);
 });
 
-test('malformed effect stacks are rejected from untrusted .spectrum files', () => {
+test('malformed effect stacks are rejected from untrusted .huelith files', () => {
   const doc = model.createDocument();
   doc.layers[0].effects = [{ id: 'ok', kind: 'glow', amount: 25, enabled: true }];
   assert.equal(model.isDocument(doc), true);
@@ -396,9 +396,9 @@ test('malformed effect stacks are rejected from untrusted .spectrum files', () =
 test('additional theme identifiers persist as independent workspaces', () => {
   useEditor.getState().setWorkspace('midnight');
   assert.equal(useEditor.getState().workspace, 'midnight');
-  assert.equal(browserStorage.getItem('spectrum-theme'), 'midnight');
+  assert.equal(browserStorage.getItem('huelith-theme'), 'midnight');
   useEditor.getState().setWorkspace('studio');
-  assert.equal(browserStorage.getItem('spectrum-theme'), 'studio');
+  assert.equal(browserStorage.getItem('huelith-theme'), 'studio');
 });
 
 test('edge resize handles change a single dimension without moving the opposite edge', () => {
@@ -419,9 +419,9 @@ test('a workspace preserves brightness selection independently from documents', 
   const before = activeTab(state).doc;
   state.setWorkspace('strawberry');
   state.setAppearanceMode('dark');
-  assert.equal(browserStorage.getItem('spectrum-theme'), 'strawberry');
+  assert.equal(browserStorage.getItem('huelith-theme'), 'strawberry');
   assert.equal(useEditor.getState().appearanceMode, 'dark');
-  assert.equal(JSON.parse(browserStorage.getItem('spectrum-layout')).appearanceMode, 'dark');
+  assert.equal(JSON.parse(browserStorage.getItem('huelith-layout')).appearanceMode, 'dark');
   state.setAppearanceMode('light');
   assert.equal(useEditor.getState().appearanceMode, 'light');
   assert.equal(activeTab(useEditor.getState()).doc, before);

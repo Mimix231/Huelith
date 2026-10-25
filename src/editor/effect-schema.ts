@@ -105,11 +105,11 @@ export const EFFECT_PARAMETER_SCHEMA: Partial<Record<EffectKind, ScalarControl[]
   watercolor: [radius('diffusion', 'Pigment diffusion', 7), pct('paper', 'Paper texture', 25)],
   ink: [pct('threshold', 'Ink threshold', 45)],
   neonedge: [radius('glowRadius', 'Glow radius', 10), pct('threshold', 'Edge sensitivity', 45), pct('branching', 'Electrical branches', 0)],
-  chromatic: [pct('colorMix', 'Colorization', 65), parameter('shiftY', 'Vertical shift', -100, 100, 0, 'px'),
-    pct('density', 'Corruption density', 18), parameter('seed', 'Seed', 0, 9999, 18), pct('scanlines', 'Scanlines', 0)],
-  glitch: [pct('colorMix', 'Colorization', 65), pct('density', 'Fragment density', 55), parameter('seed', 'Seed', 0, 9999, 21),
-    pct('scanlines', 'Scanlines', 30), parameter('shiftY', 'Vertical offset', -100, 100, 0, 'px')],
-  vhs: [pct('colorMix', 'Colorization', 65), parameter('seed', 'Seed', 0, 9999, 9), pct('density', 'Signal dropouts', 55), pct('scanlines', 'Scanlines', 60)],
+  chromatic: [pct('colorMix', 'RGB channel separation', 65), parameter('shiftY', 'Vertical channel shift', -100, 100, 0, 'px'),
+    parameter('angle', 'Split direction', -180, 180, 0, '°')],
+  glitch: [pct('colorMix', 'Block displacement', 65), pct('density', 'Fragment density', 55), parameter('seed', 'Seed', 0, 9999, 21),
+    parameter('shiftY', 'Vertical fragment offset', -100, 100, 0, 'px')],
+  vhs: [pct('colorMix', 'Tracking instability', 65), parameter('seed', 'Tape variation', 0, 9999, 9), pct('density', 'Signal dropouts', 55), pct('scanlines', 'Scanline strength', 60)],
   crt: [pct('scanlineDepth', 'Scanline strength', 70), pct('phosphor', 'Phosphor mask', 40)],
   mosaic: [parameter('gap', 'Grout width', 0, 20, 2, 'px')],
   swirl: xy, ripple: [...xy, parameter('frequency', 'Wave frequency', 1, 30, 8)],
@@ -152,7 +152,7 @@ export function defaultParameters(kind: EffectKind): EffectParameters {
   if (kind === 'outline') {
     values.outlineStyle = 'neon'; values.silhouetteMode = 'auto'; values.secondaryColor = '#8d55ff';
   }
-  if (kind === 'cutout') values.decontaminate = 0;
+  if (kind === 'cutout') { values.decontaminate = 0; values.backgroundAuto = 1; values.maskBrushSize = 24; values.maskStrokes = []; }
   if (kind === 'balance') { values.highlightsRed = 10; values.shadowsBlue = 8; }
   if (kind === 'mixer') { values.redGreen = 9; values.blueRed = 7; }
   if (kind === 'gradientmap') values.stops = structuredClone(DEFAULT_GRADIENT_STOPS);

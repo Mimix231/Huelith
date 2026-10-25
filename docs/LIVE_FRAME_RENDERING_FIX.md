@@ -1,4 +1,4 @@
-# Spectrum 0.1 — Live Studio sliders, color wheels & rendering performance
+# Huelith 0.1 — Live Studio sliders, color wheels & rendering performance
 
 ## Regression and root causes
 
@@ -36,7 +36,7 @@ The prior build did *not* guarantee a live preview during pointer movement. `FxS
 
 ## Windows acceptance checklist
 
-1. Start `npm run desktop:dev`; open a 1920×1080 artwork with a pasted full-resolution image and some small text. Enable Spectrum Studio and observe the canvas and the slider during an uninterrupted drag.
+1. Start `npm run desktop:dev`; open a 1920×1080 artwork with a pasted full-resolution image and some small text. Enable Huelith Studio and observe the canvas and the slider during an uninterrupted drag.
 2. Test **Brightness, Grayscale, Saturation, Hue, Contrast, Sepia and Invert**. The image itself should change while the mouse is still held down; inspect small text and thin edges for softness.
 3. Test detailed multi-step **Glow, Hyper Outline, Shadow Forge, Watercolor, Oil Painting, VHS, Lens Blur and Gradient Map**. Thumb values must remain responsive even if processing finishes later. Release at e.g. 67%, let the preview finish and verify its final appearance.
 4. Reopen the same FX, drag two advanced sliders, drag the native color wheel, and edit gradient/shadow controls without waiting for pointer release to see value changes. Apply, undo once, redo, save/reopen and compare with PNG export.

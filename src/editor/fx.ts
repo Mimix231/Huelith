@@ -18,7 +18,7 @@ export function clampEffectAmount(kind: EffectKind, amount: number): number {
   return Math.max(descriptor.min, Math.min(descriptor.max, Number.isFinite(amount) ? amount : descriptor.min));
 }
 
-/** The 22 signature FX are *standalone processors*. Historical .spectrum files
+/** The 22 signature FX are *standalone processors*. Historical .huelith files
  * containing multiple legacy steps still render unchanged; newly applied FX
  * create only one dedicated sig_N effect, without composing named filters. */
 export const SIGNATURE_FX_NAMES = [

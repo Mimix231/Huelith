@@ -73,7 +73,7 @@ export default function WindowControls() {
         }
         unlistenResize = removeResizeListener;
       } catch (cause) {
-        console.error('Spectrum could not initialize window controls', cause);
+        console.error('Huelith could not initialize window controls', cause);
         if (!disposed) setError(`Window controls unavailable: ${String(cause)}`);
       }
     }
@@ -97,7 +97,7 @@ export default function WindowControls() {
         setMaximized(await getCurrentWindow().isMaximized());
       }
     } catch (cause) {
-      console.error(`Failed to ${action} Spectrum`, cause);
+      console.error(`Failed to ${action} Huelith`, cause);
       setError(`Window action failed: ${String(cause)}`);
     }
   }
@@ -122,7 +122,7 @@ export default function WindowControls() {
       // close() would re-enter the unsaved-document close listener.
       await getCurrentWindow().destroy();
     } catch (cause) {
-      console.error('Spectrum could not complete the close request', cause);
+      console.error('Huelith could not complete the close request', cause);
       setError(`Close failed: ${String(cause)}`);
     } finally {
       setClosing(false);
@@ -131,7 +131,7 @@ export default function WindowControls() {
 
   return (
     <>
-      <div className="spectrum-window-controls" role="group" aria-label="Window controls">
+      <div className="huelith-window-controls" role="group" aria-label="Window controls">
         {error && <span role="alert" className="window-error" title={error}>Window error</span>}
         <button
           type="button"
@@ -155,7 +155,7 @@ export default function WindowControls() {
           type="button"
           className="window-close"
           aria-label="Close window"
-          title="Close Spectrum"
+          title="Close Huelith"
           disabled={!ready || closing}
           onClick={() => void act('close')}
         >
@@ -168,11 +168,11 @@ export default function WindowControls() {
         onClose={() => {
           if (!closing) setConfirmOpen(false);
         }}
-        aria-labelledby="spectrum-close-title"
+        aria-labelledby="huelith-close-title"
         maxWidth="xs"
         fullWidth
       >
-        <DialogTitle id="spectrum-close-title">Unsaved Spectrum documents</DialogTitle>
+        <DialogTitle id="huelith-close-title">Unsaved Huelith documents</DialogTitle>
         <DialogContent>
           Some changes have not been saved. Save all open documents before closing, discard
           unsaved changes, or continue editing.

@@ -1,4 +1,4 @@
-/* Spectrum Studio Experience: compact surfaces and compositor-friendly motion. */
+/* Huelith Studio Experience: compact surfaces and compositor-friendly motion. */
 .app {
   --studio-ease: cubic-bezier(.18,.78,.2,1);
   --studio-fast: 140ms;
@@ -17,17 +17,17 @@
   will-change: opacity, transform;
   transform-origin: top right;
 }
-.fx-overlay { animation: spectrum-enter var(--studio-enter) var(--studio-ease) both; }
-.fx-host.closing .fx-overlay { animation: spectrum-leave var(--studio-fast) ease-in both; pointer-events: none; }
-@keyframes spectrum-enter {
+.fx-overlay { animation: huelith-enter var(--studio-enter) var(--studio-ease) both; }
+.fx-host.closing .fx-overlay { animation: huelith-leave var(--studio-fast) ease-in both; pointer-events: none; }
+@keyframes huelith-enter {
   from { opacity: 0; transform: translate3d(10px,-5px,0) scale(.975); }
   to { opacity: 1; transform: translate3d(0,0,0) scale(1); }
 }
-@keyframes spectrum-leave {
+@keyframes huelith-leave {
   from { opacity: 1; transform: translate3d(0,0,0) scale(1); }
   to { opacity: 0; transform: translate3d(10px,-5px,0) scale(.98); }
 }
-.spectrum-focus-text {
+.huelith-focus-text {
   position: fixed;
   inset: 0;
   z-index: 9000;
@@ -37,7 +37,7 @@
   padding: 28px;
   animation: focus-appear 240ms ease both;
 }
-.spectrum-focus-text.is-leaving { pointer-events: none; animation: focus-disappear 190ms ease both; }
+.huelith-focus-text.is-leaving { pointer-events: none; animation: focus-disappear 190ms ease both; }
 .focus-text-backdrop {
   position: absolute;
   inset: 0;
@@ -141,7 +141,7 @@
 .theme-shadow .focus-text-card { border-radius: 9px; box-shadow: 0 40px 90px #000b; }
 .theme-classic .focus-text-card { border-radius: 3px; box-shadow: 5px 6px 0 #0004; }
 @media (prefers-reduced-motion: reduce) {
-  .fx-overlay, .fx-host.closing .fx-overlay, .spectrum-focus-text, .spectrum-focus-text.is-leaving {
+  .fx-overlay, .fx-host.closing .fx-overlay, .huelith-focus-text, .huelith-focus-text.is-leaving {
     animation: none !important;
     transition: none !important;
   }

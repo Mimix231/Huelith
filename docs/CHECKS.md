@@ -2,7 +2,7 @@
 
 For the latest Stage D–H results, see **STAGE_DH_CHECKS.md**. The older reports below describe earlier source snapshots and should not be interpreted as current production-build verification.
 
-# Spectrum 0.1 — Studio Experience / Live Preview verification
+# Huelith 0.1 — Studio Experience / Live Preview verification
 
 **Date:** 2026-10-21  
 **Version:** 0.1.0 (unchanged)  
@@ -48,4 +48,4 @@ npm run desktop:dev
 npm run desktop:build
 ```
 
-Manually verify the centered Focus Text editor (including IME, font selection, multiline Shift+Enter, and cancel), text drag on single click, correct FX export pixels, color wheel responsiveness on a 1080p document, 4K image memory use, undo/redo after sliders, old `.spectrum` files, and native window closure. **Keep 0.1 until all advertised workflows pass.**
+Manually verify the centered Focus Text editor (including IME, font selection, multiline Shift+Enter, and cancel), text drag on single click, correct FX export pixels, color wheel responsiveness on a 1080p document, 4K image memory use, undo/redo after sliders, old `.huelith` files, and native window closure. **Keep 0.1 until all advertised workflows pass.**

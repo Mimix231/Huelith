@@ -20,7 +20,7 @@ export interface AuroraGraphRender extends CpuRenderResult {
   gpuStages: number;
   activeBackend: 'cpu' | 'gpu';
 }
-export const BACKEND_EVENT = 'spectrum-aurora-backend-status';
+export const BACKEND_EVENT = 'huelith-aurora-backend-status';
 let selection: Promise<AuroraBackendStatus | null> = Promise.resolve(null);
 let requestedGpu: boolean | null = null;
 
@@ -66,7 +66,7 @@ export async function renderNativeGraph(id: string, effects: CpuEffect[], prefer
  * a tiny RGBA source without replacing any existing editor effect algorithm.
  */
 export async function nativeGraphSelfTest(preferences: AuroraPreferences): Promise<string> {
-  if (!nativeAvailable()) return 'Native processing is available in Spectrum Desktop (Tauri).';
+  if (!nativeAvailable()) return 'Native processing is available in Huelith Desktop (Tauri).';
   const { registerCpuImage, releaseCpuImage } = await import('./native-cpu');
   const id = `aurora-graph-smoke-${Date.now()}`;
   const pixels = new Uint8ClampedArray([

@@ -1,4 +1,4 @@
-/** Spectrum Originals: retained objects, stable seeds, and frame-indexed property tracks. */
+/** Huelith Originals: retained objects, stable seeds, and frame-indexed property tracks. */
 import type { Document, Point } from './types';
 
 const uid = (): string => globalThis.crypto?.randomUUID?.() ?? `creative-${Date.now()}-${Math.random().toString(36).slice(2)}`;

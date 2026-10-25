@@ -1,7 +1,7 @@
 import type { Document, Effect, EffectParameters, Layer } from './types';
 import { defaultParameters } from './effect-schema';
 
-/** Upgrade older Spectrum 0.1 effect settings on load without mutating source pixels. */
+/** Upgrade older Huelith 0.1 effect settings on load without mutating source pixels. */
 function migrateEffect(effect: Effect): void {
   const current = effect.parameters ?? {};
   const defaults = defaultParameters(effect.kind);

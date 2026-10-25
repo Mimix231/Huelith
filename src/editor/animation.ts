@@ -17,6 +17,30 @@ function frameFromLayers(layers: Layer[], activeLayerId: string | null, duration
   return { id: uid(), durationMs, layers: copy(layers), activeLayerId };
 }
 
+/** Existing projects may contain cels whose artwork exists but whose
+ * animation-layer FX stack was saved only on an earlier frame. Inherit a
+ * track's available effect stack without modifying the cel artwork, and only
+ * where that cel has no own effects. Preserves legacy project compatibility. */
+export function inheritLayerTrackEffects(layers: Layer[], frames: readonly AnimationFrame[]): Layer[] {
+  const effects = new Map<string, NonNullable<Layer['effects']>>();
+  const gather = (items: Layer[]): void => {
+    for (const item of items) {
+      if (item.effects?.length && !effects.has(item.id)) effects.set(item.id, item.effects);
+      if (item.type === 'group') gather(item.children);
+    }
+  };
+  for (const frame of frames) gather(frame.layers);
+  if (!effects.size) return layers;
+  const resolve = (item: Layer): Layer => {
+    const inherited = !item.effects?.length ? effects.get(item.id) : undefined;
+    const children = item.type === 'group' ? item.children.map(resolve) : undefined;
+    if (!inherited && (!children || children.every((child, i) => child === (item as Extract<Layer, {type: 'group'}>).children[i]))) return item;
+    if (item.type === 'group') return { ...item, ...(inherited ? {effects:copy(inherited)} : {}), children:children! };
+    return { ...item, ...(inherited ? {effects:copy(inherited)} : {}) };
+  };
+  return layers.map(resolve);
+}
+
 /** The editor works against doc.layers; synchronize that working cel after document edits. */
 export function syncActiveCel(doc: Document): void {
   if (!doc.animation) return;
@@ -47,7 +71,8 @@ export function selectFrame(doc: Document, index: number): boolean {
   if (!animation || !Number.isInteger(index) || index < 0 || index >= animation.frames.length) return false;
   syncActiveCel(doc);
   animation.currentFrame = index;
-  doc.layers = copy(animation.frames[index].layers);
+  doc.layers = inheritLayerTrackEffects(copy(animation.frames[index].layers), animation.frames);
+  animation.frames[index].layers = copy(doc.layers);
   doc.activeLayerId = animation.frames[index].activeLayerId;
   return true;
 }
@@ -122,7 +147,7 @@ export function changeOnion(doc: Document, change: Partial<OnionSkinSettings>): 
 export function frameDocument(doc: Document, index: number): Document {
   const frame = doc.animation?.frames[index];
   if (!frame) return doc;
-  return { ...doc, layers: frame.layers, activeLayerId: frame.activeLayerId, animation: { ...doc.animation!, currentFrame: index }, creativeFrame: index };
+  return { ...doc, layers: inheritLayerTrackEffects(frame.layers, doc.animation!.frames), activeLayerId: frame.activeLayerId, animation: { ...doc.animation!, currentFrame: index }, creativeFrame: index };
 }
 
 /** Last-frame timing is respected and the playhead wraps to the beginning. */

@@ -1,4 +1,4 @@
-/** Independent Spectrum Originals processors. Canvas/export call the same routines. */
+/** Independent Huelith Originals processors. Canvas/export call the same routines. */
 import type { CreativeObject, CreativeKind } from './creative';
 import { evaluatedCreative, currentCreativeFrame } from './creative';
 import type { Document, Layer } from './types';

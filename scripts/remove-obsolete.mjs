@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Spectrum 0.1 obsolete-source cleanup.
+ * Huelith 0.1 obsolete-source cleanup.
  * Default is a dry run. --apply deletes only explicitly identified legacy paths
  * or source backup/reject files, never current .ts/.tsx/.css files or dependencies.
  * No recursive directory deletion, shell globbing or external filesystem traversal.

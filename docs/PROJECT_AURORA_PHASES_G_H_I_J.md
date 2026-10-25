@@ -1,6 +1,6 @@
-# Spectrum 0.1 — Project Aurora, Phases G, H, I and J
+# Huelith 0.1 — Project Aurora, Phases G, H, I and J
 
-**Version:** 0.1.0. **Status:** implementation pass with executed Node/Chromium tests; native Windows Tauri build, Rust compilation and actual device-FPS qualification have **not** been completed. This does **not** certify universal 60 FPS or the native migration of the complete Spectrum FX catalog.
+**Version:** 0.1.0. **Status:** implementation pass with executed Node/Chromium tests; native Windows Tauri build, Rust compilation and actual device-FPS qualification have **not** been completed. This does **not** certify universal 60 FPS or the native migration of the complete Huelith FX catalog.
 
 ## The reported regression
 

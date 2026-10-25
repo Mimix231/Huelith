@@ -1,5 +1,5 @@
 /**
- * Spectrum's effect previews are never permitted to rasterize an image, vector,
+ * Huelith's effect previews are never permitted to rasterize an image, vector,
  * or text layer at a lower resolution than its document.  Downsampling the
  * entire layer (then enlarging it) made pasted images and glyph edges visibly
  * blurry while moving a slider.  Responsiveness is handled by the worker,

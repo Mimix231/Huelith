@@ -64,7 +64,7 @@ export default function FontPicker({ value, onChange, disabled = false }: Props)
   };
 
   return (
-    <div ref={root} className="spectrum-font-picker">
+    <div ref={root} className="huelith-font-picker">
       <button
         type="button"
         className="font-picker-trigger"

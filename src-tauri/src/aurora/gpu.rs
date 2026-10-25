@@ -38,7 +38,7 @@ impl GpuEngine {
                 return Err("Only a software GPU adapter is available; choose native CPU processing".into());
             }
             let (device, queue) = adapter.request_device(&wgpu::DeviceDescriptor {
-                label: Some("Spectrum Aurora GPU Compute"),
+                label: Some("Huelith Aurora GPU Compute"),
                 required_features: wgpu::Features::empty(),
                 required_limits: wgpu::Limits::downlevel_defaults(),
             }, None).await.map_err(|error| format!("GPU device initialization failed: {error}"))?;

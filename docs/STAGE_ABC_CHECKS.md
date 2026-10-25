@@ -1,4 +1,4 @@
-# Spectrum 0.1 — Stage A/B/C verification (2026-10-21)
+# Huelith 0.1 — Stage A/B/C verification (2026-10-21)
 
 ## Checks actually executed in this environment
 
@@ -25,4 +25,4 @@
 
 ## Production readiness gate
 
-Run `npm install`, `npm run verify`, `npm run test:browser`, `npm run test:timeline`, `npm run desktop:build`, and manual Windows tests from `ACCEPTANCE.md` before describing Spectrum as production-stable or publishing v1.0. In particular verify font rendering, DPI, pointer hit testing, real installed-font discovery and native close behavior.
+Run `npm install`, `npm run verify`, `npm run test:browser`, `npm run test:timeline`, `npm run desktop:build`, and manual Windows tests from `ACCEPTANCE.md` before describing Huelith as production-stable or publishing v1.0. In particular verify font rendering, DPI, pointer hit testing, real installed-font discovery and native close behavior.

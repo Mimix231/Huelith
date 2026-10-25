@@ -1,6 +1,6 @@
-# Spectrum 0.1 · Project Aurora — Stages A, B & C
+# Huelith 0.1 · Project Aurora — Stages A, B & C
 
-**Status: implemented source foundation.** The native Rust build is not verified in this environment, and full replacement of existing Spectrum FX has **not** happened yet. Version stays **0.1.0**.
+**Status: implemented source foundation.** The native Rust build is not verified in this environment, and full replacement of existing Huelith FX has **not** happened yet. Version stays **0.1.0**.
 
 ## Stage A — Professional Settings
 
@@ -18,9 +18,9 @@ The titlebar gear and File/Edit menu Settings entry open a compact, searchable m
 | Shortcuts | Original editor hotkeys, uniqueness validation and reset controls, migrated from older dialog |
 | About | Open-source status, milestone and current limitations |
 
-Settings are validated and stored under `spectrum-aurora-preferences-v1` in localStorage. The GPU preference does **not** activate the unreleased native GPU engine. It expresses the user's choice for Stages D/E. Disabling it won't magically disable WebView2's hardware UI compositing.
+Settings are validated and stored under `huelith-aurora-preferences-v1` in localStorage. The GPU preference does **not** activate the unreleased native GPU engine. It expresses the user's choice for Stages D/E. Disabling it won't magically disable WebView2's hardware UI compositing.
 
-Animation onion-skin settings continue to live inside the active `.spectrum` document. App preferences are **not** embedded in project files. Transparent checkerboard, FPS diagnostics, and appearance settings update in the existing editor with no image flattening.
+Animation onion-skin settings continue to live inside the active `.huelith` document. App preferences are **not** embedded in project files. Transparent checkerboard, FPS diagnostics, and appearance settings update in the existing editor with no image flattening.
 
 ### Source organization
 
@@ -56,7 +56,7 @@ A native, deterministic RGBA CPU kernel foundation processes an ordered sequence
 
 Worker threads are configured with `std::thread::scope` and row-sliced mutable buffers, preserving deterministic results regardless of thread count. The std-library multithreading approach **does not add a Rayon dependency yet**, making the native core self-contained and avoiding unnecessary new build prerequisites; Rayon may be adopted after benchmarking. A blur doesn't show tile seams because its immutable input is accessible across row partitions. Input images are never modified by the processors.
 
-These kernels are real native operations, but they **are not yet pixel-equivalent replacements for the legacy Canvas2D implementation**, particularly the box blur versus CSS Gaussian blur. This is why Spectrum's existing 87+ effects still render using the existing authoritative JS effect pipeline: no user-visible regressions or feature downgrades in Stages A–C. Effect-by-effect parity tests, production routing and GPU acceleration belong to Aurora F–H/D–E.
+These kernels are real native operations, but they **are not yet pixel-equivalent replacements for the legacy Canvas2D implementation**, particularly the box blur versus CSS Gaussian blur. This is why Huelith's existing 87+ effects still render using the existing authoritative JS effect pipeline: no user-visible regressions or feature downgrades in Stages A–C. Effect-by-effect parity tests, production routing and GPU acceleration belong to Aurora F–H/D–E.
 
 ## Checks run here
 

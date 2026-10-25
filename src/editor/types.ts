@@ -1,4 +1,4 @@
-/** Spectrum 0.1's on-disk document model. Keep serialized fields stable. */
+/** Huelith document model, compatible with legacy Spectrum-format version 1 files. */
 export type BlendMode = 'source-over' | 'multiply' | 'screen' | 'overlay' | 'darken' | 'lighten';
 
 export interface Point {
@@ -51,7 +51,20 @@ export interface ShadowEntry {
 }
 
 /** Version-1 document compatible: optional extensible, bounded, JSON-only parameters. */
+/** Editable keep/remove marks are normalized to the document canvas.
+ * The source layer is never erased; these marks only affect the cutout effect. */
+export interface BackgroundMaskStroke {
+  x: number;
+  y: number;
+  radius: number;
+  mode: 'keep' | 'remove';
+}
+
 export interface EffectParameters {
+  /** 0 = manual mask only, 1 = conservative border-connected detection. */
+  backgroundAuto?: number;
+  maskBrushSize?: number;
+  maskStrokes?: BackgroundMaskStroke[];
   blur?: number;
   opacity?: number;
   offsetX?: number;
@@ -268,7 +281,7 @@ export interface AnimationTrack {
 }
 
 export interface Document {
-  format: 'spectrum';
+  format: 'huelith' | 'spectrum';
   version: 1;
   id: string;
   name: string;
@@ -277,7 +290,7 @@ export interface Document {
   background: string;
   layers: Layer[];
   activeLayerId: string | null;
-  /** Optional; omitted in existing static .spectrum projects. */
+  /** Optional; omitted in legacy static projects. */
   animation?: AnimationTrack;
   /** Shared creative objects apply to static artwork and every animation cel. */
   creative?: CreativeObject[];
@@ -329,7 +342,7 @@ export function createDocument(name = 'Untitled', width = 1280, height = 800, ba
   const layer = makeRaster();
   const now = new Date().toISOString();
   return {
-    format: 'spectrum', version: 1, id: uid(), name: name.trim() || 'Untitled', width, height,
+    format: 'huelith', version: 1, id: uid(), name: name.trim() || 'Untitled', width, height,
     background, layers: [layer], activeLayerId: layer.id, createdAt: now, updatedAt: now,
   };
 }
@@ -414,6 +427,12 @@ function validEffectParameters(parameters: unknown): boolean {
           finite(shadow[field]) && Math.abs(shadow[field] as number) <= 10000) &&
         (shadow.opacity as number) >= 0 && (shadow.opacity as number) <= 100 &&
         (shadow.style === undefined || ['drop', 'inner', 'contact', 'long', 'perspective'].includes(String(shadow.style))))) return false;
+    } else if (key === 'maskStrokes') {
+      if (!Array.isArray(value) || value.length > 4000 || !value.every(mark =>
+        record(mark) && (mark.mode === 'keep' || mark.mode === 'remove') &&
+        finite(mark.x) && mark.x >= 0 && mark.x <= 1 &&
+        finite(mark.y) && mark.y >= 0 && mark.y <= 1 &&
+        finite(mark.radius) && mark.radius >= 1 && mark.radius <= 500)) return false;
     } else if (key === 'glowMode') {
       if (!['outer', 'inner', 'both', 'bloom', 'atmosphere', 'energy'].includes(String(value))) return false;
     } else if (key === 'glowPalette') {
@@ -469,7 +488,7 @@ function isLayer(value: unknown, depth: number): value is Layer {
 
 /** Deep validation: never trust parsed JSON based on its top-level fields alone. */
 export function isDocument(value: unknown): value is Document {
-  if (!record(value) || value.format !== 'spectrum' || value.version !== 1) return false;
+  if (!record(value) || (value.format !== 'huelith' && value.format !== 'spectrum') || value.version !== 1) return false;
   if (!finite(value.width) || !finite(value.height) || !validSize(value.width, value.height)) return false;
   if (typeof value.id !== 'string' || typeof value.name !== 'string' || typeof value.background !== 'string') return false;
   if (typeof value.createdAt !== 'string' || typeof value.updatedAt !== 'string') return false;

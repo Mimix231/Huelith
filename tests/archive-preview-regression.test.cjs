@@ -10,7 +10,7 @@ test('Studio queues worker results AND invalidates canvas when setting changes',
   const dispatch = store.match(/function announceStudioPreview\([\s\S]*?\n}\n/);
   assert.ok(dispatch);
   assert.match(dispatch[0], /queueLayerEffectPreview\(layerId, effects\)/);
-  assert.match(dispatch[0], /dispatchEvent\(new Event\('spectrum-studio-preview'\)\)/);
+  assert.match(dispatch[0], /dispatchEvent\(new Event\('huelith-studio-preview'\)\)/);
   assert.doesNotMatch(dispatch[0], /queueLayerEffectPreview\(layerId, effects\)\) return/);
 });
 

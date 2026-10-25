@@ -1,8 +1,8 @@
-# Spectrum 0.1 — Stages D–H Verification
+# Huelith 0.1 — Stages D–H Verification
 
 ## Summary
 
-This is an implementation checkpoint for the current source ZIP, **not a stable Windows desktop release certificate**. Spectrum is still `0.1.0`.
+This is an implementation checkpoint for the current source ZIP, **not a stable Windows desktop release certificate**. Huelith is still `0.1.0`.
 
 ### Stage D — Color & Light (24 registered filters)
 
@@ -20,9 +20,9 @@ Four illustration tools received independent Sobel/luminance processors: **Penci
 
 Added independently parameterized **Holy Radiance** and **Miasma**, with actual procedural luminous/smoke fields that appear outside the source silhouette on transparent layers. Glow gains **spectral multicolor gradient mode** (editable color stops) in addition to single-color outer/inner/bloom. Backdrop retains spatial X/Y, scale and editable gradients; shadows retain editable independent entries.
 
-### Stage H — Original Spectrum Signature FX
+### Stage H — Original Huelith Signature FX
 
-**15 single-node signature FX** have dedicated procedural renderers (`sig_0`…`sig_14`) and per-effect controls. Newly applied FX **do not invoke `processEffects` recipes or append named Creativity filters**. Legacy saved chain-based FX remain loadable and appear grouped in Spectrum Studio. New effects save as one serializable effect object.
+**15 single-node signature FX** have dedicated procedural renderers (`sig_0`…`sig_14`) and per-effect controls. Newly applied FX **do not invoke `processEffects` recipes or append named Creativity filters**. Legacy saved chain-based FX remain loadable and appear grouped in Huelith Studio. New effects save as one serializable effect object.
 
 ## Checks executed in this environment
 
@@ -43,4 +43,4 @@ Added independently parameterized **Holy Radiance** and **Miasma**, with actual 
 - Whole-app React user interaction tests and real color-picker/slider FPS measurements on Windows.
 - Advanced color-management profiles, semantic background isolation, physical oil/watercolor painting simulation, industrial-grade blur quality and GPU-tiled performance on huge documents.
 
-Passing canvas pixels is not equivalent to proving professional artistic quality; the new source must still be reviewed with actual photography, translucent subjects, layered artwork and animation timelines. No claim is made that Spectrum 1.0 is release-ready.
+Passing canvas pixels is not equivalent to proving professional artistic quality; the new source must still be reviewed with actual photography, translucent subjects, layered artwork and animation timelines. No claim is made that Huelith 1.0 is release-ready.

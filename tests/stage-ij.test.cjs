@@ -38,7 +38,7 @@ test('VHS, Chromatic Split, Digital Glitch and matching FX have independent save
   }
 });
 
-test('existing Spectrum 0.1 documents lacking new optional effect parameters remain readable', () => {
+test('existing Huelith 0.1 documents lacking new optional effect parameters remain readable', () => {
   const previous = createDocument('Historical project');
   previous.layers[0].effects = [newEffect('sig_0', 65, '#fefefe', { radius: 8 }), newEffect('vhs', 60)];
   for (const effect of previous.layers[0].effects) {

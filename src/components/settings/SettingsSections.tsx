@@ -17,7 +17,7 @@ export const CATEGORIES: { id: Category; icon: string; label: string; keywords: 
   { id: 'animation', icon: '◇', label: 'Animation', keywords: 'onion ghost frames previous next opacity' },
   { id: 'storage', icon: '▣', label: 'Storage', keywords: 'autosave recovery local disk preferences' },
   { id: 'shortcuts', icon: '⌘', label: 'Shortcuts', keywords: 'keyboard tools hotkeys bindings' },
-  { id: 'about', icon: 'ⓘ', label: 'About', keywords: 'version license donations open source aurora' },
+  { id: 'about', icon: 'ⓘ', label: 'About', keywords: 'version license donations open source rendering' },
 ];
 export interface ShortcutItem { id: Tool; label: string; shortcut: string }
 export interface SettingsSectionProps {
@@ -46,7 +46,7 @@ export function AppearanceSection({ settings, update }: SettingsSectionProps) {
   const mode = useEditor(state => state.appearanceMode);
   const store = useEditor.getState;
   return <>
-    <Heading title="Appearance" subtitle="Make Spectrum feel like your own creative workspace." />
+    <Heading title="Appearance" subtitle="Make Huelith feel like your own creative workspace." />
     <SettingRow title="Theme" description="Each theme has its own visual identity and stylesheet.">
       <select aria-label="Theme" value={workspace} onChange={event => store().setWorkspace(event.target.value as Workspace)}>
         {THEMES.map(theme => <option key={theme} value={theme}>{theme[0].toUpperCase() + theme.slice(1)}</option>)}
@@ -105,17 +105,17 @@ export function PerformanceSection({ settings, update }: SettingsSectionProps) {
     finally { setBusy(false); }
   }
   return <>
-    <Heading title="Performance" subtitle="Project Aurora — quality first, with an optional GPU compute backend." />
-    <div className="aurora-staged" role="note">Aurora II Phases Q–S: 22 native-resolution signature FX, seven additional Creativity styles and user-selectable worker budget profiles. GPU compute still covers only certified native operations; other FX retain exact CPU processing.</div>
-    <SettingRow title="GPU acceleration" description="Controls the Aurora native graph. Off = CPU; unavailable GPUs automatically fall back without losing capabilities.">
+    <Heading title="Performance" subtitle="Quality-first rendering with optional GPU compute acceleration." />
+    <div className="aurora-staged" role="note">22 full-resolution signature FX, seven additional Creativity styles and adjustable worker budget profiles. GPU compute still covers only certified native operations; other FX retain exact CPU processing.</div>
+    <SettingRow title="GPU acceleration" description="Controls native acceleration for supported operations. Off = CPU; unavailable GPUs automatically fall back without losing capabilities.">
       <Toggle title="GPU acceleration" value={settings.gpuAcceleration} onChange={value => update({ gpuAcceleration: value })} />
     </SettingRow>
     <div className="aurora-info-card" role="status">
-      <strong>Active Aurora device: {backend ? `${backend.active.toUpperCase()} · ${backend.device}` : 'Checking native backend…'}</strong>
+      <strong>Active rendering device: {backend ? `${backend.active.toUpperCase()} · ${backend.device}` : 'Checking native backend…'}</strong>
       {backend?.fallbackReason && <p>GPU fallback: {backend.fallbackReason}</p>}
       {backend && <p>GPU kernels: {backend.gpuSupportedOperations.join(', ')}. All six foundational operations are available on CPU. Blur currently uses the CPU even in GPU mode.</p>}
     </div>
-    <SettingRow title="CPU multithreading" description="Controls native Aurora CPU work, not the existing JavaScript workers.">
+    <SettingRow title="CPU multithreading" description="Controls native CPU work, not the existing JavaScript workers.">
       <Toggle title="CPU multithreading" value={settings.cpuMultithreading} onChange={value => update({ cpuMultithreading: value })} />
     </SettingRow>
     <SettingRow title="CPU threads" description="0 = automatic; maximum 32. Single-thread mode always uses one.">
@@ -174,7 +174,7 @@ export function EffectsSection({ settings, update }: SettingsSectionProps) {
   }
   return <>
     <Heading title="Effects & caching" subtitle="Non-destructive effects remain intact in both CPU and GPU modes." />
-    <div className="aurora-staged">Aurora Phases G–J: cancellation between completed effect stages, exact intermediate previews, retained silhouette geometry for Glow and Hyper Outline, and animation-cel source reuse. Native color operations must pass parity certification before user-visible migration; unsupported FX retain the original full-quality processor.</div>
+    <div className="aurora-staged">Rendering improvements: cancellation between completed effect stages, exact intermediate previews, retained silhouette geometry for Glow and Hyper Outline, and animation-cel source reuse. Native color operations must pass parity certification before user-visible migration; unsupported FX retain the original full-quality processor.</div>
     <div className="aurora-test-buttons">
       <Button size="small" variant="outlined" disabled={certifying} onClick={() => void certify()}>
         {certifying ? 'Comparing actual pixels…' : 'Test native/Studio visual parity'}
@@ -204,7 +204,7 @@ export function EffectsSection({ settings, update }: SettingsSectionProps) {
 export function AnimationSection() {
   const animation = useEditor(state => activeTab(state).doc.animation);
   return <>
-    <Heading title="Animation" subtitle="Frame-by-frame tools share Spectrum's non-destructive document model." />
+    <Heading title="Animation" subtitle="Frame-by-frame tools share Huelith's non-destructive document model." />
     {!animation ? <p className="aurora-hint">Open an animation project to edit onion-skin settings.</p> : <>
       <SettingRow title="Onion skin" description="Ghost frames before and after the active frame.">
         <Toggle title="Onion skin enabled" value={animation.onion.enabled} onChange={value => useEditor.getState().setOnion({ enabled: value })} />
@@ -224,7 +224,7 @@ export function AnimationSection() {
 export function StorageSection() {
   return <>
     <Heading title="Storage & recovery" subtitle="Your work stays on your computer." />
-    <div className="aurora-info-card"><strong>Local autosave and recovery</strong><p>Recovery snapshots are stored locally using IndexedDB and do not replace saving your .spectrum files. Your artwork is never uploaded by Aurora.</p></div>
+    <div className="aurora-info-card"><strong>Local autosave and recovery</strong><p>Recovery snapshots are stored locally using IndexedDB and do not replace saving your .huelith files. Your artwork is never uploaded by Huelith.</p></div>
     <div className="aurora-info-card"><strong>Personal settings</strong><p>Appearance and performance preferences are stored locally, separately from project documents. You can reset them in the bottom bar.</p></div>
   </>;
 }
@@ -234,22 +234,22 @@ export function ShortcutsSection({ shortcuts, setShortcuts, shortcutTools }: Set
     if (shortcutTools.some(other => other.id !== id && (shortcuts[other.id] ?? other.shortcut) === value)) return;
     const next = { ...shortcuts, [id]: value };
     setShortcuts(next);
-    try { localStorage.setItem('spectrum-shortcuts', JSON.stringify(next)); } catch { /* private browsing */ }
+    try { localStorage.setItem('huelith-shortcuts', JSON.stringify(next)); } catch { /* private browsing */ }
   }
   return <>
     <Heading title="Keyboard shortcuts" subtitle="Assign unique single-letter shortcuts to frequently used tools." />
     <div className="aurora-shortcuts">{shortcutTools.map(tool => <label key={tool.id}><span>{tool.label}</span>
       <input maxLength={1} aria-label={`${tool.label} shortcut`} value={shortcuts[tool.id] ?? tool.shortcut}
         onChange={event => change(tool.id, event.target.value.toUpperCase())} /></label>)}</div>
-    <Button size="small" onClick={() => { localStorage.removeItem('spectrum-shortcuts'); setShortcuts({}); }}>Restore shortcut defaults</Button>
+    <Button size="small" onClick={() => { localStorage.removeItem('huelith-shortcuts'); setShortcuts({}); }}>Restore shortcut defaults</Button>
   </>;
 }
 export function AboutSection() {
   return <>
-    <Heading title="About Spectrum" subtitle="Free, open source, and built for everyone." />
-    <div className="aurora-info-card"><strong>Spectrum 0.1 · Project Aurora II Phases Q–S</strong>
+    <Heading title="About Huelith" subtitle="Free, open source, and built for everyone." />
+    <div className="aurora-info-card"><strong>Huelith 0.2 · Creative editor · Native rendering options</strong>
       <p>Settings, retained native images, multithreaded CPU processing, GPU compute, backend switching and cached effect graphs.</p>
       <p>No paid features, accounts, subscriptions, or cancellation fees. Donations are voluntary.</p></div>
-    <p className="aurora-hint">Aurora performance diagnostics and visual parity checks are included. Universal native acceleration still requires further effect-by-effect quality certification and Windows hardware benchmarking.</p>
+    <p className="aurora-hint">Performance diagnostics and visual parity checks are included. Universal native acceleration still requires further effect-by-effect quality certification and Windows hardware benchmarking.</p>
   </>;
 }

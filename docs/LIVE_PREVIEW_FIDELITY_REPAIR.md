@@ -1,4 +1,4 @@
-# Spectrum 0.1 — Live preview fidelity, latency, and geometry repair
+# Huelith 0.1 — Live preview fidelity, latency, and geometry repair
 
 **Scope:** Fix the recurring 1 FPS effect-preview regression and the incorrect on-drag appearance reported for Spectrum Glow, Hyper Outline, Shadow Forge, VHS, and Oil Painting. Version stays `0.1.0`.
 
@@ -35,7 +35,7 @@ The previous GPU-first draft renderer routed many unrelated Creativity filters t
 
 1. Install dependencies, then run `npm run verify`, `npm run test:live-preview-fidelity`, and `npm run desktop:dev`.
 2. Test the same pasted illustration and text at 100% and 200% zoom. Drag **Spectrum Glow, Hyper Outline, Shadow Forge, VHS, Oil Painting**, plus **Curves, Gradient Map, Temperature and Levels**. Neither source coordinates nor original geometry should jump or scale; changes should appear during the drag.
-3. Compare the latest released slider setting with the exported PNG and a reopened `.spectrum` document.
-4. Set `localStorage.setItem('spectrum:perf', '1'); location.reload();` in the developer console to measure canvas FPS, paint time and exact FX throughput; share a capture if a specific effect remains slow.
+3. Compare the latest released slider setting with the exported PNG and a reopened `.huelith` document.
+4. Set `localStorage.setItem('huelith:perf', '1'); location.reload();` in the developer console to measure canvas FPS, paint time and exact FX throughput; share a capture if a specific effect remains slow.
 
-**Release status:** Experimental Spectrum **0.1.0**, *not certified* for universal 60 FPS or a Windows production release.
+**Release status:** Experimental Huelith **0.1.0**, *not certified* for universal 60 FPS or a Windows production release.

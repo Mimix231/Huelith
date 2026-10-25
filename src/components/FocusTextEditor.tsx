@@ -73,7 +73,7 @@ export default function FocusTextEditor() {
   };
   const target = document.querySelector('.app') ?? document.body;
   return createPortal(
-    <div className={`spectrum-focus-text ${leaving ? 'is-leaving' : ''}`} role="dialog"
+    <div className={`huelith-focus-text ${leaving ? 'is-leaving' : ''}`} role="dialog"
       aria-modal="true" aria-label="Focus Text editor">
       <button type="button" className="focus-text-backdrop" aria-label="Finish editing text"
         onClick={commit} tabIndex={-1} />

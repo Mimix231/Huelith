@@ -35,8 +35,8 @@ const script = `(() => {
     loaded[name] = module.exports;
     return loaded[name];
   }
-  window.SpectrumBundledModules = source;
-  window.SpectrumTest = { ...load('types'), ...load('creative'), ...load('creative-render'), ...load('animation'), ...load('geometry'), ...load('render'), ...load('effect-ops'), ...load('fx'), ...load('preview-quality'), ...load('brush'), ...load('clipboard'), ...load('store') };
+  window.HuelithBundledModules = source;
+  window.HuelithTest = { ...load('types'), ...load('creative'), ...load('creative-render'), ...load('animation'), ...load('geometry'), ...load('render'), ...load('effect-ops'), ...load('fx'), ...load('preview-quality'), ...load('brush'), ...load('clipboard'), ...load('store') };
 })();`;
 
 const executable = process.env.PYTHON ?? 'python3';

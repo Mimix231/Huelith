@@ -1,6 +1,6 @@
 {
   "identifier": "default",
-  "description": "Spectrum desktop file actions",
+  "description": "Huelith desktop file actions",
   "windows": [
     "main"
   ],

@@ -1,4 +1,4 @@
-# Spectrum 0.1 — full-resolution effect previews and slider scheduling
+# Huelith 0.1 — full-resolution effect previews and slider scheduling
 
 ## Root cause and correction
 
@@ -10,7 +10,7 @@ The prior live-preview path deliberately rendered expensive effected layers at o
 
 - Preserves full-resolution output for **every** effect, filter and signature FX by fixing their shared `renderWithEffects` pipeline rather than patching individual effects.
 - Uses a bounded 64 MiB / four-layer cache of **unfiltered input surfaces**. When a slider changes only the effect parameters, the expensive image/text source is reused instead of repainted at each update. Cache keys include source content and geometry, so replacing/moving/resizing the raster or changing vector geometry invalidates the cached surface.
-- Spectrum Studio merges pointer-driven slider changes and submits the latest state for worker processing at most about every 80 ms. The slider thumb/number itself responds immediately. Releasing the slider flushes its exact final value. Clicking Apply also flushes before producing one undoable change.
+- Huelith Studio merges pointer-driven slider changes and submits the latest state for worker processing at most about every 80 ms. The slider thumb/number itself responds immediately. Releasing the slider flushes its exact final value. Clicking Apply also flushes before producing one undoable change.
 - Keeps the existing OffscreenCanvas worker's latest-wins queue, so superseded effect jobs do not accumulate; an exported document still uses a deterministic full-resolution processing path.
 - Existing 96 MiB processed-preview cache and idle thumbnail scheduling remain in effect.
 
@@ -28,10 +28,10 @@ The prior live-preview path deliberately rendered expensive effected layers at o
 
 ## Suggested desktop acceptance test
 
-1. Open a detailed 1920×1080 photograph or high-resolution PNG and paste it into Spectrum.
+1. Open a detailed 1920×1080 photograph or high-resolution PNG and paste it into Huelith.
 2. Create a text layer with a small font and fine edges above it.
 3. Apply Grayscale, Glow, Sharpen, VHS and at least one signature FX to each layer in turn; drag the slider rapidly and release.
 4. **Verify edges remain sharp** at every intermediate and final preview; compare 100% zoom screenshots before and after.
 5. Watch the mouse cursor/slider position for stutters. Check with Chrome DevTools performance recording (WebView2) and compare against the previous build.
-6. Apply each effect, save/reopen the `.spectrum` file, and export a full-resolution PNG. Compare its details and effect parameters with the editor.
-7. Disable Worker support intentionally only for a fallback test; confirm Spectrum continues rendering (slow fallback is documented).
+6. Apply each effect, save/reopen the `.huelith` file, and export a full-resolution PNG. Compare its details and effect parameters with the editor.
+7. Disable Worker support intentionally only for a fallback test; confirm Huelith continues rendering (slow fallback is documented).

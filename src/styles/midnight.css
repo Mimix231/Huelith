@@ -38,7 +38,7 @@
 .theme-midnight .doc-tab.active { border-bottom: 2px solid #84aaff; }
 .theme-midnight .toolrail button.selected { box-shadow: inset 3px 0 #84aaff; }
 .theme-midnight .canvas-host { background: #080c12; }
-.theme-midnight .spectrum-popup { border: 1px solid #2e3e55; }
+.theme-midnight .huelith-popup { border: 1px solid #2e3e55; }
 
 /* Readable light counterpart retaining the midnight component geometry. */
 .theme-midnight.tone-light {

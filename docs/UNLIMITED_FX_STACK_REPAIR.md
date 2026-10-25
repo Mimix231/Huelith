@@ -1,4 +1,4 @@
-# Spectrum 0.1 — No four-effect preview limit / Glow drag repair
+# Huelith 0.1 — No four-effect preview limit / Glow drag repair
 
 ## Confirmed defect in uploaded source
 
@@ -33,6 +33,6 @@ The **4-effect GPU preview restriction was removed**. The separate 64-item per-l
 2. Try 6, 10, and 15 FX, changing effects near the end and near the beginning of the stack.
 3. Test transparent subjects and fully opaque images. Outer Glow on an opaque full-canvas rectangle does not create an outside silhouette, by design.
 4. Compare the settled exact preview with exported PNG at 100% zoom. A GPU draft may differ in halo falloff, but must not displace the original subject.
-5. On Windows use the existing `spectrum:perf` toggle for measured canvas FPS and exact FX throughput.
+5. On Windows use the existing `huelith:perf` toggle for measured canvas FPS and exact FX throughput.
 
 **Source ZIP note:** Precompiled `dist/` from the uploaded archive is deliberately not shipped in the updated ZIP because it contains the old four-effect code. Run `npm install` and `npm run build` (or `npm run desktop:dev`) to regenerate assets from these corrected TypeScript files. The existing source project configuration and lockfile are included.

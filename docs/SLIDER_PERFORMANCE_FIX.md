@@ -1,4 +1,4 @@
-# Spectrum 0.1 — Live Slider Synchronization & Performance Repair
+# Huelith 0.1 — Live Slider Synchronization & Performance Repair
 
 ## What actually caused the lag
 
@@ -30,7 +30,7 @@ The existing `tests/stage-abc.test.cjs` was updated to check the new transient-p
 | Node regression tests | 143 passed |
 | Chromium canvas/theme tests | 271 passed, including 4 actual cached-worker pixel tests |
 | Chromium Animation/FX motion tests | 9 passed |
-| Chromium Spectrum Originals tests | 18 passed |
+| Chromium Huelith Originals tests | 18 passed |
 | Strict TypeScript check for modified dependency-free worker and renderer modules | Passed |
 | All application TS/TSX files parsed | Passed, 52 files |
 | Full `tsc --noEmit` against real React/MUI/Zustand/Tauri packages | **Not completed**: packages unavailable offline |

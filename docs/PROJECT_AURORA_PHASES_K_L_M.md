@@ -1,4 +1,4 @@
-# Spectrum 0.1 — Project Aurora II: Phases K, L, M
+# Huelith 0.1 — Project Aurora II: Phases K, L, M
 
 ## Objectives and boundaries
 
