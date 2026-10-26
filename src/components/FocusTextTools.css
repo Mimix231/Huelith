@@ -5,3 +5,5 @@
 .focus-style-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; min-height: 28px; max-height: 80px; overflow-y: auto; }
 .focus-style-color { display: flex; align-items: center; gap: 4px; font-size: 11px; }
 .focus-style-hint { margin: 0; color: var(--muted); font-size: 10px; }
+
+.focus-text-presets{display:flex;gap:5px;align-items:center;flex-wrap:wrap;padding:5px}.focus-text-presets input{min-width:0;width:120px;margin-left:6px;padding:5px;background:var(--input-bg,var(--panel-bg));color:var(--text);border:1px solid var(--border);border-radius:5px}.focus-text-presets button{border:1px solid var(--border);border-radius:6px;background:var(--panel-bg);color:var(--text);padding:5px;cursor:pointer}

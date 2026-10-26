@@ -83,6 +83,7 @@ export function smoothPath(points: Point[], tension = 0.75): BezierNode[] {
     return {
       x: point.x,
       y: point.y,
+      nodeMode: tension > 0 ? 'smooth' : 'corner',
       in: index === 0 ? undefined : { x: point.x - dx, y: point.y - dy },
       out: index === reduced.length - 1 ? undefined : { x: point.x + dx, y: point.y + dy },
     };
@@ -144,4 +145,18 @@ export function scaleShape(shape: VectorShape, bounds: SelectionRect, next: Sele
   shape.y = next.y;
   shape.width = next.width;
   shape.height = next.height;
+}
+
+
+/** Exact de Casteljau cubic split: preserves curve geometry when inserting a node. */
+export function splitPathSegment(shape: VectorShape, index: number, t: number): void {
+  const nodes = shape.nodes;
+  if (!nodes || index < 0 || index >= nodes.length - 1 || t <= 0 || t >= 1) return;
+  const a = nodes[index], b = nodes[index + 1];
+  const mix = (p: Point, q: Point) => ({x:p.x+(q.x-p.x)*t,y:p.y+(q.y-p.y)*t});
+  const ab = mix(a,a.out ?? a), bc = mix(a.out ?? a,b.in ?? b), cd = mix(b.in ?? b,b);
+  const d = mix(ab,bc), e = mix(bc,cd), middle = mix(d,e);
+  a.out = ab; b.in = cd;
+  nodes.splice(index+1,0,{...middle, in:d, out:e, nodeMode:'smooth'});
+  Object.assign(shape,shapeBounds(shape));
 }

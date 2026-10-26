@@ -74,7 +74,7 @@ export async function handlePaste(event: ClipboardEvent): Promise<boolean> {
     try {
       const shape = JSON.parse(raw) as VectorShape;
       if (shape && typeof shape.id === 'string' &&
-        ['rect', 'ellipse', 'roundedRect', 'triangle', 'polygon', 'star', 'arrow', 'heart', 'ring', 'line', 'path', 'text'].includes(shape.kind) &&
+        ['gradient', 'diamond', 'speechBubble', 'crescent', 'cross', 'rect', 'ellipse', 'roundedRect', 'triangle', 'polygon', 'star', 'arrow', 'heart', 'ring', 'line', 'path', 'text'].includes(shape.kind) &&
         [shape.x, shape.y, shape.width, shape.height, shape.strokeWidth].every(Number.isFinite) &&
         (!shape.nodes || (Array.isArray(shape.nodes) && shape.nodes.length <= 20000))) {
         pasteVector(shape);

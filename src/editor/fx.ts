@@ -116,6 +116,8 @@ interface SourceSnapshot {
   y: number;
   imageWidth?: number;
   imageHeight?: number;
+  /** A raster cutout changes the immutable painted source and must bust the FX cache. */
+  cutoutMask?: string;
   scaleX?: number;
   scaleY?: number;
   rotation?: number;
@@ -141,13 +143,14 @@ function fullResolutionSource(
   width: number,
   height: number,
 ): HTMLCanvasElement {
-  const content = layer.type === 'raster' ? layer.image : layer.type === 'vector' ? layer.shapes : layer.children;
+  const content = layer.type === 'raster' ? layer.image : layer.type === 'vector' ? layer.shapes : layer.type === 'gradient' ? layer.gradient : layer.children;
   const variants = sourceCache.get(layer.id) ?? [];
   const current = variants.find(current => current.layerType === layer.type &&
     current.content === content && current.width === width && current.height === height &&
     current.x === layer.x && current.y === layer.y &&
     current.imageWidth === (layer.type === 'raster' ? layer.imageWidth : undefined) &&
     current.imageHeight === (layer.type === 'raster' ? layer.imageHeight : undefined) &&
+    current.cutoutMask === (layer.type === 'raster' && layer.cutoutMask?.enabled ? layer.cutoutMask.data : undefined) &&
     current.scaleX === (layer.type === 'raster' ? layer.scaleX : undefined) &&
     current.scaleY === (layer.type === 'raster' ? layer.scaleY : undefined) &&
     current.rotation === (layer.type === 'raster' ? layer.rotation : undefined));
@@ -169,6 +172,7 @@ function fullResolutionSource(
       layerType: layer.type, content, x: layer.x, y: layer.y,
       imageWidth: layer.type === 'raster' ? layer.imageWidth : undefined,
       imageHeight: layer.type === 'raster' ? layer.imageHeight : undefined,
+      cutoutMask: layer.type === 'raster' && layer.cutoutMask?.enabled ? layer.cutoutMask.data : undefined,
       scaleX: layer.type === 'raster' ? layer.scaleX : undefined,
       scaleY: layer.type === 'raster' ? layer.scaleY : undefined,
       rotation: layer.type === 'raster' ? layer.rotation : undefined,
@@ -289,6 +293,32 @@ export function setAsyncEffectsProcessor(renderer: AsyncEffectsProcessor | null)
 }
 
 
+/** Animation playback must not flash raw unprocessed frames while a worker
+ * changes cels. Retain exact committed native-size processed output per cel
+ * source+stack. Memory bounded; first render may still be expensive. */
+let animationPlayback = false;
+export function setAnimationPlayback(enabled: boolean): void { animationPlayback = enabled; }
+export function isAnimationPlayback(): boolean { return animationPlayback; }
+const playbackExact = new Map<HTMLCanvasElement, Map<string, HTMLCanvasElement>>();
+const PLAYBACK_EXACT_BUDGET = 160 * 1024 * 1024;
+function cachedExact(source: HTMLCanvasElement, signature: string, effects: readonly Effect[]): HTMLCanvasElement {
+  const variants = playbackExact.get(source);
+  const matched = variants?.get(signature);
+  if (matched) { playbackExact.delete(source); playbackExact.set(source, variants!);return matched; }
+  const result = processEffects(source,effects);
+  const next = variants ?? new Map<string,HTMLCanvasElement>();
+  next.set(signature,result);
+  playbackExact.delete(source);playbackExact.set(source,next);
+  let bytes=0;
+  for(const group of playbackExact.values())for(const entry of group.values())bytes+=entry.width*entry.height*4;
+  while(bytes>PLAYBACK_EXACT_BUDGET && playbackExact.size>1){
+    const [key,group]=playbackExact.entries().next().value as [HTMLCanvasElement,Map<string,HTMLCanvasElement>];
+    playbackExact.delete(key);
+    for(const entry of group.values())bytes-=entry.width*entry.height*4;
+  }
+  return result;
+}
+
 export function renderWithEffects(
   ctx: CanvasRenderingContext2D,
   layer: Layer,
@@ -328,6 +358,13 @@ export function renderWithEffects(
   const cached = closed ? undefined : stored;
   // Never downsample whole pasted images, antialiased text or vector art.
   const source = fullResolutionSource(layer, paint, width, height);
+  // Never draw a naked source cel while playing an animation. Each frame
+  // receives its *own exact processed pixels*, cached across timeline loops.
+  // Interactive Studio slider dragging still uses the asynchronous preview.
+  if (onReady && animationPlayback && !isInteractiveEffectPreview(layer.id)) {
+    ctx.drawImage(cachedExact(source, signature, effects),0,0,width,height);
+    return;
+  }
   // During dragging, use the *same ordered effect graph* that Apply and
   // Export use. Older releases substituted unrelated GPU/Canvas2D draft
   // algorithms (e.g. Miasma -> displaced shadow, Brightness -> contrast),
@@ -373,7 +410,9 @@ export function renderWithEffects(
   }
   // Without workers, an exact synchronous render may be slow. Never replace
   // it with an intentionally incorrect effect just to claim high preview FPS.
-  const processed = processEffects(source, effects);
+  // Timeline thumbnails and export share the identical exact cache used during
+  // playback. Visible thumbnails prewarm the corresponding animation cels.
+  const processed = cachedExact(source, signature, effects);
   if (layer.type === 'vector') effectCache.set(layer, { width, height, scale, image: processed });
   ctx.drawImage(processed, 0, 0, width, height);
 }

@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { Dialog } from '@mui/material';
 import type { Effect, EffectParameters, GradientStop, CurvePoint, ShadowEntry, Layer, BackgroundMaskStroke } from '../editor/types';
 import { activeTab, useEditor } from '../editor/store';
+import { applyEffect } from '../editor/effect-ops';
 import { DEFAULT_CURVE_POINTS, DEFAULT_DUOTONE_STOPS, DEFAULT_GRADIENT_STOPS, DEFAULT_GLOW_STOPS, DEFAULT_SHADOWS } from '../editor/effect-schema';
 
 interface EditorProps {
@@ -99,6 +101,52 @@ function GradientEditor({ effect, preview, commit }: EditorProps) {
       <p className="fx-subtle">Dark pixels use the left colors; highlights use the right colors. Image transparency is preserved.</p>
     </div>
   );
+}
+
+/** Real luminance histogram from the unmodified raster layer (not a decorative graph). */
+function LevelsHistogram({ sourceLayer }: { sourceLayer?: Layer }) {
+  const [histogram, setHistogram] = useState<number[] | null>(null);
+  const image = sourceLayer?.type === 'raster' ? sourceLayer.image : undefined;
+  useEffect(() => {
+    if (!image) { setHistogram(null); return; }
+    let alive = true;
+    const element = new Image();
+    element.onload = () => {
+      if (!alive) return;
+      const canvas = document.createElement('canvas');
+      // Fixed-size representative sampling prevents histogram preparation from
+      // blocking interactive slider input on 4K images.
+      canvas.width = 256; canvas.height = 256;
+      const ctx = canvas.getContext('2d', {willReadFrequently:true});
+      if (!ctx) return;
+      ctx.drawImage(element,0,0,256,256);
+      const data=ctx.getImageData(0,0,256,256).data;
+      const bins=new Array<number>(64).fill(0);
+      for(let i=0;i<data.length;i+=4){
+        if(data[i+3]<8)continue;
+        const lum=.2126*data[i]+.7152*data[i+1]+.0722*data[i+2];
+        bins[Math.min(63,Math.floor(lum/4))]++;
+      }
+      // Log scale prevents a huge white background peak hiding all midtones.
+      setHistogram(bins.map(n=>Math.log1p(n)));
+    };
+    element.onerror = () => { if (alive) setHistogram(null); };
+    element.src=image;
+    return () => { alive=false; element.onload=null; element.onerror=null; };
+  },[image]);
+  return <div className="fx-levels-histogram" aria-label="Source luminance histogram">
+    <strong>Luminance histogram · source image</strong>
+    {histogram ? <svg viewBox="0 0 256 92" role="img" aria-label="Actual source luminance distribution">
+      {histogram.map((value,index)=><rect key={index} x={index*4} width="3.2" y={92-value/Math.max(1,...histogram)*88}
+        height={value/Math.max(1,...histogram)*88} fill="var(--accent,#9c7fff)"/>)}
+    </svg> : <small>Select a raster layer to display its actual tone distribution.</small>}
+  </div>;
+}
+function LevelsEditor(props: EditorProps) {
+  return <div className="fx-complex-editor">
+    <LevelsHistogram sourceLayer={props.sourceLayer}/>
+    <p className="fx-subtle">Use Input Black, White and Midtone Gamma below to remap contrast. Output Black and White limit the final range; the histogram shows the unmodified source.</p>
+  </div>;
 }
 
 function CurveEditor({ effect, preview, commit }: EditorProps) {
@@ -314,23 +362,98 @@ function OutlineEditor({ effect, preview, commit }: EditorProps) {
  * independent of zoom and editor panel size. This does not mutate the image. */
 function CutoutEditor({ effect, preview, commit, sourceLayer }: EditorProps) {
   const doc = useEditor(state => activeTab(state).doc);
-  const [mode, setMode] = useState<'keep' | 'remove'>('keep');
+  const [mode, setMode] = useState<'keep' | 'remove' | 'sample' | 'box'>('keep');
+  const [expanded, setExpanded] = useState(false);
+  const [showGuides, setShowGuides] = useState(true);
+  const [showMatte, setShowMatte] = useState(false);
+  const [draftBox, setDraftBox] = useState<EffectParameters['subjectBox']>();
+  const boxStart = useRef<{x: number; y: number} | null>(null);
+  const liveBox = useRef<EffectParameters['subjectBox']>();
   const [size, setSize] = useState(effect.parameters?.maskBrushSize ?? 24);
   const latest = useRef(effect.parameters?.maskStrokes ?? []);
   const [marks, setMarks] = useState(effect.parameters?.maskStrokes ?? []);
   const pointer = useRef<number | null>(null);
   const last = useRef<{x: number; y: number} | null>(null);
+  const previewCanvas = useRef<HTMLCanvasElement | null>(null);
+  const originalCanvas = useRef<HTMLCanvasElement | null>(null);
+  const raster = sourceLayer?.type === 'raster' ? sourceLayer : null;
+  useEffect(() => {
+    if (!raster?.image || !previewCanvas.current) return;
+    const canvas = previewCanvas.current;
+    const image = new Image(); let cancelled = false;
+    image.onload = () => {
+      if (cancelled) return;
+      // The inspector preview and the document use the SAME cutout processor.
+      const ratio = Math.min(1, 900 / Math.max(doc.width,doc.height));
+      const width = Math.max(1,Math.round(doc.width*ratio));
+      const height = Math.max(1,Math.round(doc.height*ratio));
+      const input = document.createElement('canvas');input.width=canvas.width=width;input.height=canvas.height=height;
+      const context=input.getContext('2d'); const output=canvas.getContext('2d');
+      if (!context || !output) return;
+      context.save();
+      context.translate((raster.x+(raster.imageWidth??doc.width)*(raster.scaleX??1)/2)*ratio,
+        (raster.y+(raster.imageHeight??doc.height)*(raster.scaleY??1)/2)*ratio);
+      context.rotate((raster.rotation??0)*Math.PI/180);
+      context.drawImage(image,-(raster.imageWidth??doc.width)*(raster.scaleX??1)*ratio/2,
+        -(raster.imageHeight??doc.height)*(raster.scaleY??1)*ratio/2,
+        (raster.imageWidth??doc.width)*(raster.scaleX??1)*ratio,
+        (raster.imageHeight??doc.height)*(raster.scaleY??1)*ratio);
+      context.restore();
+      originalCanvas.current = input;
+      const scaled = {...effect,parameters:{...effect.parameters,maskStrokes:(effect.parameters?.maskStrokes??[]).map(stroke=>({...stroke,radius:stroke.radius*ratio}))}};
+      const result = applyEffect(input,scaled);
+      output.clearRect(0,0,width,height);
+      if (showMatte) {
+        const imageData = result.getContext('2d')?.getImageData(0,0,width,height);
+        if (imageData) {
+          for (let i=0; i<imageData.data.length; i+=4) {
+            const alpha = imageData.data[i+3];
+            imageData.data[i]=imageData.data[i+1]=imageData.data[i+2]=alpha;
+            imageData.data[i+3]=255;
+          }
+          output.putImageData(imageData,0,0);
+        }
+      } else output.drawImage(result,0,0);
+    };
+    image.src = raster.image;
+    return () => { cancelled=true;image.onload=null; };
+  }, [raster?.image,raster?.x,raster?.y,raster?.rotation,raster?.scaleX,raster?.scaleY,doc.width,doc.height,effect,expanded,showMatte]);
   useEffect(() => {
     latest.current = effect.parameters?.maskStrokes ?? [];
     setMarks(latest.current);
-  }, [effect.id]);
-  const publish = (strokes: BackgroundMaskStroke[]): void => {
+  }, [effect.id, effect.parameters?.maskStrokes]);
+  const publish = (strokes: BackgroundMaskStroke[], render = true): void => {
     latest.current = strokes;
     setMarks(strokes);
-    preview({ maskStrokes: strokes });
+    if (render) preview({ maskStrokes: strokes });
   };
   const paint = (event: ReactPointerEvent<HTMLDivElement>): void => {
     if (pointer.current !== event.pointerId) return;
+    if (mode === 'box') {
+      const rect = event.currentTarget.getBoundingClientRect();
+      const at = {x: number((event.clientX-rect.left)/rect.width,0,1),
+        y: number((event.clientY-rect.top)/rect.height,0,1)};
+      if (!boxStart.current) boxStart.current = at;
+      const start=boxStart.current;
+      const selection={x:Math.min(start.x,at.x),y:Math.min(start.y,at.y),
+        width:Math.abs(at.x-start.x),height:Math.abs(at.y-start.y)};
+      liveBox.current=selection;setDraftBox(selection);
+      return;
+    }
+    if (mode === 'sample') {
+      // Sample the original, transformation-aware *document* raster — the
+      // exact same source used by the effect, never the processed mask.
+      const input = originalCanvas.current;
+      if (!input) return;
+      const bounds = event.currentTarget.getBoundingClientRect();
+      const sx = Math.min(input.width - 1,Math.max(0,Math.floor((event.clientX-bounds.left) / bounds.width * input.width)));
+      const sy = Math.min(input.height - 1,Math.max(0,Math.floor((event.clientY-bounds.top) / bounds.height * input.height)));
+      const pixel = input.getContext('2d', { willReadFrequently:true })?.getImageData(sx, sy, 1, 1).data;
+      if (!pixel || pixel[3] < 16) return;
+      const color = `#${Array.from(pixel.slice(0, 3)).map(v => v.toString(16).padStart(2, '0')).join('')}`;
+      preview({ backgroundSampleColor: color, backgroundAuto: 1 }); commit(); setMode('keep'); pointer.current = null;
+      return;
+    }
     const bounds = event.currentTarget.getBoundingClientRect();
     const x = number((event.clientX - bounds.left) / bounds.width, 0, 1);
     const y = number((event.clientY - bounds.top) / bounds.height, 0, 1);
@@ -338,45 +461,101 @@ function CutoutEditor({ effect, preview, commit, sourceLayer }: EditorProps) {
     if (prev && Math.hypot((x - prev.x) * doc.width, (y - prev.y) * doc.height) < Math.max(2, size / 3)) return;
     last.current = { x, y };
     if (latest.current.length >= 4000) return;
-    publish([...latest.current, { x, y, radius: size, mode }]);
+    publish([...latest.current, { x, y, radius: size, mode }], false);
   };
-  const raster = sourceLayer?.type === 'raster' ? sourceLayer : null;
-  return <div className="fx-complex-editor cutout-editor">
-    <div className="fx-complex-header"><strong>Subject isolation · editable mask</strong><span>Original kept</span></div>
-    <p className="fx-subtle">Automatic removal only targets a dominant, border-connected background. Paint corrections below: Keep restores original artwork, Remove masks unwanted regions.</p>
+  const workbench = <div className="fx-complex-editor cutout-editor">
+    <div className="fx-complex-header"><strong>Subject isolation · editable mask</strong><span>Original kept · CPU</span></div>
+    <p className="fx-subtle">Smart mode minimizes an edge-aware foreground/background graph cut locally (CPU). Draw a subject rectangle and paint Keep/Remove guidance for complex subjects; no image is erased. This is not a neural model.</p>
     <label className="fx-customize-row"><span>Automatic background selection</span>
       <input type="checkbox" aria-label="Automatic background selection"
         checked={effect.parameters?.backgroundAuto !== 0}
-        onChange={event => { preview({ backgroundAuto: event.target.checked ? 1 : 0 }); commit(); }} />
+        onChange={event => { preview({ backgroundAuto: event.target.checked ? 1 : 0, segmentationMode: event.target.checked ? (effect.parameters?.segmentationMode === 'color' ? 'color' : 'smart') : 'manual' }); commit(); }} />
     </label>
+    <label className="fx-customize-row"><span>Segmentation engine</span>
+      <select aria-label="Segmentation engine" value={effect.parameters?.segmentationMode ?? 'color'}
+        onChange={event => { preview({ segmentationMode: event.target.value as 'smart' | 'color' | 'manual', backgroundAuto: event.target.value==='manual'?0:1 }); commit(); }}>
+        <option value="smart">Smart — guided graph cut (CPU)</option>
+        <option value="color">Color — connected or global</option>
+        <option value="manual">Manual — brush mask only</option>
+      </select>
+    </label>
+    {(effect.parameters?.segmentationMode ?? 'color') === 'color' && <label className="fx-customize-row"><span>Color removal method</span><select aria-label="Background removal method"
+      value={effect.parameters?.backgroundGlobal === 1 ? 'color' : 'connected'} onChange={event=>{preview({backgroundGlobal:event.target.value==='color'?1:0});commit();}}>
+      <option value="connected">Connected background · safer</option>
+      <option value="color">Similar color everywhere · logos</option>
+    </select></label>}
     <div className="cutout-toolbar" role="group" aria-label="Mask correction brush">
       <button type="button" className={mode === 'keep' ? 'active' : ''} onClick={() => setMode('keep')}>✓ Keep subject</button>
       <button type="button" className={mode === 'remove' ? 'active' : ''} onClick={() => setMode('remove')}>✕ Remove background</button>
+      <button type="button" className={mode === 'sample' ? 'active' : ''} onClick={() => setMode('sample')}>◉ Sample background</button>
+      <button type="button" className={mode === 'box' ? 'active' : ''} onClick={() => setMode('box')}>▣ Subject rectangle</button>
+      <button type="button" onClick={() => { preview({ subjectBox: undefined }); commit(); setDraftBox(undefined); }} disabled={!effect.parameters?.subjectBox}>Clear rectangle</button>
       <button type="button" onClick={() => { publish([]); commit(); }}>Clear marks</button>
     </div>
+    <label className="fx-level"><span>Protect high-contrast edges <output>{effect.parameters?.backgroundEdgeGuard ?? 24}</output></span>
+      <input aria-label="Background edge protection" type="range" min={0} max={100} value={effect.parameters?.backgroundEdgeGuard ?? 24}
+        onChange={event => preview({ backgroundEdgeGuard: Number(event.target.value) })} onPointerUp={() => commit()} />
+    </label>
+    {effect.parameters?.backgroundSampleColor && <div className="fx-subtle">Sampled background: <b>{effect.parameters.backgroundSampleColor}</b> <button type="button" onClick={() => { preview({ backgroundSampleColor: undefined }); commit(); }}>Clear sample</button></div>}
+    {(effect.parameters?.segmentationMode === 'smart') && <label className="fx-level"><span>Segmentation detail <output>{effect.parameters?.segmentationQuality ?? 152}</output></span>
+      <input type="range" aria-label="Segmentation resolution" min="64" max="224" step="8" value={effect.parameters?.segmentationQuality ?? 152}
+        onChange={event => preview({ segmentationQuality: Number(event.target.value) })} onPointerUp={commit} onKeyUp={commit}/>
+    </label>}
     <label className="fx-level"><span>Brush radius <output>{size}px</output></span>
       <input aria-label="Mask brush radius" type="range" min={1} max={160} step={1} value={size}
-        onChange={event => setSize(Number(event.target.value))} />
+        onChange={event => setSize(Number(event.target.value))}
+        onPointerUp={() => { preview({maskBrushSize:size}); commit(); }}
+        onKeyUp={() => { preview({maskBrushSize:size}); commit(); }} />
     </label>
+    <div className="cutout-visibility"><label><input type="checkbox" checked={showGuides} onChange={event => setShowGuides(event.target.checked)} /> Show guides</label>
+      <label><input type="checkbox" checked={showMatte} onChange={event => setShowMatte(event.target.checked)} /> Inspect grayscale alpha</label></div>
     <div className="cutout-paintboard" style={{ aspectRatio: `${doc.width} / ${doc.height}` }}
       role="img" aria-label="Paint a non-destructive subject mask; keep or remove"
-      onPointerDown={event => { pointer.current = event.pointerId; last.current = null; event.currentTarget.setPointerCapture(event.pointerId); paint(event); }}
+      onPointerDown={event => { pointer.current = event.pointerId; last.current = null; if (mode !== 'sample') event.currentTarget.setPointerCapture(event.pointerId); paint(event); }}
       onPointerMove={paint}
-      onPointerUp={event => { paint(event); pointer.current = null; last.current = null; if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); commit(); }}
-      onPointerCancel={() => { pointer.current = null; last.current = null; commit(); }}>
-      {raster?.image && <img src={raster.image} draggable={false} alt="" style={{
-        left: `${raster.x / doc.width * 100}%`, top: `${raster.y / doc.height * 100}%`,
-        width: `${(raster.imageWidth ?? doc.width) * (raster.scaleX ?? 1) / doc.width * 100}%`,
-        height: `${(raster.imageHeight ?? doc.height) * (raster.scaleY ?? 1) / doc.height * 100}%`,
-        transform: `rotate(${raster.rotation ?? 0}deg)`,
-      }} />}
+      onPointerUp={event => {
+        paint(event);
+        if (mode === 'box') {
+          const box = liveBox.current;
+          if (box && box.width > .02 && box.height > .02) preview({subjectBox:box,segmentationMode:'smart',backgroundAuto:1});
+          boxStart.current=null;liveBox.current=undefined;setDraftBox(undefined);
+        } else if (mode !== 'sample') preview({maskStrokes:latest.current});
+        pointer.current = null; last.current = null;
+        if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+        commit();
+      }}
+      onPointerCancel={() => { pointer.current = null; last.current = null; boxStart.current=null;liveBox.current=undefined;setDraftBox(undefined);preview({maskStrokes:latest.current});commit(); }}>
+      <canvas ref={previewCanvas} className="cutout-live-result" aria-label="Live transparency mask preview" />
       <svg aria-hidden="true" viewBox={`0 0 ${doc.width} ${doc.height}`} preserveAspectRatio="none">
-        {marks.slice(-700).map((stroke, index) => <circle key={index}
+        {showGuides && (draftBox ?? effect.parameters?.subjectBox) && <rect
+          x={(draftBox ?? effect.parameters?.subjectBox)!.x * doc.width} y={(draftBox ?? effect.parameters?.subjectBox)!.y * doc.height}
+          width={(draftBox ?? effect.parameters?.subjectBox)!.width * doc.width}
+          height={(draftBox ?? effect.parameters?.subjectBox)!.height * doc.height}
+          fill="#36db9120" stroke="#36db91" strokeWidth="3" strokeDasharray="12 7" />}
+        {showGuides && marks.slice(-700).map((stroke, index) => <circle key={index}
           cx={stroke.x * doc.width} cy={stroke.y * doc.height} r={stroke.radius}
           fill={stroke.mode === 'keep' ? '#36db9180' : '#ff4c7090'} />)}
       </svg>
     </div>
-    <p className="fx-subtle">Green = protected • Pink = removed • {marks.length} brush marks. Changes can be undone; the original layer is never erased. Complex photographs may require manual corrections.</p>
+    <p className="fx-subtle">Green = protected • Pink = removed • {marks.length} brush marks. Save/reopen and undo preserve the effect data. Hair, textured scenes and white-on-white details may require marked guidance.</p>
+  </div>;
+  return <div className="huelith-mask-host">
+    {!expanded && <><button type="button" className="huelith-expand-mask" onClick={() => setExpanded(true)}>⛶ Open full Mask Workspace</button>{workbench}</>}
+    <Dialog open={expanded} onClose={() => setExpanded(false)} fullWidth maxWidth="lg"
+      data-huelith-mask-workspace="open"
+      container={() => document.querySelector<HTMLElement>('.app') ?? document.body}
+      aria-labelledby="huelith-mask-workspace-title" sx={{'& .MuiDialog-paper':{
+        bgcolor:'var(--panel-bg, #202438)', color:'var(--text, #ffffff)', border:'1px solid var(--border)',
+        width:'min(96vw, 1200px)', maxWidth:'none', maxHeight:'94vh', borderRadius:'12px',
+      }}}>
+      <div className="huelith-mask-workspace">
+        <header><h2 id="huelith-mask-workspace-title">Huelith Mask Workspace</h2>
+          <span>Non-destructive local foreground segmentation</span>
+          <button type="button" aria-label="Close Mask Workspace" onClick={() => setExpanded(false)}>Done ✓</button>
+        </header>
+        {expanded && workbench}
+      </div>
+    </Dialog>
   </div>;
 }
 
@@ -384,6 +563,7 @@ export default function EffectAdvancedEditors(props: EditorProps) {
   if (props.effect.kind === 'cutout') return <CutoutEditor {...props} />;
   if (props.effect.kind === 'gradientmap' || props.effect.kind === 'duotone') return <GradientEditor {...props} />;
   if (props.effect.kind === 'curves') return <CurveEditor {...props} />;
+  if (props.effect.kind === 'levels') return <LevelsEditor {...props} />;
   if (props.effect.kind === 'shadow') return <ShadowEditor {...props} />;
   if (props.effect.kind === 'glow') return <GlowEditor {...props} />;
   if (props.effect.kind === 'outline') return <OutlineEditor {...props} />;

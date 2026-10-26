@@ -9,7 +9,7 @@ for (const name of [
   'canvas-surface', 'types', 'geometry', 'parametric-shapes', 'typography',
   'effect-catalog', 'effect-schema', 'advanced-ops', 'color-reconstruction',
   'detail-reconstruction', 'subject-outline', 'creative-reconstruction',
-  'stylize-reconstruction', 'effect-ops', 'preview-quality', 'live-color-lut',
+  'stylize-reconstruction', 'subject-segmentation', 'effect-ops', 'preview-quality', 'live-color-lut',
   'live-gpu-effects', 'fx', 'creative', 'creative-render', 'render',
 ]) {
   bundle[name] = ts.transpileModule(fs.readFileSync(path.join(base, name + '.ts'), 'utf8'), {

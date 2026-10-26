@@ -17,34 +17,129 @@ function frameFromLayers(layers: Layer[], activeLayerId: string | null, duration
   return { id: uid(), durationMs, layers: copy(layers), activeLayerId };
 }
 
-/** Existing projects may contain cels whose artwork exists but whose
- * animation-layer FX stack was saved only on an earlier frame. Inherit a
- * track's available effect stack without modifying the cel artwork, and only
- * where that cel has no own effects. Preserves legacy project compatibility. */
-export function inheritLayerTrackEffects(layers: Layer[], frames: readonly AnimationFrame[]): Layer[] {
-  const effects = new Map<string, NonNullable<Layer['effects']>>();
-  const gather = (items: Layer[]): void => {
-    for (const item of items) {
-      if (item.effects?.length && !effects.has(item.id)) effects.set(item.id, item.effects);
-      if (item.type === 'group') gather(item.children);
+/** Per-animation-layer effect stacks are canonical. Cels may carry historical
+ * effect copies for compatibility, but those copies never override this map.
+ * Prefer the active working cel on first migration (legacy work may be unsaved
+ * in one of the frame mirrors), falling back to any other cel once per layer. */
+export function ensureTrackEffects(doc: Document): Record<string, Layer['effects']> {
+  const animation = doc.animation;
+  if (!animation) return {};
+  if (animation.trackEffects) return animation.trackEffects;
+  const source: Record<string, NonNullable<Layer['effects']>> = Object.create(null);
+  const gather = (layers: readonly Layer[], preferred = false): void => {
+    for (const layer of layers) {
+      if (!Object.hasOwn(source, layer.id) || (preferred && layer.effects?.length)) {
+        source[layer.id] = copy(layer.effects ?? []);
+      }
+      if (layer.type === 'group') gather(layer.children, preferred);
     }
   };
-  for (const frame of frames) gather(frame.layers);
-  if (!effects.size) return layers;
-  const resolve = (item: Layer): Layer => {
-    const inherited = !item.effects?.length ? effects.get(item.id) : undefined;
-    const children = item.type === 'group' ? item.children.map(resolve) : undefined;
-    if (!inherited && (!children || children.every((child, i) => child === (item as Extract<Layer, {type: 'group'}>).children[i]))) return item;
-    if (item.type === 'group') return { ...item, ...(inherited ? {effects:copy(inherited)} : {}), children:children! };
-    return { ...item, ...(inherited ? {effects:copy(inherited)} : {}) };
+  // Active artwork takes precedence; search all legacy frames for missing FX.
+  gather(doc.layers, true);
+  for (const frame of animation.frames) {
+    for (const layer of flattenTrackLayers(frame.layers)) {
+      if (!Object.hasOwn(source, layer.id) || (!source[layer.id].length && layer.effects?.length)) {
+        source[layer.id] = copy(layer.effects ?? []);
+      }
+    }
+  }
+  animation.trackEffects = source;
+  return source;
+}
+
+/** Gradient-layer procedural content belongs to the animation layer, not the cel.
+ * Legacy projects are migrated without changing their painted frame artwork. */
+export function ensureTrackGradients(doc: Document): Record<string, import('./types').VectorShape> {
+  const animation = doc.animation;
+  if (!animation) return {};
+  if (animation.trackGradients) return animation.trackGradients;
+  const source: Record<string, import('./types').VectorShape> = Object.create(null);
+  const gather = (layers: readonly Layer[]) => {
+    for (const layer of flattenTrackLayers(layers)) if (layer.type === 'gradient' && !Object.hasOwn(source,layer.id))
+      source[layer.id] = copy(layer.gradient);
   };
-  return layers.map(resolve);
+  gather(doc.layers);
+  for (const frame of animation.frames) gather(frame.layers);
+  animation.trackGradients=source;
+  return source;
+}
+
+function flattenTrackLayers(layers: readonly Layer[]): Layer[] {
+  return layers.flatMap(layer => layer.type === 'group'
+    ? [layer, ...flattenTrackLayers(layer.children)] : [layer]);
+}
+
+/** Copy-on-write layer view for a particular frame: artwork stays per cel,
+ * while every effect stack is resolved ONLY from the shared track map. */
+export function resolveTrackLayers(layers: readonly Layer[], effects: Readonly<Record<string, Layer['effects']>>, gradients: Readonly<Record<string, import('./types').VectorShape>> = {}): Layer[] {
+  return layers.map(layer => {
+    const expected = Object.hasOwn(effects, layer.id) ? effects[layer.id] ?? [] : layer.effects ?? [];
+    const children = layer.type === 'group' ? resolveTrackLayers(layer.children, effects, gradients) : null;
+    // Do not deep-clone on each playback tick; track effect snapshots are
+    // immutable until the explicit layer-level edit is committed.
+    if (layer.type === 'group') {
+      if (layer.effects === expected && children?.every((child, index) => child === layer.children[index])) return layer;
+      return { ...layer, effects: expected, children: children! };
+    }
+    if (layer.type === 'gradient') {
+      const gradient = Object.hasOwn(gradients, layer.id) ? gradients[layer.id] : layer.gradient;
+      if (layer.effects === expected && layer.gradient === gradient) return layer;
+      return { ...layer, effects: expected, gradient };
+    }
+    if (layer.effects === expected) return layer;
+    return { ...layer, effects: expected };
+  });
+}
+
+/** Older callers may still request inheritance. Unlike the legacy heuristic,
+ * an explicit empty canonical stack never resurrects stale historical effects. */
+export function inheritLayerTrackEffects(layers: Layer[], frames: readonly AnimationFrame[]): Layer[] {
+  const byId: Record<string, NonNullable<Layer['effects']>> = Object.create(null);
+  for (const frame of frames) for (const layer of flattenTrackLayers(frame.layers)) {
+    if (!Object.hasOwn(byId, layer.id) || (!byId[layer.id].length && layer.effects?.length))
+      byId[layer.id] = layer.effects ?? [];
+  }
+  return resolveTrackLayers(layers, byId);
+}
+
+/** The ONLY operation allowed to modify the canonical effect map. */
+export function setTrackEffects(doc: Document, layerId: string, effects: Readonly<NonNullable<Layer['effects']>>): void {
+  const animation = doc.animation;
+  if (!animation) return;
+  const map = ensureTrackEffects(doc);
+  map[layerId] = copy(effects);
+  // The active cel mirror must be kept valid for saving. Other cels are NOT
+  // overwritten: their effect fields are legacy baggage, not authoritative.
+  doc.layers = resolveTrackLayers(doc.layers, map);
+  const frame = animation.frames[animation.currentFrame];
+  frame.layers = doc.layers;
+  frame.activeLayerId = doc.activeLayerId;
+}
+
+/** Gradient content can only change through a layer-wide edit. */
+export function setTrackGradient(doc: Document, layerId: string, gradient: import('./types').VectorShape): void {
+  if (!doc.animation) return;
+  const map = ensureTrackGradients(doc);
+  map[layerId] = copy(gradient);
+  doc.layers = resolveTrackLayers(doc.layers, ensureTrackEffects(doc), map);
+  const frame = doc.animation.frames[doc.animation.currentFrame];
+  frame.layers = doc.layers;
+  frame.activeLayerId = doc.activeLayerId;
 }
 
 /** The editor works against doc.layers; synchronize that working cel after document edits. */
 export function syncActiveCel(doc: Document): void {
   if (!doc.animation) return;
   const frame = doc.animation.frames[doc.animation.currentFrame];
+  const track = ensureTrackEffects(doc);
+  const gradients = ensureTrackGradients(doc);
+  // Include layer IDs introduced through edits without ever overriding a
+  // previously saved track-wide stack with an out-of-date cel value.
+  for (const layer of flattenTrackLayers(doc.layers)) {
+    if (!Object.hasOwn(track, layer.id)) track[layer.id] = copy(layer.effects ?? []);
+    if (layer.type === 'gradient' && !Object.hasOwn(gradients, layer.id)) gradients[layer.id] = copy(layer.gradient);
+  }
+  doc.layers = resolveTrackLayers(doc.layers, track, gradients);
   frame.layers = copy(doc.layers);
   frame.activeLayerId = doc.activeLayerId;
 }
@@ -57,12 +152,15 @@ export function enableAnimation(doc: Document, fps = 12): void {
     currentFrame: 0,
     onion: copy(DEFAULT_ONION),
     frames: [frameFromLayers(doc.layers, doc.activeLayerId, Math.round(1000 / safeFps))],
+    trackEffects: Object.fromEntries(flattenTrackLayers(doc.layers).map(layer => [layer.id, copy(layer.effects ?? [])])),
+    trackGradients: Object.fromEntries(flattenTrackLayers(doc.layers).filter(layer => layer.type === 'gradient').map(layer => [layer.id, copy((layer as Extract<Layer,{type:'gradient'}>).gradient)])),
   };
 }
 
 function emptyLayer(layer: Layer): Layer {
   if (layer.type === 'group') return { ...copy(layer), children: layer.children.map(emptyLayer) };
   if (layer.type === 'vector') return { ...copy(layer), shapes: [] };
+  if (layer.type === 'gradient') return copy(layer); // Gradient belongs to the track, not a painted cel.
   return { ...copy(layer), image: '', imageWidth: undefined, imageHeight: undefined };
 }
 
@@ -71,8 +169,8 @@ export function selectFrame(doc: Document, index: number): boolean {
   if (!animation || !Number.isInteger(index) || index < 0 || index >= animation.frames.length) return false;
   syncActiveCel(doc);
   animation.currentFrame = index;
-  doc.layers = inheritLayerTrackEffects(copy(animation.frames[index].layers), animation.frames);
-  animation.frames[index].layers = copy(doc.layers);
+  doc.layers = resolveTrackLayers(copy(animation.frames[index].layers), ensureTrackEffects(doc), ensureTrackGradients(doc));
+  animation.frames[index].layers = doc.layers;
   doc.activeLayerId = animation.frames[index].activeLayerId;
   return true;
 }
@@ -100,7 +198,8 @@ export function deleteFrame(doc: Document): boolean {
   animation.frames.splice(current, 1);
   animation.currentFrame = Math.min(current, animation.frames.length - 1);
   const frame = animation.frames[animation.currentFrame];
-  doc.layers = copy(frame.layers);
+  doc.layers = resolveTrackLayers(copy(frame.layers), ensureTrackEffects(doc), ensureTrackGradients(doc));
+  frame.layers = doc.layers;
   doc.activeLayerId = frame.activeLayerId;
   return true;
 }
@@ -144,10 +243,27 @@ export function changeOnion(doc: Document, change: Partial<OnionSkinSettings>): 
   if (Number.isFinite(change.next)) onion.next = Math.max(0, Math.min(5, Math.round(change.next!)));
 }
 
+function legacyTrackEffects(doc: Document): Record<string, NonNullable<Layer['effects']>> {
+  const result: Record<string, NonNullable<Layer['effects']>> = Object.create(null);
+  const sources = [doc.layers, ...(doc.animation?.frames.map(frame => frame.layers) ?? [])];
+  for (const layers of sources) for (const layer of flattenTrackLayers(layers)) {
+    if (!Object.hasOwn(result, layer.id) || (!result[layer.id].length && layer.effects?.length)) {
+      result[layer.id] = layer.effects ?? [];
+    }
+  }
+  return result;
+}
+
 export function frameDocument(doc: Document, index: number): Document {
   const frame = doc.animation?.frames[index];
   if (!frame) return doc;
-  return { ...doc, layers: inheritLayerTrackEffects(frame.layers, doc.animation!.frames), activeLayerId: frame.activeLayerId, animation: { ...doc.animation!, currentFrame: index }, creativeFrame: index };
+  // Read-only migration: preview/export MUST NOT mutate the saved document.
+  const map = doc.animation!.trackEffects ?? legacyTrackEffects(doc);
+  const gradients = doc.animation!.trackGradients ?? Object.fromEntries(
+    [doc.layers,...doc.animation!.frames.map(entry=>entry.layers)]
+      .flatMap(layers=>flattenTrackLayers(layers)).filter(layer=>layer.type==='gradient')
+      .map(layer=>[layer.id, (layer as Extract<Layer,{type:'gradient'}>).gradient]));
+  return { ...doc, layers: resolveTrackLayers(frame.layers, map, gradients), activeLayerId: frame.activeLayerId, animation: { ...doc.animation!, currentFrame: index }, creativeFrame: index };
 }
 
 /** Last-frame timing is respected and the playhead wraps to the beginning. */

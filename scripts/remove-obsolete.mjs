@@ -22,6 +22,8 @@ const knownObsolete = Object.freeze([
   'src/editor/live-gpu-effects.ts',
   'src/editor/live-preview-mixer.ts',
   'src/editor/live-color-lut.ts',
+  'src/components/GradientControls.tsx',
+  'src/components/GradientControls.css',
 ]);
 
 const scanRoots = ['src', 'scripts', 'tests'];

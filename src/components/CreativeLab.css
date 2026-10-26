@@ -70,3 +70,18 @@
 .creative-advanced summary {cursor:pointer;color:var(--content-primary);font-weight:700;font-size:11px;margin-bottom:7px;}
 .creative-advanced[open] {display:grid;gap:4px;}
 @media(max-width:410px){.creative-position {grid-template-columns:1fr}.creative-position-pad{width:100%}}
+
+.creative-node-row{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin:4px 0;padding:4px;border:1px solid var(--border);border-radius:6px;color:var(--text)}.creative-node-row label{display:flex;align-items:center;gap:3px;font-size:11px}.creative-node-row input{width:55px;max-width:100%;background:var(--input-bg,var(--panel-bg));color:inherit;border:1px solid var(--border);border-radius:4px;padding:3px}.creative-node-row button{background:var(--panel-bg);color:inherit;border:1px solid var(--border);border-radius:5px}
+.creative-original-preset-bar{display:flex;flex-wrap:wrap;align-items:center;gap:5px;padding:7px 0;border-bottom:1px solid var(--border)}.creative-original-preset-bar label{font-size:11px;display:flex;align-items:center;gap:5px}.creative-original-preset-bar input{width:75px}.creative-original-preset-bar input,.creative-original-preset-bar select,.creative-original-preset-bar button{background:var(--input-bg,var(--panel-bg));border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px;font:inherit;font-size:11px}.creative-original-preset-bar select{width:110px;max-width:100%}
+/* Improved Originals studio: deliberate preview area and independent presets for all 15 tools. */
+.creative-lab{width:min(370px,48vw)}
+.creative-live-stage{border:1px solid var(--stroke-subtle);border-radius:11px;overflow:hidden;background:var(--surface-raised);margin:8px 0;}
+.creative-stage-heading{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:9px 11px;color:var(--content-primary)}
+.creative-stage-heading strong{font-size:12px}.creative-stage-heading span{color:var(--content-secondary);font-size:10px}
+.creative-live-stage canvas{width:100%;height:auto;display:block;background:#171c2a;}
+.creative-quick-looks{padding:10px;background:var(--surface-raised);border:1px solid var(--stroke-subtle);border-radius:10px;display:grid;gap:8px;margin:8px 0;}
+.creative-quick-looks>strong{font-size:11px}.creative-quick-looks>div{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.creative-quick-looks button{font-size:11px;text-align:center;padding:7px 6px;border:1px solid var(--stroke-subtle);border-radius:8px;background:var(--surface-input);color:var(--content-primary);cursor:pointer}
+.creative-quick-looks button:hover{background:var(--surface-selected);border-color:var(--focus-ring)}
+.creative-quick-looks small{font-size:10px;color:var(--content-secondary)}
+@media(max-width:700px){.creative-lab{width:min(350px,75%)}}

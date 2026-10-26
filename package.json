@@ -34,7 +34,16 @@
     "test:aurora-klm": "node --test tests/aurora-klm.test.cjs && node tests/aurora-ghij-browser.cjs",
     "test:aurora-nop": "node --test tests/aurora-nop.test.cjs && node tests/aurora-nop-browser.cjs",
     "test:aurora-qrs": "node --test tests/aurora-qrs.test.cjs && node tests/aurora-qrs-browser.cjs",
-    "bench:aurora-qrs": "node tests/aurora-qrs-browser.cjs"
+    "bench:aurora-qrs": "node tests/aurora-qrs-browser.cjs",
+    "test:implementation3": "node --test tests/huelith-implementation3.test.cjs tests/creative-originals.test.cjs && node tests/creative-browser.cjs",
+    "release:check": "node scripts/release-gate.mjs",
+    "release:source": "node scripts/release-gate.mjs --source-only",
+    "test:animation-fx": "node --test tests/animation-persistent-effects.test.cjs tests/version-changelogs.test.cjs && node tests/animation-track-browser.cjs",
+    "test:phase-aj": "node --test tests/phase-aj-segmentation.test.cjs && node tests/phase-aj-browser.cjs",
+    "test:cutout": "node --test tests/cutout-workspace.test.cjs",
+    "test:phase-ak": "node --test tests/phase-ak-gradient.test.cjs && python tests/phase-ak-browser.py",
+    "test:phase-al": "node --test tests/phase-al-workspaces.test.cjs && python tests/phase-al-browser.py",
+    "test:core-actions": "node --test tests/core-document-actions.test.cjs && python tests/core-document-actions-browser.py && python tests/core-selection-browser.py"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

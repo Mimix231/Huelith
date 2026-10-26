@@ -148,7 +148,7 @@ export function applyPrecisionColor(source: HTMLCanvasElement, effect: Effect): 
         break;
       }
     }
-    const strength = effect.kind === 'balance' || effect.kind === 'selective' ? 1 : Math.min(1, Math.max(0, effect.amount / 100));
+    const strength = effect.kind === 'balance' ? 1 : Math.min(1, Math.max(0, effect.amount / 100));
     d[i] = clamp(d[i] * (1 - strength) + r * strength);
     d[i + 1] = clamp(d[i + 1] * (1 - strength) + g * strength);
     d[i + 2] = clamp(d[i + 2] * (1 - strength) + b * strength);

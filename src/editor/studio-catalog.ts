@@ -3,7 +3,7 @@ import { FX_PRESETS, newEffect } from './fx';
 import { uid, type Effect, type EffectKind } from './types';
 
 export type StudioCategory = 'creativity' | 'effects' | 'fx';
-export const LAYER_EFFECT_KINDS = ['cutout', 'outline', 'glow', 'shadow', 'backdrop', 'radiance', 'miasma'] as const;
+export const LAYER_EFFECT_KINDS = ['outline', 'glow', 'shadow', 'backdrop', 'radiance', 'miasma'] as const;
 const layerEffectSet = new Set<string>(LAYER_EFFECT_KINDS);
 
 export const STUDIO_CATEGORIES: Record<StudioCategory, string> = {
@@ -14,7 +14,7 @@ export const STUDIO_CATEGORIES: Record<StudioCategory, string> = {
 
 export function inferStudioCategory(effect: Effect): StudioCategory {
   if (effect.studioCategory) return effect.studioCategory;
-  return effect.kind.startsWith('sig_') ? 'fx' : layerEffectSet.has(effect.kind) ? 'effects' : 'creativity';
+  return effect.kind.startsWith('sig_') ? 'fx' : (effect.kind === 'cutout' || layerEffectSet.has(effect.kind)) ? 'effects' : 'creativity';
 }
 
 export function createStudioFilter(kind: EffectKind): Effect {
@@ -70,7 +70,7 @@ export function appliedStudioItems(effects: readonly Effect[]): AppliedStudioIte
   return [...groups.values()].sort((a, b) => a.startIndex - b.startIndex);
 }
 
-export const CREATIVITY_FILTERS = FILTER_CATALOG.filter(item => !layerEffectSet.has(item.kind) && item.group !== 'Signature FX');
+export const CREATIVITY_FILTERS = FILTER_CATALOG.filter(item => item.kind !== 'cutout' && !layerEffectSet.has(item.kind) && item.group !== 'Signature FX');
 export const LAYER_EFFECTS = FILTER_CATALOG.filter(item => layerEffectSet.has(item.kind));
 
 /** Move one applied icon (including all steps in a legacy FX chain) as one unit. */

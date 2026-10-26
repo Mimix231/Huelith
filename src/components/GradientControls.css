@@ -1,0 +1,27 @@
+.huelith-gradient-dialog{min-height:min(690px,90vh);background:var(--panel-bg,#20263b)!important;color:var(--text,#f5f3ff)!important;border:1px solid var(--border,#59627d);border-radius:17px!important;overflow:hidden}
+.gradient-studio-title{display:flex;align-items:center;gap:12px;font-size:19px!important;font-weight:700!important;border-bottom:1px solid var(--border,#64748b);padding:13px 20px!important}
+.gradient-studio-title small{font-size:11px;font-weight:400;color:var(--muted,#aeb9c9)}
+.gradient-studio-title .MuiIconButton-root{margin-left:auto;color:inherit}
+.gradient-studio-body{padding:0!important;display:grid;grid-template-columns:136px minmax(0,1fr) 228px;min-height:475px;max-height:72vh;overflow:hidden!important}
+.gradient-studio-modes{display:flex;flex-direction:column;gap:6px;padding:14px 9px;overflow:auto;border-right:1px solid var(--border,#64748b)}
+.gradient-studio-modes strong{font-size:11px;margin:18px 4px 5px;color:var(--muted,#bbc5d1)}
+.gradient-studio-modes button{color:inherit;border:1px solid transparent;border-radius:9px;padding:9px;text-align:left;background:transparent;font-size:12px;cursor:pointer}
+.gradient-studio-modes button:hover,.gradient-studio-modes button.active{background:var(--active-bg,var(--accent-soft,#51456b));border-color:var(--accent,#9f91fb)}
+.gradient-studio-workspace{padding:16px;display:flex;flex-direction:column;gap:10px;min-width:0;overflow-y:auto}
+.gradient-preview-header{display:flex;flex-direction:column;gap:3px}.gradient-preview-header span,.gradient-studio-coordinates{color:var(--muted,#aeb9c9);font-size:11px}
+.gradient-preview-surface{position:relative;width:100%;aspect-ratio:12/7;border-radius:12px;overflow:hidden;cursor:crosshair;touch-action:none;border:1px solid var(--border,#64748b);box-shadow:0 9px 35px #0002;user-select:none}
+.gradient-preview-surface canvas{width:100%;height:100%;display:block}
+.gradient-center-marker,.gradient-point-marker{position:absolute;width:15px;height:15px;border:2px solid #fff;border-radius:50%;box-shadow:0 0 0 2px #101624,0 1px 7px #0008;transform:translate(-50%,-50%);pointer-events:none}
+.gradient-center-marker{background:var(--accent,#ae96f5)}
+.gradient-edit-stops,.gradient-edit-points{display:grid;gap:10px;padding:12px;border:1px solid var(--border,#64748b);border-radius:10px;background:var(--context-bg,#1d293c)}
+.gradient-edit-stops strong,.gradient-edit-points strong{font-size:12px}.gradient-studio-stop,.gradient-edit-points>div{display:flex;align-items:center;gap:8px}
+.gradient-studio-stop input[type=range]{flex:1;min-width:0;accent-color:var(--accent)}.gradient-studio-stop output{font-size:11px;width:32px}.gradient-studio-stop button,.gradient-edit-points button{background:transparent;border:1px solid var(--border);color:inherit;border-radius:6px;padding:4px 7px;cursor:pointer}
+.gradient-studio-properties{display:flex;flex-direction:column;gap:11px;padding:16px;overflow:auto;border-left:1px solid var(--border,#64748b)}
+.gradient-studio-properties>strong{font-size:13px;margin-bottom:2px}.gradient-studio-properties label:not(.gradient-check){display:block;font-size:11px}
+.gradient-studio-properties label>span{display:flex;justify-content:space-between;gap:5px}.gradient-studio-properties output{color:var(--muted);font-variant-numeric:tabular-nums}
+.gradient-check{display:flex;gap:7px;align-items:center;font-size:12px}
+.gradient-studio-footer{padding:12px 20px;display:flex;gap:8px;align-items:center;justify-content:flex-end;border-top:1px solid var(--border,#64748b)}
+.gradient-studio-footer span{margin-right:auto;color:var(--muted,#aeb9c9);font-size:11px}
+@media(max-width:850px){.gradient-studio-body{grid-template-columns:110px minmax(0,1fr)}.gradient-studio-properties{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);border-left:0;border-top:1px solid var(--border);max-height:180px}.gradient-studio-modes button{font-size:10px}}
+
+.gradient-ray-controls{border:1px solid var(--border);border-radius:8px;padding:8px;display:grid;gap:7px;background:var(--context-bg,#0001)}.gradient-ray-controls label{display:grid;gap:3px;font-size:11px}.gradient-ray-controls label span{display:flex;justify-content:space-between}

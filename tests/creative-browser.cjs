@@ -3,9 +3,9 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const ts = require('typescript');
 const source = {};
-for (const name of ['creative', 'creative-render', 'types', 'animation', 'effect-catalog', 'effect-schema',
+for (const name of ['canvas-surface', 'immutable-effect-sources', 'effect-stack-cache', 'creative', 'originals-expansion', 'creative-render', 'types', 'animation', 'effect-catalog', 'effect-schema',
   'advanced-ops', 'color-reconstruction', 'detail-reconstruction', 'subject-outline', 'creative-reconstruction',
-  'stylize-reconstruction', 'preview-quality', 'geometry', 'parametric-shapes', 'aurora-expansion', 'effect-ops', 'fx', 'render', 'typography']) {
+  'stylize-reconstruction', 'preview-quality', 'geometry', 'parametric-shapes', 'aurora-expansion', 'subject-segmentation', 'effect-ops', 'fx', 'render', 'typography']) {
   source[name] = ts.transpileModule(fs.readFileSync(path.join(__dirname, `../src/editor/${name}.ts`), 'utf8'), {
     fileName: `${name}.ts`, compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
   }).outputText;

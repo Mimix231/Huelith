@@ -20,7 +20,7 @@ test('interactive Canvas2D and WebGL lookalike effects are not used by the edito
   assert.doesNotMatch(fx, /(?:paintGpuEffectDraft|paintCanvasEffectDraft|drawLiveStrengthPreview)/);
   assert.doesNotMatch(fx, /from ['"]\.\/live-(?:gpu-effects|preview-mixer|color-lut)['"]/);
   assert.match(fx, /queueLayerEffectPreview\(layer\.id, effects\)/);
-  assert.match(fx, /const processed = processEffects\(source, effects\)/);
+  assert.match(fx, /const result = processEffects\(source,effects\)/);
 });
 
 test('brightness continues to map to brightness, not contrast', () => {

@@ -2,6 +2,7 @@ import type { Document, Layer, VectorShape } from './types';
 import { shapeBounds } from './geometry';
 import { shapePath } from './parametric-shapes';
 import { transformText } from './typography';
+import { gradientShapeCanvas } from './gradient';
 
 const escapeXML = (value: string): string => value.replace(/&/g, '&amp;')
   .replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
@@ -13,6 +14,10 @@ function shapeToSVG(shape: VectorShape): string {
     : '';
   const common = `fill="${escapeXML(shape.fill)}" stroke="${escapeXML(shape.stroke)}" stroke-width="${shape.strokeWidth}"`;
   switch (shape.kind) {
+    case 'gradient': {
+      const image = gradientShapeCanvas(shape);
+      return image ? `<image x="${shape.x}" y="${shape.y}" width="${shape.width}" height="${shape.height}" href="${image.toDataURL('image/png')}"${rotated}/>` : '';
+    }
     case 'roundedRect':
     case 'triangle':
     case 'polygon':
@@ -20,6 +25,10 @@ function shapeToSVG(shape: VectorShape): string {
     case 'arrow':
     case 'heart':
     case 'ring':
+    case 'diamond':
+    case 'speechBubble':
+    case 'crescent':
+    case 'cross':
       return `<path d="${shapePath(shape)}" fill-rule="evenodd" ${common}${rotated}/>`;
     case 'rect':
       return `<rect x="${shape.x}" y="${shape.y}" width="${shape.width}" height="${shape.height}" ${common}${rotated}/>`;
@@ -79,7 +88,13 @@ function rasterToSVG(layer: Extract<Layer, { type: 'raster' }>, width: number, h
   const rotation = layer.rotation
     ? ` transform="rotate(${layer.rotation} ${imageWidth / 2} ${imageHeight / 2})"`
     : '';
-  return `<image x="0" y="0" width="${imageWidth}" height="${imageHeight}"${rotation} href="${escapeXML(layer.image)}"/>`;
+  const image = `<image x="0" y="0" width="${imageWidth}" height="${imageHeight}"${rotation} href="${escapeXML(layer.image)}"/>`;
+  if (!layer.cutoutMask?.enabled) return image;
+  const id = `cutout-${escapeXML(layer.id)}`;
+  // Mask coordinates and transform match the rendered raster exactly. This
+  // embeds the full-resolution grayscale/alpha PNG without flattening RGB.
+  const matte = `<mask id="${id}" maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse" style="mask-type:alpha" x="0" y="0" width="${Math.max(imageWidth, width)}" height="${Math.max(imageHeight, height)}"><image x="0" y="0" width="${imageWidth}" height="${imageHeight}"${rotation} href="${escapeXML(layer.cutoutMask.data)}"/></mask>`;
+  return `${matte}<g mask="url(#${id})">${image}</g>`;
 }
 
 function layerToSVG(layer: Layer, width: number, height: number): string {
@@ -89,6 +104,7 @@ function layerToSVG(layer: Layer, width: number, height: number): string {
     ? rasterToSVG(layer, width, height)
     : layer.type === 'vector'
       ? layer.shapes.map(shapeToSVG).join('\n')
+      : layer.type === 'gradient' ? shapeToSVG(layer.gradient)
       : layer.children.map(child => layerToSVG(child, width, height)).join('\n');
 
   const mask = layer.mask

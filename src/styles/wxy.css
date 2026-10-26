@@ -1,0 +1,5 @@
+
+.huelith-node-controls{display:flex;gap:4px;align-items:center}.huelith-node-controls .MuiButton-root{font-size:10px;padding:3px 5px}.huelith-shape-menu input{padding:7px;border:1px solid var(--border,#888);background:var(--panel-bg,#242738);color:inherit;border-radius:5px}
+
+.huelith-layer-actions{display:flex;align-items:center;gap:4px;padding:5px;border-top:1px solid var(--border)}.huelith-layer-actions button{font:inherit;font-size:11px;min-width:0;padding:5px 7px;border:1px solid var(--border);background:var(--panel-bg);color:var(--text-primary,var(--text));border-radius:6px;cursor:pointer}.huelith-layer-actions button[aria-pressed=true]{background:var(--active-bg);border-color:var(--accent)}.huelith-layer-actions button:disabled{opacity:.4;cursor:default}
+.gradient-tool-hint{padding:5px 12px;min-height:20px;border-bottom:1px solid var(--border);font-size:11px;line-height:20px;color:var(--text-secondary,var(--muted))}

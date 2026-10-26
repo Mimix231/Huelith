@@ -11,11 +11,11 @@ const namesSource = fx.match(/export const SIGNATURE_FX_NAMES = \[([\s\S]*?)\] a
 const signatures = [...namesSource.matchAll(/'([^']+)'/g)].map(match => match[1]);
 const counts = Object.fromEntries(new Set(entries.map(item => item.group)).values().map(group =>
   [group, entries.filter(item => item.group === group).length]));
-const expected = { 'Color & light': 24, 'Detail & texture': 21, Stylize: 25, 'Creative effects': 2, 'Signature FX': 15 };
+const expected = { 'Color & light': 24, 'Detail & texture': 21, Stylize: 32, 'Creative effects': 2, 'Signature FX': 22 };
 for (const [group, count] of Object.entries(expected)) {
   if (counts[group] !== count) throw new Error(`Registry mismatch for ${group}: expected ${count}, got ${counts[group]}`);
 }
-if (signatures.length !== 15) throw new Error(`Expected 15 standalone FX; got ${signatures.length}`);
+if (signatures.length !== expected['Signature FX']) throw new Error(`Expected ${expected['Signature FX']} standalone FX; got ${signatures.length}`);
 const descriptions = {
   exposure: 'Linear-light EV adjustment with highlight protection.',
   selective: 'Chosen color family remains saturated; other color families desaturate.',
@@ -44,10 +44,10 @@ const boundaries = [
   ['Stage H: Standalone signature FX', 'Signature FX'],
 ];
 const lines = [
-  '# Huelith 0.1 — Engine Inventory after Stages D–H', '',
+  '# Huelith 0.2 — Implementation 4 Engine Inventory', '',
   'Generated from the actual effect registry and signature-name list. **A source inventory is not a release certificate.**',
   '', '## Architecture and compatibility', '',
-  '- New signature FX use `sig_0` through `sig_14`, each dispatched to `applySignatureFX` and rendered independently of Creativity filters.',
+  '- Signature FX use `sig_0` through `sig_21`; the first fifteen dispatch to `applySignatureFX`, while the seven newer effects use independent `aurora-expansion` processors. They are distinct from Creativity filter recipes.',
   '- Previous `.huelith` projects containing legacy grouped filter recipes remain loadable through their original effect kinds and Studio metadata.',
   '- Layer effects (glow, outline, shadow, backdrop) and new Radiance/Miasma have separate parameter schemes.',
   '- Stages D–H do not complete performance benchmarking, GPU compositing, real UI build verification, or advanced professional color management.',
@@ -68,6 +68,6 @@ lines.push('## Risk and acceptance status', '',
   '- **Core TypeScript:** Compile using locally available TypeScript against the real editor modules.',
   '- **Full dependency build / Tauri Windows launch:** Still must be verified on a machine with npm registry access and Rust toolchain.',
   '- **Remaining release gaps:** Artist review of Oil Painting/Watercolor, general subject isolation, complex-image performance, color-profile support, Unicode typography, accessibility and UI E2E.', '',
-  'The application stays at **0.1.0** until the release gates have been satisfied.', '');
+  'The application remains at **0.2.0** until release gates and native builds have been satisfied.', '');
 writeFileSync(new URL('../ENGINE_AUDIT.md', import.meta.url), lines.join('\n'));
 console.log(`Audit updated: ${entries.length} catalog entries, ${signatures.length} native signature FX.`);

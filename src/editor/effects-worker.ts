@@ -5,7 +5,7 @@ import type { Effect } from './types';
 
 interface WorkerRequest {
   kind?: 'render' | 'supersede' | 'budget';
-  graphMb?: number; edgeMb?: number; silhouetteMb?: number;
+  graphMb?: number; edgeMb?: number; silhouetteMb?: number; sourceMb?: number;
   id: number;
   sourceId: number;
   bitmap?: ImageBitmap;
@@ -21,8 +21,25 @@ const sources = new Map<number, HTMLCanvasElement>();
 // because the cooperative stack yields to the worker event loop between FX.
 const newestRequest = new Map<number, number>();
 const stackCache = new EffectStackCache();
-const MAX_SOURCES = 3;
-const MAX_SOURCE_BYTES = 96 * 1024 * 1024;
+// All cache budgets are bounded and can be changed without restarting the worker.
+const MAX_SOURCES = 8;
+let sourceBudgetBytes = 128 * 1024 * 1024;
+function evictSources(protectedId?: number): number[] {
+  let bytes = 0;
+  for (const image of sources.values()) bytes += image.width * image.height * 4;
+  const evicted: number[] = [];
+  while ((sources.size > MAX_SOURCES || bytes > sourceBudgetBytes) && sources.size > 1) {
+    const oldest = [...sources.keys()].find(id => id !== protectedId);
+    if (oldest === undefined) break;
+    const image = sources.get(oldest)!;
+    bytes -= image.width * image.height * 4;
+    sources.delete(oldest);
+    stackCache.clearSource(oldest);
+    newestRequest.delete(oldest);
+    evicted.push(oldest);
+  }
+  return evicted;
+}
 const scope = self as unknown as {
   onmessage: ((event: MessageEvent<WorkerRequest>) => void) | null;
   postMessage: (message: unknown, transfer?: Transferable[]) => void;
@@ -33,6 +50,9 @@ scope.onmessage = async event => {
     stackCache.setBudget(event.data.graphMb ?? 128);
     setEdgeCacheBudget(event.data.edgeMb ?? 64);
     setSilhouetteCacheBudget(event.data.silhouetteMb ?? 80);
+    sourceBudgetBytes = Math.max(32, Math.min(1024, event.data.sourceMb ?? 128)) * 1024 * 1024;
+    const evicted = evictSources();
+    if (evicted.length) scope.postMessage({ kind: 'evicted', evicted });
     return;
   }
   const { id, sourceId, bitmap, effects } = event.data;
@@ -57,18 +77,7 @@ scope.onmessage = async event => {
       sources.delete(sourceId);
       stackCache.clearSource(sourceId);
       sources.set(sourceId, canvas);
-      let bytes = 0;
-      for (const entry of sources.values()) bytes += entry.width * entry.height * 4;
-      while (sources.size > MAX_SOURCES || bytes > MAX_SOURCE_BYTES) {
-        if (sources.size === 1) break;
-        const oldest = sources.keys().next().value as number;
-        const removed = sources.get(oldest)!;
-        sources.delete(oldest);
-        stackCache.clearSource(oldest);
-        newestRequest.delete(oldest);
-        evicted.push(oldest);
-        bytes -= removed.width * removed.height * 4;
-      }
+      evicted.push(...evictSources(sourceId));
     } else if (source) {
       // LRU: active layer source stays hot while its slider is being dragged.
       sources.delete(sourceId);

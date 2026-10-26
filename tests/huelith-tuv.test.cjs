@@ -39,6 +39,8 @@ test('Phase T: animation layers inherit saved FX stacks without modifying other 
   const second = doc.animation.frames[1].layers[0];
   second.effects = [];
   second.image = '';
+  // Simulate a pre-Phase-AI project with FX only on the first cel.
+  delete doc.animation.trackEffects;
   const resolved = animation.frameDocument(doc, 1);
   assert.equal(resolved.layers[0].effects[0].id, effect.id);
   assert.equal(resolved.layers[0].image, '', 'FX inheritance cannot replace the cel artwork');

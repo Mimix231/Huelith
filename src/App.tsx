@@ -2,11 +2,11 @@ import { useEffect, useMemo, useState, type ReactNode, type MouseEvent as ReactM
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import {
   Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton,
-  Menu, MenuItem, ListSubheader, Divider, Slider, Stack, TextField, Tooltip, Typography, Select, FormControl, Snackbar, Alert,
+  Menu, MenuItem, Popover, ListSubheader, Divider, Slider, Stack, TextField, Tooltip, Typography, Select, FormControl, Snackbar, Alert,
 } from '@mui/material';
 import {
-  Add, ArrowDownward, ArrowUpward, AutoAwesome, Brush, Close,
-  Colorize, ContentCopy, Create, Delete, Download, Edit,
+  Add, ArrowDownward, ArrowUpward, AutoAwesome, Brush, Close, Download, Edit,
+  Colorize, ContentCopy, Create, Delete, Gradient, SwapHoriz, RestartAlt, Diamond, ChatBubbleOutline,
   FlipToFront, GridOn, History, Image, Layers,
   Lock, LockOpen, Menu as MenuIcon, Mouse, Palette, PanTool,
   RadioButtonUnchecked, Rectangle, Redo, Save, Settings, ShapeLine,
@@ -19,12 +19,27 @@ import { exportImage, exportSvg, importImage, openProject, saveProject } from '.
 import { getRecovery, storeRecovery } from './editor/recovery';
 import { handlePaste, pasteFromSystem, copySelected, insertImage } from './editor/clipboard';
 import FxStudio from './components/FxStudio';
+import CutoutWorkspace from './components/CutoutWorkspace';
+import './components/CutoutWorkspace.css';
 import FontPicker from './components/FontPicker';
 import WindowControls from './components/WindowControls';
 import BufferedColorPicker from './components/BufferedColorPicker';
+import StudioColorPicker from './components/StudioColorPicker';
+
+function EraserGlyph() {
+  return <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round">
+    <path d="M10 4 3.5 11.5a2.3 2.3 0 0 0 0 3.2L8.8 20h6.1L22 11.9a2 2 0 0 0 0-2.8l-4.5-5.1a2.1 2.1 0 0 0-3.1 0L10 4Z"/>
+    <path d="m9 8 8.3 8.4M8.7 20H22"/>
+  </svg>;
+}
+import GradientDesignerToolbar from './components/GradientDesignerToolbar';
 import { reflowTextShape } from './editor/typography';
 import type { AppearanceMode } from './editor/types';
 import Canvas from './components/Canvas';
+import ActionWorkspace, {type ActionWorkspaceMode, type LayerTransform} from './components/ActionWorkspace';
+import {alignLayer, rasterAssets, commitRasterize} from './editor/layer-actions';
+import {prepareSelectionEdit,type SelectionAction} from './editor/selection-actions';
+import {applyDocumentAction, prepareRasterAction, swapRasterSources, transparentTrimBounds, type DocumentAction, type ResampleMode} from './editor/document-actions';
 import AnimationTimeline from './components/AnimationTimeline';
 import CreativeLab from './components/CreativeLab';
 import AuroraSettings from './components/settings/AuroraSettings';
@@ -51,6 +66,9 @@ import './styles/polish.css';
 import './styles/typography.css';
 import './styles/workspace-pro.css';
 import './styles/studio-experience.css';
+import './components/StudioColorPicker.css';
+import './styles/wxy.css';
+import './styles/theme-identities.css';
 
 interface ToolEntry {
   id: Tool;
@@ -65,7 +83,8 @@ const tools: ToolEntry[] = [
   { id: 'marquee', label: 'Rectangular selection', icon: <CropFree />, shortcut: 'M' },
   { id: 'hand', label: 'Pan', icon: <PanTool />, shortcut: 'H' },
   { id: 'brush', label: 'Brush', icon: <Brush />, shortcut: 'B' },
-  { id: 'eraser', label: 'Eraser', icon: <Edit />, shortcut: 'E' },
+  { id: 'eraser', label: 'Eraser', icon: <EraserGlyph />, shortcut: 'E' },
+  { id: 'pencil', label: 'Pixel pencil', icon: <Edit />, shortcut: 'N' },
   { id: 'eyedropper', label: 'Eyedropper', icon: <Colorize />, shortcut: 'I' },
   { id: 'rectangle', label: 'Rectangle', icon: <Rectangle />, shortcut: 'R' },
   { id: 'ellipse', label: 'Ellipse', icon: <RadioButtonUnchecked />, shortcut: 'O' },
@@ -76,6 +95,11 @@ const tools: ToolEntry[] = [
   { id: 'arrow', label: 'Arrow', icon: <HorizontalRule />, shortcut: 'W' },
   { id: 'heart', label: 'Heart', icon: <AutoAwesome />, shortcut: 'J' },
   { id: 'ring', label: 'Ring', icon: <RadioButtonUnchecked />, shortcut: 'K' },
+  { id: 'diamond', label: 'Diamond', icon: <Diamond />, shortcut: '' },
+  { id: 'speechBubble', label: 'Speech bubble', icon: <ChatBubbleOutline />, shortcut: '' },
+  { id: 'crescent', label: 'Crescent', icon: <RadioButtonUnchecked />, shortcut: '' },
+  { id: 'cross', label: 'Cross', icon: <Add />, shortcut: '' },
+  { id: 'gradient', label: 'Gradient', icon: <Gradient />, shortcut: 'Z' },
   { id: 'line', label: 'Line', icon: <HorizontalRule />, shortcut: 'L' },
   { id: 'pen', label: 'Precision pen (Enter to finish)', icon: <Create />, shortcut: 'P' },
   { id: 'freehand', label: 'Freehand path', icon: <Brush />, shortcut: 'F' },
@@ -157,26 +181,73 @@ function ActionIcon({ title, children, onClick, active = false, disabled = false
   );
 }
 
+const SHAPE_TOOL_IDS = ['rectangle', 'ellipse', 'roundedRect', 'triangle', 'polygon', 'star', 'arrow', 'heart', 'ring', 'diamond', 'speechBubble', 'crescent', 'cross'] as const;
+
 function ToolRail({ state, openNew }: { state: EditorStore; openNew: () => void }) {
+  const [shapeAnchor, setShapeAnchor] = useState<HTMLElement | null>(null);
+  const [shapeSearch, setShapeSearch] = useState('');
+  const [lastShape, setLastShape] = useState<Tool>('rectangle');
+  const shapeActive = SHAPE_TOOL_IDS.includes(state.tool as typeof SHAPE_TOOL_IDS[number]);
   return (
     <aside className="toolrail" aria-label="Editing tools">
       <div className="rail-heading">TOOLS</div>
-      {tools.filter(tool => !['roundedRect', 'triangle', 'polygon', 'star', 'arrow', 'heart', 'ring'].includes(tool.id)).map(tool => (
+      {tools.filter(tool => tools.indexOf(tool) <= 7 && tool.id !== 'rectangle' && !SHAPE_TOOL_IDS.includes(tool.id as typeof SHAPE_TOOL_IDS[number])).map(tool => (
         <ActionIcon
           key={tool.id}
           title={`${tool.label} (${tool.shortcut})`}
           active={tool.id === state.tool}
           onClick={() => {
             state.setTool(tool.id);
-            if (tool.id !== 'node' && tool.id !== 'move' && tool.id !== 'text') state.selectShape(null);
+            if (tool.id !== 'node' && tool.id !== 'move' && tool.id !== 'text' && tool.id !== 'gradient') state.selectShape(null);
+          }}
+        >
+          {tool.icon}
+        </ActionIcon>
+      ))}
+      <ActionIcon title="Shapes — select a shape" active={shapeActive} onClick={event => setShapeAnchor(event.currentTarget)}>
+        {tools.find(item => item.id === (shapeActive ? state.tool : lastShape))?.icon ?? <Rectangle />}
+      </ActionIcon>
+      <Popover open={Boolean(shapeAnchor)} anchorEl={shapeAnchor} onClose={() => { setShapeAnchor(null); setShapeSearch(''); }}
+        anchorOrigin={{ vertical: 'center', horizontal: 'right' }}>
+        <div className="huelith-shape-menu" aria-label="Shape Studio">
+          <input type="search" aria-label="Find shape" placeholder="Search shapes" value={shapeSearch}
+            style={{ gridColumn: '1 / -1', width: '100%', boxSizing: 'border-box' }} onChange={event => setShapeSearch(event.target.value)}/>
+          {tools.filter(item => SHAPE_TOOL_IDS.includes(item.id as typeof SHAPE_TOOL_IDS[number]) && item.label.toLowerCase().includes(shapeSearch.toLowerCase())).map(item =>
+            <button type="button" key={item.id} aria-pressed={state.tool === item.id} onClick={() => {
+              state.setTool(item.id); state.selectShape(null); setLastShape(item.id); setShapeAnchor(null); setShapeSearch('');
+            }}>{item.icon}<span>{item.label}</span></button>)}
+        </div>
+      </Popover>
+      {tools.filter(tool => tools.indexOf(tool) > 7 && tool.id !== 'rectangle' && !SHAPE_TOOL_IDS.includes(tool.id as typeof SHAPE_TOOL_IDS[number])).map(tool => (
+        <ActionIcon
+          key={tool.id}
+          title={`${tool.label} (${tool.shortcut})`}
+          active={tool.id === state.tool}
+          onClick={() => {
+            state.setTool(tool.id);
+            if (tool.id !== 'node' && tool.id !== 'move' && tool.id !== 'text' && tool.id !== 'gradient') state.selectShape(null);
           }}
         >
           {tool.icon}
         </ActionIcon>
       ))}
       <div className="rail-spacer" />
+      <div className="huelith-color-pair" aria-label="Foreground and background colors">
+        <StudioColorPicker label="Foreground color" value={state.color} onChange={state.setColor} alpha={state.opacity} onAlpha={state.setOpacity}/>
+        <StudioColorPicker label="Background color" value={state.backgroundColor} onChange={state.setBackgroundColor} alpha={state.backgroundOpacity} onAlpha={state.setBackgroundOpacity}/>
+      </div>
+      <div className="huelith-color-actions" aria-label="Color actions">
+        <button type="button" aria-label="Swap foreground and background colors (X)" title="Swap colors (X)" onClick={state.swapColors}><SwapHoriz fontSize="small"/></button>
+        <button type="button" aria-label="Reset colors to black and white (D)" title="Default colors (D)" onClick={state.resetColors}><RestartAlt fontSize="small"/></button>
+      </div>
       <ActionIcon title="Toggle grid" active={state.grid} onClick={() => state.setGrid(!state.grid)}>
         <GridOn />
+      </ActionIcon>
+      <ActionIcon title="Show canvas rulers" active={state.rulers} onClick={() => state.setRulers(!state.rulers)}>
+        <HorizontalRule />
+      </ActionIcon>
+      <ActionIcon title="Snap geometric points to 10px grid (Alt overrides)" active={state.snap} onClick={() => state.setSnap(!state.snap)}>
+        <CropFree />
       </ActionIcon>
       <ActionIcon title="Reset canvas position" onClick={() => { state.setZoom(1); state.setPan({ x: 0, y: 0 }); }}>
         <FlipToFront />
@@ -216,10 +287,12 @@ function CompactSlider({
 
 function ContextToolbar({ state }: { state: EditorStore }) {
   const entry = tools.find(item => item.id === state.tool);
-  const drawing = state.tool === 'brush' || state.tool === 'eraser';
-  const colorTool = ['brush', 'rectangle', 'ellipse', 'roundedRect', 'triangle', 'polygon', 'star', 'arrow', 'heart', 'ring', 'line', 'pen', 'freehand'].includes(state.tool);
-  const shapeTool = ['rectangle', 'ellipse', 'roundedRect', 'triangle', 'polygon', 'star', 'arrow', 'heart', 'ring', 'line', 'pen', 'freehand'].includes(state.tool);
+  const drawing = state.tool === 'brush' || state.tool === 'eraser' || state.tool === 'pencil';
+  const colorTool = ['brush', 'pencil', 'gradient', 'rectangle', 'ellipse', 'roundedRect', 'triangle', 'polygon', 'star', 'arrow', 'heart', 'ring', 'line', 'pen', 'freehand'].includes(state.tool);
+  const shapeTool = ['diamond', 'speechBubble', 'crescent', 'cross', 'rectangle', 'ellipse', 'roundedRect', 'triangle', 'polygon', 'star', 'arrow', 'heart', 'ring', 'line', 'pen', 'freehand'].includes(state.tool);
   const selectionTool = state.tool === 'marquee';
+  const selectedVector = activeLayer(state)?.type === 'vector' ? activeLayer(state) as Extract<ReturnType<typeof activeLayer>, {type:'vector'}> : undefined;
+  const selectedPath = selectedVector?.shapes.find(item => item.id === state.selectedShapeId && item.kind === 'path');
   const moveTool = state.tool === 'move' || state.tool === 'node';
   const active = activeLayer(state);
   const selectedText = active?.type === 'vector'
@@ -252,12 +325,12 @@ function ContextToolbar({ state }: { state: EditorStore }) {
           <span>Shape</span>
           <select aria-label="Select shape type" value={['freehand', 'pen'].includes(state.tool) ? state.tool : state.tool}
             onChange={event => state.setTool(event.target.value as Tool)}>
-            {tools.filter(option => ['rectangle', 'ellipse', 'roundedRect', 'triangle', 'polygon', 'star', 'arrow', 'heart', 'ring', 'line', 'pen', 'freehand'].includes(option.id))
+            {tools.filter(option => ['rectangle', 'ellipse', 'roundedRect', 'triangle', 'polygon', 'star', 'arrow', 'heart', 'ring', 'diamond', 'speechBubble', 'crescent', 'cross', 'line', 'pen', 'freehand'].includes(option.id))
               .map(option => <option value={option.id} key={option.id}>{option.label}</option>)}
           </select>
         </label>
       )}
-      {shapeTool && (
+      {shapeTool && state.tool !== 'gradient' && (
         <label className="swatch-control">
           <span>Fill</span>
           <BufferedColorPicker value={state.fill} label="Fill color" onCommit={state.setFill} />
@@ -267,7 +340,7 @@ function ContextToolbar({ state }: { state: EditorStore }) {
         <CompactSlider label="Size" value={state.strokeWidth} min={1} max={120}
           display={`${state.strokeWidth}px`} onChange={state.setStrokeWidth} />
       )}
-      {drawing && (
+      {drawing && state.tool !== 'pencil' && (
         <>
           <CompactSlider label="Hardness" value={Math.round(state.hardness * 100)} min={2} max={100}
             display={`${Math.round(state.hardness * 100)}%`} onChange={value => state.setHardness(value / 100)} />
@@ -277,6 +350,10 @@ function ContextToolbar({ state }: { state: EditorStore }) {
             display={`${Math.round(state.opacity * 100)}%`} onChange={value => state.setOpacity(value / 100)} />
         </>
       )}
+      {state.tool === 'pencil' && <span className="context-instruction">Pixel-perfect hard-edge pencil · uses foreground color</span>}
+      {drawing && <label className="context-instruction" title="Mirror paint strokes around the vertical canvas center">
+        <input type="checkbox" checked={state.symmetryX} onChange={event => state.setSymmetryX(event.target.checked)}/> Mirror X
+      </label>}
       {selectionTool && (
         <>
           <span className="context-instruction">Drag to select an area</span>
@@ -288,6 +365,24 @@ function ContextToolbar({ state }: { state: EditorStore }) {
           {state.tool === 'node' ? 'Drag anchor points and curve handles' : 'Drag objects or use resize / rotate handles'}
         </span>
       )}
+      {state.tool === 'node' && selectedPath?.nodes?.length && <div className="huelith-node-controls" aria-label="Path node editing">
+        <span>Node</span>
+        {(['corner', 'smooth', 'symmetric'] as const).map(mode => <Button key={mode} size="small"
+          disabled={state.selectedNodeIndex === null} variant={selectedPath.nodes?.[state.selectedNodeIndex ?? -1]?.nodeMode === mode ? 'contained' : 'text'}
+          onClick={() => state.updateShape(selectedPath.id, shape => {
+            const node = shape.nodes?.[state.selectedNodeIndex ?? -1]; if (!node) return;
+            node.nodeMode = mode;
+            if (mode === 'corner') { delete node.in; delete node.out; }
+            else {
+              const old = node.out ?? node.in ?? {x:node.x+16,y:node.y};
+              const dx = (old.x-node.x)||16, dy = old.y-node.y;
+              node.in = {x:node.x-dx,y:node.y-dy}; node.out = {x:node.x+dx,y:node.y+dy};
+            }
+          })}>{mode}</Button>)}
+        <Button size="small" disabled={state.selectedNodeIndex === null || (selectedPath.nodes?.length ?? 0) <= 2}
+          onClick={() => { state.updateShape(selectedPath.id, shape => { shape.nodes?.splice(state.selectedNodeIndex ?? -1, 1); }); state.selectNode(null); }}>Delete point</Button>
+        <span className="context-instruction">Double-click a segment to insert a point</span>
+      </div>}
       {state.tool === 'pen' && <Button size="small" variant="contained"
         onClick={() => window.dispatchEvent(new Event('huelith-finish-pen'))}>Finish path (Enter)</Button>}
       {state.tool === 'line' && <span className="context-instruction">After drawing: press A and drag any of the four points</span>}
@@ -425,7 +520,7 @@ function DocumentTabs({ state, openNew }: { state: EditorStore; openNew: () => v
   );
 }
 
-type InspectorPanel = 'layers' | 'properties' | 'history';
+type InspectorPanel = 'layers' | 'inspector' | 'history';
 
 const blendOptions: { value: BlendMode; label: string }[] = [
   { value: 'source-over', label: 'Normal' },
@@ -499,6 +594,7 @@ function Inspector({ state }: { state: EditorStore }) {
   const [renameId, setRenameId] = useState<string | null>(null);
   const [preview, setPreview] = useState(100);
   const [fxOpen, setFxOpen] = useState(false);
+  const [cutoutOpen, setCutoutOpen] = useState(false);
   useEffect(() => {
     const openFx = (): void => { setPanel('layers'); setFxClosing(false); setFxOpen(true); };
     window.addEventListener('huelith-open-fx', openFx);
@@ -523,7 +619,14 @@ function Inspector({ state }: { state: EditorStore }) {
   const doc = tab.doc;
   const active = activeLayer(state);
   const activeShape = active?.type === 'vector' ? active.shapes.find(shape => shape.id === state.selectedShapeId) : undefined;
-  const layers = [...doc.layers].reverse();
+  const layers: Array<{ layer: import('./editor/types').Layer; depth: number }> = [];
+  const collectLayers = (items: import('./editor/types').Layer[], depth = 0): void => {
+    for (const layer of [...items].reverse()) {
+      layers.push({ layer, depth });
+      if (layer.type === 'group') collectLayers(layer.children, depth + 1);
+    }
+  };
+  collectLayers(doc.layers);
 
   useEffect(() => {
     setPreview(Math.round((active?.opacity ?? 1) * 100));
@@ -581,10 +684,10 @@ function Inspector({ state }: { state: EditorStore }) {
         }}
       />
       <div className="inspector-tabs">
-        {(['layers', 'properties', 'history'] as const).map(key => (
+        {(['layers', 'inspector', 'history'] as const).map(key => (
           <button type="button" className={panel === key ? 'active' : ''} key={key}
             aria-pressed={panel === key} onClick={() => setPanel(key)}>
-            {key === 'layers' ? <Layers /> : key === 'properties' ? <Settings /> : <History />}
+            {key === 'layers' ? <Layers /> : key === 'inspector' ? <Settings /> : <History />}
             {key}
           </button>
         ))}
@@ -594,15 +697,15 @@ function Inspector({ state }: { state: EditorStore }) {
         <>
           <div className="panel-title"><span>Layers</span><span>{doc.layers.length}</span></div>
           <div className="layer-list">
-            {layers.map(layer => (
-              <div className={`layer-row ${doc.activeLayerId === layer.id ? 'active' : ''}`} key={layer.id}>
+            {layers.map(({ layer, depth }) => (
+              <div style={{ paddingLeft: depth ? Math.min(24, depth * 12) : undefined }} className={`layer-row ${doc.activeLayerId === layer.id ? 'active' : ''}`} key={layer.id}>
                 <button type="button" title={layer.visible ? 'Hide layer' : 'Show layer'}
                   aria-label={`${layer.visible ? 'Hide' : 'Show'} ${layer.name}`}
                   onClick={() => state.toggleLayer(layer.id, 'visible')}>
                   {layer.visible ? <Visibility fontSize="small" /> : <VisibilityOff fontSize="small" />}
                 </button>
                 <div className={`layer-thumb ${layer.type}`}>
-                  {layer.type === 'vector' ? <ShapeLine /> : <Image />}
+                  {layer.type === 'gradient' ? <span className="huelith-layer-gradient-icon">◈</span> : layer.type === 'vector' ? <ShapeLine /> : <Image />}
                 </div>
                 {renameId === layer.id ? (
                   <input
@@ -626,8 +729,8 @@ function Inspector({ state }: { state: EditorStore }) {
                     aria-current={doc.activeLayerId === layer.id}
                     onClick={() => state.selectLayer(layer.id)}
                     onDoubleClick={() => { state.selectLayer(layer.id); setRenameId(layer.id); }}>
-                    <span>{layer.name}{layer.mask ? ' ◧' : ''}</span>
-                    <small>{layer.type} · {Math.round(layer.opacity * 100)}%</small>
+                    <span>{layer.name}{layer.mask ? ' ◧' : ''}{layer.clipToBelow ? ' ↳' : ''}{layer.adjustment ? ' ◈' : ''}</span>
+                    <small>{layer.type === 'group' ? `group · ${layer.children.length} layers` : layer.type} · {Math.round(layer.opacity * 100)}%</small>
                   </button>
                 )}
                 <button type="button" title="Lock / unlock" aria-label={`Toggle lock for ${layer.name}`}
@@ -636,6 +739,14 @@ function Inspector({ state }: { state: EditorStore }) {
                 </button>
               </div>
             ))}
+          </div>
+          <div className="huelith-layer-actions" aria-label="Layer organization">
+            <button type="button" onClick={state.addAdjustmentLayer} title="Add a non-destructive color adjustment above the selected layer">+ Adjust</button>
+            <button type="button" onClick={state.groupSelectedLayer} disabled={!active || active.locked} title="Group selected layer while preserving editable contents">Group</button>
+            <button type="button" onClick={state.ungroupSelectedLayer} disabled={active?.type !== 'group'} title="Release the layers inside this group">Ungroup</button>
+            <button type="button" onClick={() => active && state.setClipToBelow(active.id, !active.clipToBelow)}
+              disabled={!active || doc.layers.findIndex(layer => layer.id === active.id) < 1}
+              aria-pressed={active?.clipToBelow ?? false} title="Clip the active layer to the opacity of the layer immediately below">{active?.clipToBelow ? 'Unclip' : 'Clip below'}</button>
           </div>
           <button type="button" className={`fx-launcher ${fxOpen ? 'active' : ''}`}
             aria-expanded={fxOpen} aria-haspopup="dialog" aria-controls="huelith-fx-studio"
@@ -685,7 +796,7 @@ function Inspector({ state }: { state: EditorStore }) {
         </>
       )}
 
-      {panel === 'properties' && (
+      {panel === 'inspector' && (
         <div className="properties-box">
           <div className="property-heading">Document</div>
           <div className="property-line">Name <strong>{doc.name}</strong></div>
@@ -714,6 +825,18 @@ function Inspector({ state }: { state: EditorStore }) {
               state.selectShape(null);
             }}>Delete selected object</Button>
           )}
+          {active?.type === 'raster' && <section className="huelith-inspector-cutout" aria-label="Image cutout controls">
+            <strong>Image operations</strong>
+            <span>Original image: {active.imageWidth ?? 'native'} × {active.imageHeight ?? 'native'}</span>
+            <button type="button" disabled={active.locked || !active.image}
+              onClick={() => setCutoutOpen(true)}>{active.cutoutMask ? 'Edit Cutout Mask' : 'Remove Background'}</button>
+            {active.cutoutMask && <>
+              <label><input type="checkbox" checked={active.cutoutMask.enabled}
+                onChange={() => state.toggleCutoutMask(active.id)}/> Show cutout mask</label>
+              <button type="button" disabled={active.locked} onClick={() => state.removeCutoutMask(active.id)}>Delete cutout mask</button>
+              <small>Stored separately. Your image pixels are unchanged.</small>
+            </>}
+          </section>}
           {activeShape?.kind === 'text' && (
             <div className="text-properties">
               <div className="property-heading">Typography</div>
@@ -782,6 +905,13 @@ function Inspector({ state }: { state: EditorStore }) {
         </div>
       )}
 
+      {cutoutOpen && active?.type === 'raster' && <CutoutWorkspace key={active.id} layer={active}
+        onClose={() => setCutoutOpen(false)}
+        onProcess={(data, width, height) => {
+          state.applyCutoutMask(active.id, data, width, height);
+          setCutoutOpen(false);
+        }} />}
+
       {panel === 'history' && (
         <div className="properties-box">
           <div className="property-heading">Editing history</div>
@@ -822,6 +952,15 @@ export default function App() {
   const [notice, setNotice] = useState('Ready to create');
   const [errorText, setErrorText] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [actionMode, setActionMode] = useState<ActionWorkspaceMode|null>(null);
+  const [actionBusy,setActionBusy]=useState(false);
+  const [canvasMenu,setCanvasMenu]=useState<{x:number;y:number}|null>(null);
+  useEffect(()=>{
+    const context=(event:Event)=>{const point=(event as CustomEvent<{x:number;y:number}>).detail;setCanvasMenu(point);};
+    const hide=()=>setCanvasMenu(null);
+    window.addEventListener('huelith-canvas-context',context);window.addEventListener('keydown',hide);
+    return()=>{window.removeEventListener('huelith-canvas-context',context);window.removeEventListener('keydown',hide);};
+  },[]);
   useEffect(() => {
     // Backend preferences are application-wide and never written to .huelith
     // documents. The existing FX editor remains the trusted renderer until the
@@ -936,6 +1075,12 @@ export default function App() {
           case 'v':
             // Paste events carry richer data than clipboard.read(). The browser fires one for Ctrl+V.
             return;
+          case 't':
+            event.preventDefault();current.setTool('move');setActionMode('transform');return;
+          case 'i':
+            if(event.altKey){event.preventDefault();setActionMode('resize-image');return;}break;
+          case 'c':
+            if(event.altKey){event.preventDefault();setActionMode('resize-canvas');return;}break;
           case 'd':
             event.preventDefault();
             current.duplicateLayer();
@@ -953,6 +1098,10 @@ export default function App() {
       if (key === 'tab' && target?.tagName === 'CANVAS') {
         event.preventDefault();
         current.setFocusMode(!current.focusMode);
+      } else if (key === 'x') {
+        event.preventDefault(); current.swapColors();
+      } else if (key === 'd') {
+        event.preventDefault(); current.resetColors();
       } else if (key === 'delete' && current.selectedShapeId) {
         current.removeShape(current.selectedShapeId);
         current.selectShape(null);
@@ -960,7 +1109,7 @@ export default function App() {
         current.selectShape(null);
         current.setSelection(null);
       } else {
-        const found = tools.find(tool => (shortcuts[tool.id] || tool.shortcut).toLowerCase() === key);
+        const found = tools.find(tool => Boolean(shortcuts[tool.id] || tool.shortcut) && (shortcuts[tool.id] || tool.shortcut).toLowerCase() === key);
         if (found) current.setTool(found.id);
       }
     }
@@ -1005,6 +1154,96 @@ export default function App() {
     setNotice('New canvas created');
   }
 
+  async function commitDocumentAction(action:DocumentAction, resampling:ResampleMode='smooth'):Promise<void>{
+    if(actionBusy)return;
+    const editor=useEditor.getState();const original=activeTab(editor);const expectedDoc=original.doc.id;
+    const expectedRevision=original.revision;
+    setActionBusy(true);
+    try{
+      // All decoding/resampling finishes BEFORE the history transaction. Any edits
+      // made while images are processing invalidate the operation rather than
+      // overwriting newer pixels.
+      const oldW=original.doc.width,oldH=original.doc.height;
+      const pixels=await prepareRasterAction(original.doc,action,resampling);
+      const latest=activeTab(useEditor.getState());
+      if(latest.doc.id!==expectedDoc||latest.revision!==expectedRevision)throw Error('Document changed while preparing the operation. Please try again.');
+      useEditor.getState().mutate(document=>{
+        applyDocumentAction(document,action);
+        swapRasterSources(document,pixels,action,oldW,oldH);
+      });
+      useEditor.getState().setSelection(null);
+      setActionMode(null);
+      setNotice(`${action.kind.replaceAll('-',' ')} applied · all animation frames updated`);
+    }catch(error){handleError(error);}finally{setActionBusy(false);}
+  }
+
+  async function trimDocument():Promise<void>{
+    if(actionBusy)return;
+    const editor=useEditor.getState(),tab=activeTab(editor);setActionBusy(true);
+    try{
+      const bounds=await transparentTrimBounds(tab.doc);
+      if(!bounds){setNotice('Artwork is empty; nothing to trim');return;}
+      const now=activeTab(useEditor.getState());
+      if(now.doc.id!==tab.doc.id||now.revision!==tab.revision)throw Error('Document changed while analyzing transparency.');
+      useEditor.getState().mutate(doc=>applyDocumentAction(doc,{kind:'crop',rect:bounds}));
+      useEditor.getState().setSelection(null);
+      setNotice('Transparent margins trimmed');
+    }catch(error){handleError(error);}finally{setActionBusy(false);}
+  }
+
+  async function commitSelectionPixels(action:SelectionAction):Promise<void>{
+    const editor=useEditor.getState(),tab=activeTab(editor),layer=activeLayer(editor),selection=editor.selection;
+    if(!layer||layer.type!=='raster'||layer.locked||!selection){handleError('Select an unlocked raster layer and make a rectangular selection.');return;}
+    if(actionBusy)return;setActionBusy(true);
+    try{
+      const pixels=await prepareSelectionEdit(layer,selection,action,editor.color,editor.strokeWidth,tab.doc.width,tab.doc.height);
+      const latest=activeTab(useEditor.getState());
+      if(latest.doc.id!==tab.doc.id||latest.revision!==tab.revision)throw Error('Document changed while preparing the selection edit.');
+      editor.mutate(document=>{
+        const target=document.layers.find(item=>item.id===layer.id);
+        if(target?.type==='raster'&&!target.locked){target.image=pixels.image;target.imageWidth=pixels.width;target.imageHeight=pixels.height;}
+      });
+      setNotice(`${action==='clear'?'Cleared':action==='fill'?'Filled':'Outlined'} selected pixels`);
+    }catch(error){handleError(error);}finally{setActionBusy(false);}
+  }
+
+  function rasterizeSelectedLayer():void{
+    const editor=useEditor.getState(),tab=activeTab(editor),layer=activeLayer(editor);
+    if(!layer||layer.locked||layer.type==='raster'||layer.type==='group'){handleError('Choose an unlocked Vector or Gradient layer.');return;}
+    try{
+      const prepared=rasterAssets(tab.doc,layer.id);
+      editor.mutate(document=>commitRasterize(document,layer.id,prepared));
+      editor.selectShape(null);setNotice(`${layer.name} rasterized · effects preserved`);
+    }catch(error){handleError(error);}
+  }
+
+  function applyPreciseTransform(value:LayerTransform):void{
+    const selected=activeLayer(useEditor.getState());
+    if(!selected||selected.locked){handleError('Select an unlocked raster, gradient, or single-shape vector layer.');return;}
+    const activeShapeId=useEditor.getState().selectedShapeId;
+    useEditor.getState().mutate(doc=>{
+      const target=doc.layers.find(item=>item.id===selected.id);
+      if(!target||target.locked)return;
+      if(target.type==='raster'){
+        target.x=value.x;target.y=value.y;
+        target.scaleX=value.width/Math.max(1,target.imageWidth??doc.width);
+        target.scaleY=value.height/Math.max(1,target.imageHeight??doc.height);
+        target.rotation=value.rotation;
+      }else if(target.type==='gradient'){
+        target.x=value.x;target.y=value.y;target.gradient.x=0;target.gradient.y=0;
+        target.gradient.width=value.width;target.gradient.height=value.height;target.gradient.rotation=value.rotation;
+        if(doc.animation?.trackGradients)doc.animation.trackGradients[target.id]=structuredClone(target.gradient);
+      }else if(target.type==='vector'){
+        const shape=target.shapes.find(item=>item.id===activeShapeId)??(target.shapes.length===1?target.shapes[0]:null);
+        if(!shape) return;
+        const before={x:shape.x,y:shape.y,width:shape.width,height:shape.height};
+        scaleShape(shape,before,{x:value.x-target.x,y:value.y-target.y,width:value.width,height:value.height});
+        shape.rotation=value.rotation;
+      }
+    });
+    setActionMode(null);setNotice('Precision transform applied');
+  }
+
   function runMenuCommand(id: MenuAction, anchor?: HTMLElement): void {
     setMenuAnchor(null);
     switch (id) {
@@ -1023,6 +1262,21 @@ export default function App() {
       case 'export-frames': guarded(exportAnimation('sequence'), 'Animation frames exported'); break;
       case 'undo': state.undo(); break;
       case 'redo': state.redo(); break;
+      case 'resize-image': setActionMode('resize-image');break;
+      case 'resize-canvas': setActionMode('resize-canvas');break;
+      case 'crop-selection': if(state.selection)void commitDocumentAction({kind:'crop',rect:state.selection});else setActionMode('crop');break;
+      case 'trim-transparent': void trimDocument();break;
+      case 'precision-transform':state.setTool('move');setActionMode('transform');break;
+      case 'rasterize-layer':rasterizeSelectedLayer();break;
+      case 'fill-selection':void commitSelectionPixels('fill');break;
+      case 'stroke-selection':void commitSelectionPixels('stroke');break;
+      case 'clear-selection':void commitSelectionPixels('clear');break;
+      case 'align-horizontal':case 'align-vertical':case 'fit-layer':{
+        const layer=activeLayer(useEditor.getState());if(layer)useEditor.getState().mutate(document=>alignLayer(document,layer.id,
+          id==='align-horizontal'?'center-horizontal':id==='align-vertical'?'center-vertical':'fit-to-canvas'));break;}
+
+      case 'rotate-cw': case 'rotate-ccw': case 'rotate-180':
+      case 'flip-horizontal': case 'flip-vertical':void commitDocumentAction({kind:id});break;
       case 'select-all': state.setSelection({ x: 0, y: 0, width: doc.width, height: doc.height }); break;
       case 'deselect': state.setSelection(null); break;
       case 'create-raster': state.addLayer('raster'); break;
@@ -1063,6 +1317,11 @@ export default function App() {
     if (id === 'undo') return !tab.past.length;
     if (id === 'redo') return !tab.future.length;
     if (id === 'deselect' || id === 'mask-selection') return !state.selection;
+    if (id === 'precision-transform') {const layer=activeLayer(state);return !layer || layer.locked || layer.type==='group' || (layer.type==='vector'&&layer.shapes.length!==1&&!state.selectedShapeId);}
+    if (id === 'trim-transparent') return doc.background !== 'transparent' || actionBusy;
+    if (id === 'rasterize-layer') {const layer=activeLayer(state);return !layer||layer.locked||layer.type==='raster'||layer.type==='group';}
+    if(['fill-selection','stroke-selection','clear-selection'].includes(id)){const layer=activeLayer(state);return !state.selection||!layer||layer.locked||layer.type!=='raster';}
+    if (['align-horizontal','align-vertical','fit-layer'].includes(id)) {const layer=activeLayer(state);return !layer||layer.locked||layer.type==='group';}
     if (id === 'previous-frame' || id === 'next-frame') return !doc.animation;
     if (id === 'convert-animation') return Boolean(doc.animation);
     if (id === 'clear-mask') return !activeLayer(state)?.mask;
@@ -1077,7 +1336,7 @@ export default function App() {
           <div className="brand" data-tauri-drag-region>
             <div className="brand-mark">✦</div>
             <span>Huelith</span>
-            <span className="badge">0.1</span>
+            <span className="badge">0.2</span>
           </div>
           <div className="title-actions">
             <nav className="huelith-command-bar" aria-label="Huelith commands">
@@ -1121,7 +1380,8 @@ export default function App() {
         <div className="editor-grid">
           {state.toolsOpen && !state.focusMode && <ToolRail state={state} openNew={() => setNewOpen(true)} />}
           <main className="main-editor">
-            <ContextToolbar state={state} />
+            {(state.tool === 'gradient' || (() => { const layer = activeLayer(state); return layer?.type === 'gradient' || layer?.type === 'vector' && layer.shapes.some(shape => shape.kind === 'gradient' && shape.id === state.selectedShapeId); })())
+              ? <GradientDesignerToolbar state={state} /> : <ContextToolbar state={state} />}
             <div className="creative-canvas-region">
               <Canvas onError={handleError} />
               <CreativeLab />
@@ -1195,6 +1455,25 @@ export default function App() {
           ))}
         </Menu>
 
+        {actionMode&&<ActionWorkspace key={`${actionMode}-${doc.id}`} mode={actionMode} doc={doc}
+          layer={activeLayer(state)} selectedShapeId={state.selectedShapeId} selection={state.selection} busy={actionBusy}
+          onClose={()=>{if(!actionBusy)setActionMode(null);}}
+          onDocument={(action,resample)=>{void commitDocumentAction(action,resample);}}
+          onTransform={applyPreciseTransform}/>}
+        {canvasMenu&&<><div style={{position:'fixed',inset:0,zIndex:2349}} onClick={()=>setCanvasMenu(null)}
+          onContextMenu={event=>{event.preventDefault();setCanvasMenu(null);}}/>
+          <section className="h-canvas-menu" role="menu" aria-label="Huelith canvas actions"
+            style={{left:Math.min(canvasMenu.x,window.innerWidth-260),top:Math.max(8,Math.min(canvasMenu.y,window.innerHeight-440))}}>
+            <header>✦ HUELITH · CANVAS ACTIONS</header>
+            {([['precision-transform','Precision transform','Ctrl+T'],['resize-image','Resize image',''],
+              ['resize-canvas','Resize canvas',''],['crop-selection','Crop to selection',''],
+              ['rotate-cw','Rotate clockwise',''],['flip-horizontal','Flip horizontal',''],
+              ['rasterize-layer','Rasterize layer',''],['align-horizontal','Center horizontally',''],['align-vertical','Center vertically',''],
+              ['fill-selection','Fill selection',''],['stroke-selection','Stroke selection',''],['clear-selection','Clear selected pixels','']] as const).map(([id,label,shortcut])=><button
+                key={id} role="menuitem" type="button" disabled={menuDisabled(id)} onClick={()=>{setCanvasMenu(null);runMenuCommand(id);}}>
+                <span>{label}</span><kbd>{shortcut}</kbd></button>)}
+            <hr/><button role="menuitem" type="button" onClick={()=>{setCanvasMenu(null);state.undo();}}>↶ Undo <kbd>Ctrl+Z</kbd></button>
+          </section></>}
         <Snackbar open={Boolean(errorText)} autoHideDuration={7000} onClose={() => setErrorText(null)}
           anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
           <Alert severity="error" variant="filled" onClose={() => setErrorText(null)}>{errorText}</Alert>

@@ -750,7 +750,7 @@ button {
 .shortcut-grid input { width: 40px; text-align: center; }
 @media (max-width: 520px) { .shortcut-grid { grid-template-columns: 1fr; } }
 
-.inspector-tabs { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.inspector-tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .inspector-tabs button { min-width: 0; font-size: 9px; gap: 3px; }
 .fx-inspector,
 .inspector > .properties-box { overflow-y: auto; min-height: 0; flex: 1; }

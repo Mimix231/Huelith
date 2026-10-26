@@ -115,10 +115,6 @@ export default function FxStudio({ state, active, activeShape, onClose }: Props)
   function begin(title: string, tab: StudioCategory, id: string, changes: Effect[]): void {
     if (!active || active.locked) return;
     const original = active.effects ?? [];
-    if (original.length + changes.length > 64) {
-      setWarning('This layer has reached the 64 processing-step limit. Remove an effect before adding another.');
-      return;
-    }
     setWarning('');
     setEditorNotice('');
     setShowAdvanced(false);
@@ -138,7 +134,7 @@ export default function FxStudio({ state, active, activeShape, onClose }: Props)
     const next = current.current.map(effect => effect.id !== effectId ? effect : {
       ...effect,
       ...patch,
-      parameters: patch.parameters ? { ...effect.parameters, ...patch.parameters } : effect.parameters,
+      parameters: patch.parameters ? Object.fromEntries(Object.entries({ ...effect.parameters, ...patch.parameters }).filter(([, value]) => value !== undefined)) : effect.parameters,
     });
     current.current = next;
     if (!sliderPreview) setWorking(next);
@@ -200,6 +196,8 @@ export default function FxStudio({ state, active, activeShape, onClose }: Props)
   useEffect(() => {
     const onKey = (event: KeyboardEvent): void => {
       if (event.key === 'Escape') {
+        // The child Mask Workspace Dialog owns Escape while it is open.
+        if (document.querySelector('[data-huelith-mask-workspace="open"]')) return;
         event.stopPropagation();
         dismissRef.current();
       }
@@ -368,7 +366,7 @@ export default function FxStudio({ state, active, activeShape, onClose }: Props)
                 return <section key={group}>
                   <h3>{group}</h3><div className="fx-filter-grid">
                     {entries.map(item => <button key={item.kind} type="button" className="fx-filter-card"
-                      disabled={!writable || (active?.effects?.length ?? 0) >= 64} onClick={() => {
+                      disabled={!writable} onClick={() => {
                         const effect = createStudioFilter(item.kind);
                         begin(item.kind === 'cutout' ? 'Remove background' : item.label, category, effect.id, [effect]);
                       }} title={`Open ${item.label} editor`}>
@@ -385,7 +383,7 @@ export default function FxStudio({ state, active, activeShape, onClose }: Props)
               <div className="fx-preset-grid">
                 {Object.keys(FX_PRESETS).filter(matches).map(name => <button type="button"
                   className="fx-preset-card" key={name}
-                  disabled={!writable || (active?.effects?.length ?? 0) + FX_PRESETS[name].length > 64} onClick={() => {
+                  disabled={!writable} onClick={() => {
                     const effects = createStudioPreset(name);
                     begin(name, 'fx', effects[0].studioGroupId!, effects);
                   }}>

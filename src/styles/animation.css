@@ -95,3 +95,5 @@
 .project-kind input { accent-color: var(--accent); }
 
 .timeline-creative-key{color:#f6ba54;position:absolute;right:5px;top:4px;font-size:11px;text-shadow:0 1px 3px #0008;pointer-events:none}
+
+.timeline-shared-fx {font-size:9px;white-space:nowrap;color:var(--accent);font-weight:700;line-height:1;padding:4px 5px;border:1px solid var(--border);border-radius:5px;background:var(--accent-soft)}

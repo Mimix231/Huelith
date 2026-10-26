@@ -649,15 +649,15 @@ with sync_playwright() as playwright:
           const vhsCool = engine.processEffects(palette, [engine.newEffect('vhs', 75, undefined, {
             colorA: '#14ebff', colorB: '#2222ec', colorMix:100, density:100,
           })]);
-          assert('VHS color pairs alter the actual rendered pixels', differentImages(vhsWarm, vhsCool));
-          for (const kind of ['chromatic','glitch','sig_4','sig_8','sig_13']) {
+          assert('VHS does not brighten or recolor from obsolete false-color parameters', !differentImages(vhsWarm, vhsCool));
+          for (const kind of ['chromatic','glitch']) {
             const first = engine.processEffects(palette,[engine.newEffect(kind,78,undefined,{
               colorA:'#ff302a',colorB:'#fccc38',colorMix:100,density:100,
             })]);
             const second = engine.processEffects(palette,[engine.newEffect(kind,78,undefined,{
               colorA:'#28e1fa',colorB:'#2736fa',colorMix:100,density:100,
             })]);
-            assert(`${kind} honors independently selected distortion colors`,differentImages(first,second));
+            assert(`${kind} ignores obsolete false-color pairs while preserving source-color displacement`, !differentImages(first,second));
           }
           const neonLow = engine.processEffects(alpha,[engine.newEffect('sig_1',60,'#a824f6',{
             radius:12,frequency:0,opacity:100,

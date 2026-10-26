@@ -5,7 +5,7 @@ const {spawnSync}=require('child_process');
 const root=path.resolve(__dirname,'../src/editor');
 const names=['canvas-surface','immutable-effect-sources','types','effect-catalog','effect-schema',
  'advanced-ops','color-reconstruction','detail-reconstruction','subject-outline','creative-reconstruction',
- 'stylize-reconstruction','aurora-expansion', 'effect-ops','effect-stack-cache','preview-quality','fx'];
+ 'stylize-reconstruction','aurora-expansion', 'subject-segmentation', 'effect-ops','effect-stack-cache','preview-quality','fx'];
 const modules=Object.fromEntries(names.map(name=>[name,ts.transpileModule(fs.readFileSync(path.join(root,name+'.ts'),'utf8'),{
  fileName:name+'.ts',compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText]));
 const script=`(()=>{const modules=${JSON.stringify(modules)},cache={};function load(name){const id=name.replace('./','');

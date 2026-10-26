@@ -6,7 +6,7 @@ const ts = require('typescript');
 
 const sourceRoot = path.join(__dirname, '../src/editor');
 const bundle = {};
-for (const name of ['canvas-surface', 'immutable-effect-sources', 'creative', 'creative-render', 'effect-catalog', 'effect-schema', 'advanced-ops', 'color-reconstruction', 'detail-reconstruction', 'subject-outline', 'creative-reconstruction', 'stylize-reconstruction', 'preview-quality', 'types', 'animation', 'geometry', 'parametric-shapes', 'aurora-expansion', 'effect-ops', 'fx', 'effect-stack-cache', 'effects-worker', 'render', 'svg', 'brush', 'typography', 'store', 'clipboard']) {
+for (const name of ['canvas-surface', 'immutable-effect-sources', 'creative', 'creative-render', 'effect-catalog', 'effect-schema', 'advanced-ops', 'color-reconstruction', 'detail-reconstruction', 'subject-outline', 'creative-reconstruction', 'stylize-reconstruction', 'preview-quality', 'types', 'animation', 'geometry', 'parametric-shapes', 'aurora-expansion', 'subject-segmentation', 'effect-ops', 'fx', 'effect-stack-cache', 'effects-worker', 'render', 'svg', 'brush', 'typography', 'store', 'clipboard']) {
   bundle[name] = ts.transpileModule(fs.readFileSync(path.join(sourceRoot, `${name}.ts`), 'utf8'), {
     fileName: `${name}.ts`,
     compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },

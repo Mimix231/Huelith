@@ -1,0 +1,42 @@
+.huelith-color-trigger{border:0;background:transparent;padding:2px;min-width:22px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+.huelith-color-chip{width:20px;height:20px;display:block;border:1px solid var(--border,#84879c);border-radius:5px;box-shadow:0 1px 4px #0003}
+.huelith-picker{width:274px;box-sizing:border-box;padding:14px;background:var(--panel-bg,#242738);color:var(--text-primary,var(--text,#f8f7ff));display:grid;gap:12px;font-size:12px;border:1px solid var(--border,#7777a0);border-radius:12px}
+.huelith-picker header{display:flex;justify-content:space-between;align-items:center;font-size:13px}
+.huelith-picker header button{background:transparent;border:0;font-size:20px;color:inherit;cursor:pointer}
+.huelith-sv{width:100%;height:150px;position:relative;touch-action:none;cursor:crosshair;overflow:hidden;border-radius:9px}
+.huelith-sv-white,.huelith-sv-black{position:absolute;inset:0;pointer-events:none}.huelith-sv-white{background:linear-gradient(90deg,#fff,transparent)}.huelith-sv-black{background:linear-gradient(0deg,#000,transparent)}
+.huelith-sv-handle{width:11px;height:11px;border:2px solid white;border-radius:50%;position:absolute;transform:translate(-50%,-50%);box-shadow:0 0 2px #000}
+.huelith-picker label{display:flex;gap:8px;align-items:center;justify-content:space-between}.huelith-picker label input:not([type=range]){width:148px;background:var(--input-bg,#25243c);color:inherit;padding:6px;border:1px solid var(--border,#7777a0);border-radius:6px}
+.huelith-picker label input[type=range]{flex:1;min-width:0;accent-color:var(--accent,#9384ff)}.huelith-picker .huelith-hue{appearance:none;height:12px;border-radius:5px;background:linear-gradient(90deg,red,#ff0,lime,cyan,blue,#f0f,red)}
+.huelith-picker-rgb{display:flex;gap:5px}.huelith-picker-rgb label{flex:1}.huelith-picker-rgb input{max-width:48px!important}
+.huelith-picker-presets{display:flex;flex-wrap:wrap;gap:5px}.huelith-picker-presets button{width:22px;height:22px;border-radius:5px;border:1px solid #889;cursor:pointer}
+.huelith-shape-menu{width:250px;padding:10px;display:grid;grid-template-columns:repeat(3,1fr);gap:5px;background:var(--panel-bg,#242738);color:var(--text-primary,#fff)}
+.huelith-shape-menu button{background:transparent;color:inherit;border:1px solid var(--border,#62638a);border-radius:7px;padding:9px 3px;cursor:pointer;display:grid;justify-items:center;font:inherit;gap:4px}
+.huelith-shape-menu button:hover,.huelith-shape-menu button[aria-pressed=true]{background:var(--accent-soft,#7466b855)}
+.huelith-shape-menu span{font-size:10px}
+.huelith-color-pair{position:relative;width:34px;height:36px;margin:6px auto 8px}
+.huelith-color-pair .huelith-color-trigger{position:absolute;z-index:1;left:0;top:0}.huelith-color-pair .huelith-color-trigger:nth-child(2){left:12px;top:12px;z-index:0}
+.huelith-color-pair .huelith-color-chip{width:22px;height:22px}
+.huelith-color-actions{display:flex;justify-content:space-evenly}.huelith-color-actions button{background:transparent;color:inherit;border:0;cursor:pointer;font-size:12px}
+
+.huelith-save-color{background:var(--accent-soft,#66618c55);border:1px solid var(--border,#7a748d);color:inherit;border-radius:6px;padding:6px;cursor:pointer}
+
+/* 0.2 UI repair: foreground/background and actions are separate hit targets. */
+.toolrail .huelith-color-pair {box-sizing:border-box;position:relative; flex:none;width:40px;height:42px;margin:10px auto 3px;overflow:visible}
+.toolrail .huelith-color-pair .huelith-color-trigger {position:absolute;left:0;top:0;z-index:2;width:27px;height:27px;min-width:27px;padding:2px;display:grid;place-items:center}
+.toolrail .huelith-color-pair .huelith-color-trigger:nth-child(2) {left:13px;top:14px;z-index:1}
+.toolrail .huelith-color-pair .huelith-color-chip {width:23px;height:23px;box-sizing:border-box;box-shadow:0 1px 3px #0007;border:1px solid var(--border,#9393aa)}
+.toolrail .huelith-color-pair .huelith-color-trigger:hover,.toolrail .huelith-color-pair .huelith-color-trigger:focus-visible {z-index:3;outline:2px solid var(--accent,#a697ee);border-radius:6px}
+.toolrail .huelith-color-actions {display:grid;grid-template-columns:repeat(2,20px);gap:2px;justify-content:center;flex:none;margin:0 auto 9px;width:44px}
+.toolrail .huelith-color-actions button {display:grid;place-items:center;width:20px;height:22px;padding:0;border-radius:5px;color:var(--text-primary,var(--text,#fff))}
+.toolrail .huelith-color-actions button svg {font-size:15px}
+.toolrail .huelith-color-actions button:hover,.toolrail .huelith-color-actions button:focus-visible {background:var(--active-bg,#8584bd55);outline:1px solid var(--border,#7777a0)}
+/* Implementation 4: fit BOTH swatches and action buttons inside the canonical
+   35px tool rail instead of the old 40/44px controls spilling onto the canvas. */
+.toolrail .huelith-color-pair {width:33px;height:37px;margin:8px auto 3px;overflow:visible}
+.toolrail .huelith-color-pair .huelith-color-trigger{width:22px;height:22px;min-width:22px;left:1px;top:0;padding:1px}
+.toolrail .huelith-color-pair .huelith-color-trigger:nth-child(2){left:11px;top:12px}
+.toolrail .huelith-color-pair .huelith-color-chip{width:20px;height:20px}
+.toolrail .huelith-color-actions{width:33px;grid-template-columns:repeat(2,16px);gap:1px;margin:2px auto 7px}
+.toolrail .huelith-color-actions button{width:16px;height:19px;padding:0}
+.toolrail .huelith-color-actions button svg{font-size:13px}

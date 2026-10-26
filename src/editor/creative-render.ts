@@ -1,3 +1,4 @@
+import { renderExpandedOriginal } from './originals-expansion';
 /** Independent Huelith Originals processors. Canvas/export call the same routines. */
 import type { CreativeObject, CreativeKind } from './creative';
 import { evaluatedCreative, currentCreativeFrame } from './creative';
@@ -423,6 +424,8 @@ export function renderCreative(ctx: CanvasRenderingContext2D, doc: Document): vo
         case 'livingInk': livingInk(ctx, item); break;
         case 'paletteFlow': paletteFlow(ctx, item, frame); break;
         case 'motionEcho': case 'sceneCards': case 'timeSculptor': timeSculptor(ctx, item, frame); break;
+        case 'particleGarden': case 'warpCage': case 'lightTrails': case 'patternArchitect': case 'gradientReactor':
+          renderExpandedOriginal(ctx, item, frame); break;
       }
     } finally {
       ctx.restore();

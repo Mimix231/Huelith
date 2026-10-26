@@ -72,7 +72,7 @@ test('Worker entry uses bundled module URL and deterministic synchronous exports
   assert.match(client, /latest\.set\(layer/);
   assert.match(client, /worker\.terminate\(\)/);
   assert.match(renderer, /if \(onReady && asyncProcessor\)/);
-  assert.match(renderer, /const processed = processEffects\(source, effects\)/);
+  assert.match(renderer, /const result = processEffects\(source,effects\)/);
   assert.match(native, /drawDocument\(ctx, doc\)/);
 });
 

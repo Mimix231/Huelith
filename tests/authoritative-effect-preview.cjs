@@ -8,7 +8,7 @@ for (const name of [
   'canvas-surface', 'immutable-effect-sources', 'types', 'effect-catalog', 'effect-schema',
   'advanced-ops', 'color-reconstruction', 'detail-reconstruction',
   'subject-outline', 'creative-reconstruction', 'stylize-reconstruction',
-  'aurora-expansion', 'effect-ops', 'preview-quality', 'fx',
+  'aurora-expansion', 'subject-segmentation', 'effect-ops', 'preview-quality', 'fx',
 ]) {
   sources[name] = ts.transpileModule(fs.readFileSync(path.join(base, `${name}.ts`), 'utf8'), {
     fileName: `${name}.ts`,

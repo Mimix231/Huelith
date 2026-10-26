@@ -33,5 +33,6 @@ test('no temporary painter substitutes a different algorithm during dragging', (
   const fx = read('src/editor/fx.ts');
   assert.doesNotMatch(fx, /paintGpuEffectDraft|paintCanvasEffectDraft|drawLiveStrengthPreview/);
   assert.match(fx, /queueLayerEffectPreview\(layer\.id, effects\)/);
-  assert.match(fx, /const processed = processEffects\(source, effects\)/);
+  assert.match(fx, /const result = processEffects\(source,effects\)/);
+  assert.match(fx, /const processed = cachedExact\(source, signature, effects\)/);
 });

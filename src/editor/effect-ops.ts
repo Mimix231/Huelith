@@ -1,3 +1,4 @@
+import { segmentSubject } from './subject-segmentation';
 import { createSurface } from './canvas-surface';
 import { AURORA_NEW_KINDS, renderAuroraExpansion } from './aurora-expansion';
 import { renderSubjectOutline } from './subject-outline';
@@ -390,8 +391,12 @@ function detailEffect(source: HTMLCanvasElement, effect: Effect): HTMLCanvasElem
       for (let i = 0; i < base.data.length; i += 4) {
         const originalLum = shade(base.data[i], base.data[i + 1], base.data[i + 2]);
         const blurredLum = shade(softenedImage.data[i], softenedImage.data[i + 1], softenedImage.data[i + 2]);
-        const weight = 1 - clamp(Math.abs(originalLum - blurredLum) / Math.max(1, effect.parameters?.threshold ?? 60), 0, 1);
-        for (let channel = 0; channel < 3; channel++) base.data[i + channel] = mix(base.data[i + channel], softenedImage.data[i + channel], weight);
+        const tonalGap=Math.abs(originalLum-blurredLum);
+        const threshold=Math.max(1,effect.parameters?.threshold ?? 60);
+        // Fast edge-aware surface smoothing retains hard silhouettes while
+        // blending similarly colored interior pixels more strongly.
+        const weight=Math.pow(1 - clamp(tonalGap/threshold,0,1),2);
+        for (let channel=0;channel<3;channel++) base.data[i+channel]=mix(base.data[i+channel],softenedImage.data[i+channel],weight);
       }
       return fromPixels(base);
     }
@@ -467,7 +472,26 @@ function detailEffect(source: HTMLCanvasElement, effect: Effect): HTMLCanvasElem
         if (['sharpen', 'unsharp', 'clarity', 'texture'].includes(effect.kind)) {
           const delta = base[i + c] - blur[i + c];
           const threshold = effect.kind === 'unsharp' || effect.kind === 'sharpen' ? (effect.parameters?.threshold ?? 0) : 0;
-          base[i + c] = clamp(base[i + c] + (Math.abs(delta) >= threshold ? delta : 0) * a * (effect.kind === 'sharpen' ? 2 : 1));
+          if (effect.kind === 'clarity') {
+            // Clarity changes local contrast in the midtones; keep the deep
+            // shadows and near-white highlights substantially protected.
+            const luma = shade(base[i],base[i+1],base[i+2])/255;
+            const midtone = Math.pow(Math.max(0,1-Math.abs(luma-.5)*2),1.3);
+            base[i+c] = clamp(base[i+c]+delta*a*1.45*midtone);
+          } else if (effect.kind === 'texture') {
+            // Texture processes high-frequency material details with a
+            // smaller, edge-gated response so it does not imitate Clarity.
+            const edge=Math.abs(delta);
+            const micro = Math.min(1,edge/22) * (1-Math.min(1,edge/125)*.62);
+            base[i+c]=clamp(base[i+c]+delta*a*micro*1.3);
+          } else if (effect.kind === 'sharpen') {
+            // Sharpen responds strongly to thin edges with a narrow halo.
+            base[i+c]=clamp(base[i+c]+(Math.abs(delta)>=threshold?delta:0)*a*2.1);
+          } else {
+            // Unsharp Mask is distinct: subtract an adjustable blurred
+            // reference only above the user-selected threshold.
+            base[i+c]=clamp(base[i+c]+(Math.abs(delta)>=threshold?delta:0)*a);
+          }
         } else if (effect.kind === 'highpass') {
           base[i + c] = clamp(128 + base[i + c] - blur[i + c]);
         } else if (effect.kind === 'denoise') {
@@ -629,6 +653,34 @@ function silhouetteEffect(source: HTMLCanvasElement, effect: Effect): HTMLCanvas
     return output;
   }
 
+  // Opaque photographs and imported backdrops have no useful alpha boundary.
+  // A pure silhouette glow would remain invisible on them. Build an internal
+  // luminance-contour emitter instead, without changing the source geometry.
+  if (isGlow && radius > 0 && (mode === 'outer' || mode === 'both' || mode === 'energy' || mode === 'atmosphere')) {
+    let opaque = 0;
+    for (let i = 3; i < original.data.length; i += 4) if (original.data[i] > 250) opaque++;
+    if (opaque / Math.max(1, width * height) > 0.98) {
+      const edges = edgeMap(source);
+      const emissive = new ImageData(width, height);
+      const sensitivity = clamp(effect.parameters?.threshold ?? 35, 0, 255);
+      for (let i = 0; i < edges.data.length; i += 4) {
+        emissive.data[i] = tint[0]; emissive.data[i + 1] = tint[1]; emissive.data[i + 2] = tint[2];
+        emissive.data[i + 3] = Math.round(255 * Math.max(0, (edges.data[i] - sensitivity) / Math.max(1, 255 - sensitivity)));
+      }
+      const emitter = fromPixels(emissive);
+      ctx.drawImage(source, 0, 0);
+      ctx.save();
+      ctx.globalCompositeOperation = 'screen';
+      ctx.globalAlpha = opacity * clamp(radius / 22, 0, 1);
+      ctx.filter = `blur(${Math.min(100, softness + radius * 0.35)}px)`;
+      ctx.drawImage(emitter, 0, 0);
+      ctx.filter = 'none';
+      ctx.globalAlpha = opacity * Math.min(1, radius / 15) * (mode === 'energy' ? .9 : .4);
+      ctx.drawImage(emitter, 0, 0);
+      ctx.restore();
+      return output;
+    }
+  }
   const { outside, inside } = silhouetteDistances(source, original.data,
     isGlow && (mode === 'inner' || mode === 'both'));
   const image = new ImageData(width, height);
@@ -688,7 +740,7 @@ function silhouetteEffect(source: HTMLCanvasElement, effect: Effect): HTMLCanvas
 /** Conservative auto-selection: require one dominant BORDER color cluster.
  * Never treat unrelated corners as four independent background colors, which
  * previously removed similarly-colored subjects touching the image edges. */
-function removeCornerBackground(source: HTMLCanvasElement, tolerance: number): HTMLCanvasElement {
+function removeCornerBackground(source: HTMLCanvasElement, tolerance: number, effect?: Effect): HTMLCanvasElement {
   const image = pixels(source);
   const { width: w, height: h, data } = image;
   if (!w || !h) return fromPixels(image);
@@ -713,23 +765,60 @@ function removeCornerBackground(source: HTMLCanvasElement, tolerance: number): H
   }
   // Ambiguous borders (busy photos, subject across edges): do not guess and
   // accidentally erase the subject. Keep/Remove brushes remain available.
-  if (!dominant || dominant.count / Math.max(1, total) < 0.24) return fromPixels(image);
-  const [r, g, b] = [dominant.r, dominant.g, dominant.b].map(v => v / dominant!.count);
-  const threshold = Math.max(6, Math.min(150, tolerance * 1.5));
+  const manualColor = effect?.parameters?.backgroundSampleColor;
+  const selected = manualColor && /^#[0-9a-f]{6}$/i.test(manualColor) ? colorFromHex(manualColor, '#ffffff') : null;
+  // Complex borders are not a safe indication of the subject's background.
+  // Always make a conservative attempt with a coherent border cluster. The old
+  // 52% rule caused busy illustrations to return the untouched source image.
+  if (!selected && (!dominant || dominant.count / Math.max(1, total) < .12)) return fromPixels(image);
+  const [r, g, b] = selected ?? [dominant!.r, dominant!.g, dominant!.b].map(v => v / dominant!.count);
+  // A generous RGB-distance threshold easily destroys white details in an illustration.
+  // Constrain automatic matching; manual Keep/Remove strokes handle the ambiguous areas.
+  const threshold = Math.max(4, Math.min(120, tolerance * .9));
+  const guard = Math.max(0, Math.min(100, effect?.parameters?.backgroundEdgeGuard ?? 24));
   const similar = (index: number): boolean => {
     const i = index * 4;
     return data[i + 3] > 0 && Math.hypot(data[i] - r, data[i + 1] - g, data[i + 2] - b) <= threshold;
   };
+  const isEdge = (index: number): boolean => {
+    if (!guard) return false;
+    const x = index % w, y = Math.floor(index / w), k = index * 4;
+    const near = [x > 0 ? k - 4 : -1, x + 1 < w ? k + 4 : -1,
+      y > 0 ? k - 4 * w : -1, y + 1 < h ? k + 4 * w : -1];
+    // Avoid a flood fill reaching a foreground contour through mixed edge pixels.
+    // The image remains source-of-truth for manual subject protection.
+    return near.some(n => n >= 0 && Math.abs(data[k] - data[n]) +
+      Math.abs(data[k + 1] - data[n + 1]) + Math.abs(data[k + 2] - data[n + 2]) > guard * 2.6 + 35);
+  };
+  // Keep marks protect the subject DURING region growing, not merely after.
+  // Otherwise a background flood can leak across a user-protected bridge.
+  const protectedPixels = new Uint8Array(w * h);
+  for (const mark of effect?.parameters?.maskStrokes ?? []) {
+    if (mark.mode !== 'keep') continue;
+    const cx = mark.x * w, cy = mark.y * h, radius = Math.max(1, mark.radius);
+    const left=Math.max(0,Math.floor(cx-radius)),right=Math.min(w-1,Math.ceil(cx+radius));
+    const top=Math.max(0,Math.floor(cy-radius)),bottom=Math.min(h-1,Math.ceil(cy+radius));
+    for(let yy=top;yy<=bottom;yy++) for(let xx=left;xx<=right;xx++) {
+      if ((xx-cx)**2+(yy-cy)**2<=radius*radius) protectedPixels[yy*w+xx]=1;
+    }
+  }
   const visited = new Uint8Array(w * h);
   const queue = new Int32Array(w * h);
   let head = 0, tail = 0;
   const enqueue = (index: number): void => {
-    if (visited[index] || !similar(index)) return;
+    if (visited[index] || protectedPixels[index] || !similar(index) || isEdge(index)) return;
     visited[index] = 1; queue[tail++] = index;
   };
-  for (let x = 0; x < w; x++) { enqueue(x); enqueue((h - 1) * w + x); }
-  for (let y = 0; y < h; y++) { enqueue(y * w); enqueue(y * w + w - 1); }
-  while (head < tail) {
+  if (effect?.parameters?.backgroundGlobal === 1) {
+    // Explicit user choice: pure color key, useful for white-backdrop artwork.
+    // Protected strokes still override the selection.
+    for (let i = 0; i < w*h; i++) if (!protectedPixels[i] && similar(i)) {
+      visited[i] = 1; queue[tail++] = i;
+    }
+  }
+  if (effect?.parameters?.backgroundGlobal !== 1) for (let x = 0; x < w; x++) { enqueue(x); enqueue((h - 1) * w + x); }
+  if (effect?.parameters?.backgroundGlobal !== 1) for (let y = 0; y < h; y++) { enqueue(y * w); enqueue(y * w + w - 1); }
+  while (effect?.parameters?.backgroundGlobal !== 1 && head < tail) {
     const index = queue[head++], x = index % w;
     if (index >= w) enqueue(index - w);
     if (index + w < w * h) enqueue(index + w);
@@ -741,6 +830,32 @@ function removeCornerBackground(source: HTMLCanvasElement, tolerance: number): H
   // even when its background occupies more than 92% of the image.
   if (tail >= w * h - 1) return fromPixels(image);
   for (let i = 0; i < tail; i++) data[queue[i] * 4 + 3] = 0;
+  return fromPixels(image);
+}
+
+/** Retain one exact inferred matte per immutable source and parameter identity.
+ * Feather and color-spill controls do not invalidate the geometric matte. */
+const smartMatteCache = new WeakMap<HTMLCanvasElement, { key: string; alpha: Uint8ClampedArray }>();
+
+/** Guided subject extraction using an edge-aware graph minimum cut. The
+ * full-resolution input stays untouched; only alpha is changed. */
+function smartSubjectCutout(source: HTMLCanvasElement, effect: Effect): HTMLCanvasElement {
+  const params = effect.parameters;
+  const key = JSON.stringify([source.width, source.height, effect.amount,
+    params?.backgroundEdgeGuard, params?.backgroundSampleColor,
+    params?.segmentationQuality, params?.subjectBox, params?.maskStrokes]);
+  const image = pixels(source);
+  const old = smartMatteCache.get(source);
+  const matte = old?.key === key ? old.alpha : segmentSubject(image, {
+    strength: effect.amount,
+    edgeProtection: params?.backgroundEdgeGuard ?? 24,
+    backgroundColor: params?.backgroundSampleColor,
+    quality: params?.segmentationQuality ?? 152,
+    strokes: params?.maskStrokes ?? [],
+    subjectBox: params?.subjectBox,
+  });
+  if (!old || old.key !== key) smartMatteCache.set(source, {key, alpha: matte});
+  for (let i = 0; i < matte.length; i++) image.data[i * 4 + 3] = matte[i];
   return fromPixels(image);
 }
 
@@ -1078,7 +1193,9 @@ export function applyEffect(source: HTMLCanvasElement, effect: Effect): HTMLCanv
     case 'mosaic': return applyMosaic(source, effect);
     case 'cutout': {
       const removed = applyBackgroundMask(source,
-        effect.parameters?.backgroundAuto === 0 ? copyImage(source) : removeCornerBackground(source, effect.amount), effect);
+        effect.parameters?.backgroundAuto === 0 || effect.parameters?.segmentationMode === 'manual' ? copyImage(source) :
+        effect.parameters?.segmentationMode === 'smart' ? smartSubjectCutout(source, effect) :
+          removeCornerBackground(source, effect.amount, effect), effect);
       const spill = clamp(effect.parameters?.decontaminate ?? 0, 0, 100) / 100;
       if (spill > 0) {
         const src = pixels(source);

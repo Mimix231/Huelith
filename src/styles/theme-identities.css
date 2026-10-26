@@ -1,0 +1,117 @@
+/* Distinct visual identities, not merely recolored icons. Existing semantic theme tokens
+   remain the source of foreground/text contrast. Decoration is low-opacity only. */
+
+.theme-strawberry { --identity-radius:18px;--identity-highlight:#f8598b; }
+.theme-strawberry .titlebar { background:radial-gradient(circle at 9px 9px,color-mix(in srgb,var(--accent) 8%,transparent) 2px,transparent 3px) 0 0/27px 27px ,var(--title-bg); }
+.theme-strawberry .toolrail { background:radial-gradient(circle at 9px 9px,color-mix(in srgb,var(--accent) 8%,transparent) 2px,transparent 3px) 0 0/27px 27px ,var(--panel-bg); }
+.theme-strawberry .inspector { background:radial-gradient(circle at 9px 9px,color-mix(in srgb,var(--accent) 8%,transparent) 2px,transparent 3px) 0 0/27px 27px ,var(--panel-bg); }
+.theme-strawberry .brand-mark { box-shadow:0 2px 10px color-mix(in srgb,var(--identity-highlight) 38%,transparent); }
+.theme-strawberry .toolrail .tool-button:hover, .theme-strawberry .toolrail button:hover {border-radius:var(--identity-radius);}
+.theme-strawberry .toolrail .tool-button.active, .theme-strawberry .toolrail button[aria-pressed="true"] {box-shadow:inset 0 0 0 1px var(--accent-line),0 0 0 2px color-mix(in srgb,var(--accent) 11%,transparent);border-radius:var(--identity-radius);}
+
+.theme-melon { --identity-radius:13px;--identity-highlight:#51bea6; }
+.theme-melon .titlebar { background:radial-gradient(ellipse at 17px 8px,color-mix(in srgb,var(--accent) 12%,transparent) 2px,transparent 4px) 0 0/43px 23px ,var(--title-bg); }
+.theme-melon .toolrail { background:radial-gradient(ellipse at 17px 8px,color-mix(in srgb,var(--accent) 12%,transparent) 2px,transparent 4px) 0 0/43px 23px ,var(--panel-bg); }
+.theme-melon .inspector { background:radial-gradient(ellipse at 17px 8px,color-mix(in srgb,var(--accent) 12%,transparent) 2px,transparent 4px) 0 0/43px 23px ,var(--panel-bg); }
+.theme-melon .brand-mark { box-shadow:0 2px 10px color-mix(in srgb,var(--identity-highlight) 38%,transparent); }
+.theme-melon .toolrail .tool-button:hover, .theme-melon .toolrail button:hover {border-radius:var(--identity-radius);}
+.theme-melon .toolrail .tool-button.active, .theme-melon .toolrail button[aria-pressed="true"] {box-shadow:inset 0 0 0 1px var(--accent-line),0 0 0 2px color-mix(in srgb,var(--accent) 11%,transparent);border-radius:var(--identity-radius);}
+
+.theme-peach { --identity-radius:21px;--identity-highlight:#edb69d; }
+.theme-peach .titlebar { background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 8%,transparent),transparent 40%,color-mix(in srgb,var(--accent-line) 7%,transparent)) ,var(--title-bg); }
+.theme-peach .toolrail { background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 8%,transparent),transparent 40%,color-mix(in srgb,var(--accent-line) 7%,transparent)) ,var(--panel-bg); }
+.theme-peach .inspector { background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 8%,transparent),transparent 40%,color-mix(in srgb,var(--accent-line) 7%,transparent)) ,var(--panel-bg); }
+.theme-peach .brand-mark { box-shadow:0 2px 10px color-mix(in srgb,var(--identity-highlight) 38%,transparent); }
+.theme-peach .toolrail .tool-button:hover, .theme-peach .toolrail button:hover {border-radius:var(--identity-radius);}
+.theme-peach .toolrail .tool-button.active, .theme-peach .toolrail button[aria-pressed="true"] {box-shadow:inset 0 0 0 1px var(--accent-line),0 0 0 2px color-mix(in srgb,var(--accent) 11%,transparent);border-radius:var(--identity-radius);}
+
+.theme-lemon { --identity-radius:5px;--identity-highlight:#d9bf60; }
+.theme-lemon .titlebar { background:repeating-linear-gradient(-30deg,color-mix(in srgb,var(--accent) 7%,transparent) 0 2px,transparent 2px 21px) ,var(--title-bg); }
+.theme-lemon .toolrail { background:repeating-linear-gradient(-30deg,color-mix(in srgb,var(--accent) 7%,transparent) 0 2px,transparent 2px 21px) ,var(--panel-bg); }
+.theme-lemon .inspector { background:repeating-linear-gradient(-30deg,color-mix(in srgb,var(--accent) 7%,transparent) 0 2px,transparent 2px 21px) ,var(--panel-bg); }
+.theme-lemon .brand-mark { box-shadow:0 2px 10px color-mix(in srgb,var(--identity-highlight) 38%,transparent); }
+.theme-lemon .toolrail .tool-button:hover, .theme-lemon .toolrail button:hover {border-radius:var(--identity-radius);}
+.theme-lemon .toolrail .tool-button.active, .theme-lemon .toolrail button[aria-pressed="true"] {box-shadow:inset 0 0 0 1px var(--accent-line),0 0 0 2px color-mix(in srgb,var(--accent) 11%,transparent);border-radius:var(--identity-radius);}
+
+.theme-mango { --identity-radius:10px;--identity-highlight:#ffb64f; }
+.theme-mango .titlebar { background:radial-gradient(ellipse at 88% 4%,color-mix(in srgb,var(--accent) 15%,transparent),transparent 58%) ,var(--title-bg); }
+.theme-mango .toolrail { background:radial-gradient(ellipse at 88% 4%,color-mix(in srgb,var(--accent) 15%,transparent),transparent 58%) ,var(--panel-bg); }
+.theme-mango .inspector { background:radial-gradient(ellipse at 88% 4%,color-mix(in srgb,var(--accent) 15%,transparent),transparent 58%) ,var(--panel-bg); }
+.theme-mango .brand-mark { box-shadow:0 2px 10px color-mix(in srgb,var(--identity-highlight) 38%,transparent); }
+.theme-mango .toolrail .tool-button:hover, .theme-mango .toolrail button:hover {border-radius:var(--identity-radius);}
+.theme-mango .toolrail .tool-button.active, .theme-mango .toolrail button[aria-pressed="true"] {box-shadow:inset 0 0 0 1px var(--accent-line),0 0 0 2px color-mix(in srgb,var(--accent) 11%,transparent);border-radius:var(--identity-radius);}
+
+.theme-sakura { --identity-radius:23px;--identity-highlight:#dfa7ca; }
+.theme-sakura .titlebar { background:radial-gradient(ellipse 18px 7px at 12% 18%,color-mix(in srgb,var(--accent) 12%,transparent),transparent 95%) ,var(--title-bg); }
+.theme-sakura .toolrail { background:radial-gradient(ellipse 18px 7px at 12% 18%,color-mix(in srgb,var(--accent) 12%,transparent),transparent 95%) ,var(--panel-bg); }
+.theme-sakura .inspector { background:radial-gradient(ellipse 18px 7px at 12% 18%,color-mix(in srgb,var(--accent) 12%,transparent),transparent 95%) ,var(--panel-bg); }
+.theme-sakura .brand-mark { box-shadow:0 2px 10px color-mix(in srgb,var(--identity-highlight) 38%,transparent); }
+.theme-sakura .toolrail .tool-button:hover, .theme-sakura .toolrail button:hover {border-radius:var(--identity-radius);}
+.theme-sakura .toolrail .tool-button.active, .theme-sakura .toolrail button[aria-pressed="true"] {box-shadow:inset 0 0 0 1px var(--accent-line),0 0 0 2px color-mix(in srgb,var(--accent) 11%,transparent);border-radius:var(--identity-radius);}
+
+.theme-blossom { --identity-radius:17px;--identity-highlight:#c1a0ff; }
+.theme-blossom .titlebar { background:linear-gradient(120deg,color-mix(in srgb,var(--accent) 9%,transparent),transparent 52%,color-mix(in srgb,var(--accent-line) 10%,transparent)) ,var(--title-bg); }
+.theme-blossom .toolrail { background:linear-gradient(120deg,color-mix(in srgb,var(--accent) 9%,transparent),transparent 52%,color-mix(in srgb,var(--accent-line) 10%,transparent)) ,var(--panel-bg); }
+.theme-blossom .inspector { background:linear-gradient(120deg,color-mix(in srgb,var(--accent) 9%,transparent),transparent 52%,color-mix(in srgb,var(--accent-line) 10%,transparent)) ,var(--panel-bg); }
+.theme-blossom .brand-mark { box-shadow:0 2px 10px color-mix(in srgb,var(--identity-highlight) 38%,transparent); }
+.theme-blossom .toolrail .tool-button:hover, .theme-blossom .toolrail button:hover {border-radius:var(--identity-radius);}
+.theme-blossom .toolrail .tool-button.active, .theme-blossom .toolrail button[aria-pressed="true"] {box-shadow:inset 0 0 0 1px var(--accent-line),0 0 0 2px color-mix(in srgb,var(--accent) 11%,transparent);border-radius:var(--identity-radius);}
+
+.theme-shadow { --identity-radius:4px;--identity-highlight:#a2a6d6; }
+.theme-shadow .titlebar { background:repeating-linear-gradient(150deg,color-mix(in srgb,var(--accent) 7%,transparent) 0 1px,transparent 1px 15px) ,var(--title-bg); }
+.theme-shadow .toolrail { background:repeating-linear-gradient(150deg,color-mix(in srgb,var(--accent) 7%,transparent) 0 1px,transparent 1px 15px) ,var(--panel-bg); }
+.theme-shadow .inspector { background:repeating-linear-gradient(150deg,color-mix(in srgb,var(--accent) 7%,transparent) 0 1px,transparent 1px 15px) ,var(--panel-bg); }
+.theme-shadow .brand-mark { box-shadow:0 2px 10px color-mix(in srgb,var(--identity-highlight) 38%,transparent); }
+.theme-shadow .toolrail .tool-button:hover, .theme-shadow .toolrail button:hover {border-radius:var(--identity-radius);}
+.theme-shadow .toolrail .tool-button.active, .theme-shadow .toolrail button[aria-pressed="true"] {box-shadow:inset 0 0 0 1px var(--accent-line),0 0 0 2px color-mix(in srgb,var(--accent) 11%,transparent);border-radius:var(--identity-radius);}
+
+.theme-glass { --identity-radius:16px;--identity-highlight:#9be0ea; }
+.theme-glass .titlebar { background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 9%,transparent),transparent 65%) ,var(--title-bg); }
+.theme-glass .toolrail { background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 9%,transparent),transparent 65%) ,var(--panel-bg); }
+.theme-glass .inspector { background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 9%,transparent),transparent 65%) ,var(--panel-bg); }
+.theme-glass .brand-mark { box-shadow:0 2px 10px color-mix(in srgb,var(--identity-highlight) 38%,transparent); }
+.theme-glass .toolrail .tool-button:hover, .theme-glass .toolrail button:hover {border-radius:var(--identity-radius);}
+.theme-glass .toolrail .tool-button.active, .theme-glass .toolrail button[aria-pressed="true"] {box-shadow:inset 0 0 0 1px var(--accent-line),0 0 0 2px color-mix(in srgb,var(--accent) 11%,transparent);border-radius:var(--identity-radius);}
+
+.theme-material { --identity-radius:14px;--identity-highlight:#af9cda; }
+.theme-material .titlebar { background:linear-gradient(160deg,color-mix(in srgb,var(--accent) 9%,transparent),transparent 48%) ,var(--title-bg); }
+.theme-material .toolrail { background:linear-gradient(160deg,color-mix(in srgb,var(--accent) 9%,transparent),transparent 48%) ,var(--panel-bg); }
+.theme-material .inspector { background:linear-gradient(160deg,color-mix(in srgb,var(--accent) 9%,transparent),transparent 48%) ,var(--panel-bg); }
+.theme-material .brand-mark { box-shadow:0 2px 10px color-mix(in srgb,var(--identity-highlight) 38%,transparent); }
+.theme-material .toolrail .tool-button:hover, .theme-material .toolrail button:hover {border-radius:var(--identity-radius);}
+.theme-material .toolrail .tool-button.active, .theme-material .toolrail button[aria-pressed="true"] {box-shadow:inset 0 0 0 1px var(--accent-line),0 0 0 2px color-mix(in srgb,var(--accent) 11%,transparent);border-radius:var(--identity-radius);}
+
+.theme-classic { --identity-radius:4px;--identity-highlight:#c3b0a0; }
+.theme-classic .titlebar { background:repeating-linear-gradient(0deg,color-mix(in srgb,var(--text) 4%,transparent) 0 1px,transparent 1px 22px) ,var(--title-bg); }
+.theme-classic .toolrail { background:repeating-linear-gradient(0deg,color-mix(in srgb,var(--text) 4%,transparent) 0 1px,transparent 1px 22px) ,var(--panel-bg); }
+.theme-classic .inspector { background:repeating-linear-gradient(0deg,color-mix(in srgb,var(--text) 4%,transparent) 0 1px,transparent 1px 22px) ,var(--panel-bg); }
+.theme-classic .brand-mark { box-shadow:0 2px 10px color-mix(in srgb,var(--identity-highlight) 38%,transparent); }
+.theme-classic .toolrail .tool-button:hover, .theme-classic .toolrail button:hover {border-radius:var(--identity-radius);}
+.theme-classic .toolrail .tool-button.active, .theme-classic .toolrail button[aria-pressed="true"] {box-shadow:inset 0 0 0 1px var(--accent-line),0 0 0 2px color-mix(in srgb,var(--accent) 11%,transparent);border-radius:var(--identity-radius);}
+
+.theme-midnight { --identity-radius:9px;--identity-highlight:#8aa2eb; }
+.theme-midnight .titlebar { background:radial-gradient(ellipse at 80% 2%,color-mix(in srgb,var(--accent) 16%,transparent),transparent 66%) ,var(--title-bg); }
+.theme-midnight .toolrail { background:radial-gradient(ellipse at 80% 2%,color-mix(in srgb,var(--accent) 16%,transparent),transparent 66%) ,var(--panel-bg); }
+.theme-midnight .inspector { background:radial-gradient(ellipse at 80% 2%,color-mix(in srgb,var(--accent) 16%,transparent),transparent 66%) ,var(--panel-bg); }
+.theme-midnight .brand-mark { box-shadow:0 2px 10px color-mix(in srgb,var(--identity-highlight) 38%,transparent); }
+.theme-midnight .toolrail .tool-button:hover, .theme-midnight .toolrail button:hover {border-radius:var(--identity-radius);}
+.theme-midnight .toolrail .tool-button.active, .theme-midnight .toolrail button[aria-pressed="true"] {box-shadow:inset 0 0 0 1px var(--accent-line),0 0 0 2px color-mix(in srgb,var(--accent) 11%,transparent);border-radius:var(--identity-radius);}
+
+.theme-studio { --identity-radius:8px;--identity-highlight:#73cfb6; }
+.theme-studio .titlebar { background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 8%,transparent),transparent 60%) ,var(--title-bg); }
+.theme-studio .toolrail { background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 8%,transparent),transparent 60%) ,var(--panel-bg); }
+.theme-studio .inspector { background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 8%,transparent),transparent 60%) ,var(--panel-bg); }
+.theme-studio .brand-mark { box-shadow:0 2px 10px color-mix(in srgb,var(--identity-highlight) 38%,transparent); }
+.theme-studio .toolrail .tool-button:hover, .theme-studio .toolrail button:hover {border-radius:var(--identity-radius);}
+.theme-studio .toolrail .tool-button.active, .theme-studio .toolrail button[aria-pressed="true"] {box-shadow:inset 0 0 0 1px var(--accent-line),0 0 0 2px color-mix(in srgb,var(--accent) 11%,transparent);border-radius:var(--identity-radius);}
+
+/* Surface depth and controls adapt to each theme's shape vocabulary. */
+.theme-strawberry .inspector .panel,.theme-sakura .inspector .panel{border-radius:18px;}
+.theme-peach .titlebar,.theme-blossom .titlebar{box-shadow:inset 0 -1px 0 color-mix(in srgb,var(--accent) 22%,transparent);}
+.theme-lemon .titlebar,.theme-shadow .titlebar{border-bottom-width:2px;}
+.theme-mango .titlebar .brand-mark{transform:rotate(-5deg);}
+.theme-sakura .titlebar .brand-mark{transform:rotate(6deg);}
+.theme-blossom .inspector{box-shadow:inset 1px 0 0 color-mix(in srgb,var(--accent) 13%,transparent);}
+.theme-shadow .toolrail{box-shadow:inset -2px 0 0 color-mix(in srgb,var(--accent) 23%,transparent);}
+.theme-glass .titlebar{backdrop-filter:blur(18px)}
+.theme-midnight .titlebar{box-shadow:0 2px 14px color-mix(in srgb,var(--accent) 9%,transparent)}

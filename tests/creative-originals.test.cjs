@@ -23,9 +23,9 @@ const { createDocument, isDocument } = load('types');
 const { CREATIVE_DEFINITIONS, newCreative, evaluatedCreative, setCreativeKeyframe, creativeDefinition, validCreative } = load('creative');
 const { enableAnimation, frameDocument, insertFrame, selectFrame } = load('animation');
 
-test('each of ten Originals has a distinct registered interface and numeric controls', () => {
-  assert.equal(CREATIVE_DEFINITIONS.length, 10);
-  assert.equal(new Set(CREATIVE_DEFINITIONS.map(item => item.kind)).size, 10);
+test('all fifteen Originals have distinct registered interfaces and numeric controls', () => {
+  assert.equal(CREATIVE_DEFINITIONS.length, 15);
+  assert.equal(new Set(CREATIVE_DEFINITIONS.map(item => item.kind)).size, 15);
   for (const def of CREATIVE_DEFINITIONS) {
     assert.ok(def.description.length > 20, def.kind);
     assert.ok(Object.keys(def.controls).length >= 3, def.kind);

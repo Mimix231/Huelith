@@ -1,8 +1,9 @@
 import type { Document, Layer, VectorShape } from './types';
 import { shapeBounds } from './geometry';
 import { shapePath } from './parametric-shapes';
+import { drawGradientShape } from './gradient';
 import { transformText } from './typography';
-import { renderWithEffects } from './fx';
+import { renderWithEffects, processEffects } from './fx';
 import { renderCreative, renderMotionEcho, paintCreativeLayer } from './creative-render';
 
 interface CachedImage {
@@ -79,13 +80,21 @@ export function drawShape(ctx: CanvasRenderingContext2D, shape: VectorShape, dx 
   ctx.beginPath();
 
   switch (shape.kind) {
+    case 'gradient':
+      drawGradientShape(ctx, shape);
+      ctx.restore();
+      return;
     case 'roundedRect':
     case 'triangle':
     case 'polygon':
     case 'star':
     case 'arrow':
     case 'heart':
-    case 'ring': {
+    case 'ring':
+    case 'diamond':
+    case 'speechBubble':
+    case 'crescent':
+    case 'cross': {
       const path = new Path2D(shapePath(shape));
       if (shape.fill !== 'none') {
         ctx.fillStyle = shape.fill;
@@ -209,22 +218,48 @@ export function drawShape(ctx: CanvasRenderingContext2D, shape: VectorShape, dx 
   ctx.restore();
 }
 
+// Cache the already-matted raster so animation and long effect stacks do not
+// allocate a full native-size canvas on every frame or slider update.
+const mattedCache: Array<{ source: HTMLImageElement; mask: HTMLImageElement; result: HTMLCanvasElement }> = [];
+function maskedRaster(image: HTMLImageElement, mask: HTMLImageElement): HTMLCanvasElement {
+  const found = mattedCache.find(entry => entry.source === image && entry.mask === mask);
+  if (found) return found.result;
+  const output = document.createElement('canvas');
+  output.width = image.naturalWidth; output.height = image.naturalHeight;
+  const ctx = output.getContext('2d');
+  if (ctx) {
+    ctx.drawImage(image, 0, 0);
+    ctx.globalCompositeOperation = 'destination-in';
+    ctx.drawImage(mask, 0, 0, output.width, output.height);
+    ctx.globalCompositeOperation = 'source-over';
+  }
+  mattedCache.push({source:image, mask, result:output});
+  while (mattedCache.length > 5) mattedCache.shift();
+  return output;
+}
+
 function paintLayer(ctx: CanvasRenderingContext2D, layer: Layer, onReady?: () => void, width?: number, height?: number): void {
   if (layer.type === 'raster') {
     const image = loadImage(layer.image, onReady);
-    if (image) {
+    const activeMask = layer.cutoutMask?.enabled ? layer.cutoutMask : undefined;
+    const maskImage = activeMask ? loadImage(activeMask.data, onReady) : null;
+    // Never momentarily show an unmasked subject while its mask decodes.
+    if (image && (!activeMask || maskImage)) {
+      const visibleImage = maskImage ? maskedRaster(image, maskImage) : image;
       const width = (layer.imageWidth ?? image.naturalWidth) * (layer.scaleX ?? 1);
       const height = (layer.imageHeight ?? image.naturalHeight) * (layer.scaleY ?? 1);
       if (layer.rotation) {
         ctx.translate(layer.x + width / 2, layer.y + height / 2);
         ctx.rotate(layer.rotation * Math.PI / 180);
-        ctx.drawImage(image, -width / 2, -height / 2, width, height);
+        ctx.drawImage(visibleImage, -width / 2, -height / 2, width, height);
       } else {
-        ctx.drawImage(image, layer.x, layer.y, width, height);
+        ctx.drawImage(visibleImage, layer.x, layer.y, width, height);
       }
     }
   } else if (layer.type === 'vector') {
     for (const shape of layer.shapes) drawShape(ctx, shape, layer.x, layer.y);
+  } else if (layer.type === 'gradient') {
+    drawShape(ctx, layer.gradient, layer.x, layer.y);
   } else {
     ctx.translate(layer.x, layer.y);
     for (const child of layer.children) renderLayer(ctx, child, onReady, width, height);
@@ -236,6 +271,10 @@ export function renderLayer(ctx: CanvasRenderingContext2D, layer: Layer, onReady
   // Never cache an effects preview before its raster image has decoded.
   // The previously cached blank preview could persist after the image loaded.
   if (layer.type === 'raster' && layer.image && !loadImage(layer.image, onReady)) return;
+  // Never cache an empty FX source while an enabled cutout mask is decoding.
+  // The mask participates in the painted-source cache key as well.
+  if (layer.type === 'raster' && layer.cutoutMask?.enabled && layer.cutoutMask.data
+    && !loadImage(layer.cutoutMask.data, onReady)) return;
   ctx.save();
   ctx.globalAlpha *= layer.opacity;
   ctx.globalCompositeOperation = layer.blend;
@@ -257,6 +296,57 @@ export function renderLayer(ctx: CanvasRenderingContext2D, layer: Layer, onReady
   ctx.restore();
 }
 
+/** A true alpha clipping mask. Both layers are rendered with their original
+ * effects, so preview and export share the same compositing behavior. */
+export function renderClippedLayer(
+  target: CanvasRenderingContext2D, above: Layer, below: Layer,
+  onReady?: () => void, width = target.canvas.width, height = target.canvas.height,
+): void {
+  const make = (): HTMLCanvasElement => { const c = document.createElement('canvas'); c.width = width; c.height = height; return c; };
+  const mask = make(), upper = make();
+  const mc = mask.getContext('2d'), uc = upper.getContext('2d');
+  if (!mc || !uc) return;
+  renderLayer(mc, below, onReady, width, height);
+  renderLayer(uc, above, onReady, width, height);
+  uc.globalCompositeOperation = 'destination-in';
+  uc.drawImage(mask, 0, 0);
+  uc.globalCompositeOperation = 'source-over';
+  target.drawImage(upper, 0, 0);
+}
+
+/** Process all already-composited layers through the authoritative effect stack.
+ * Adjustment layers are opt-in; no source layer is modified or flattened. */
+export function applyAdjustmentLayer(ctx: CanvasRenderingContext2D, adjustment: Layer,
+  previous: Layer[], doc: Document, onReady?: () => void, checkerboard = false): void {
+  if (!adjustment.visible || !adjustment.adjustment || !adjustment.effects?.some(e => e.enabled)) return;
+  const canvas = document.createElement('canvas');
+  canvas.width = doc.width; canvas.height = doc.height;
+  const painter = canvas.getContext('2d'); if (!painter) return;
+  if (doc.background !== 'transparent') {
+    painter.fillStyle = doc.background; painter.fillRect(0, 0, doc.width, doc.height);
+  }
+  for (let index = 0; index < previous.length; index++) {
+    const below = previous[index];
+    if (below.adjustment) applyAdjustmentLayer(painter, below, previous.slice(0, index), doc, onReady);
+    else if (below.clipToBelow && index > 0)
+      renderClippedLayer(painter, below, previous[index - 1], onReady, doc.width, doc.height);
+    else renderLayer(painter, below, onReady, doc.width, doc.height);
+  }
+  const processed = processEffects(canvas, adjustment.effects);
+  ctx.save();
+  ctx.clearRect(0, 0, doc.width, doc.height);
+  if (checkerboard && doc.background === 'transparent') drawChecker(ctx, doc.width, doc.height);
+  ctx.drawImage(canvas, 0, 0);
+  ctx.globalAlpha = Math.max(0, Math.min(1, adjustment.opacity));
+  if (adjustment.mask) {
+    ctx.beginPath();
+    ctx.rect(adjustment.mask.x, adjustment.mask.y, adjustment.mask.width, adjustment.mask.height);
+    ctx.clip();
+  }
+  ctx.drawImage(processed, 0, 0);
+  ctx.restore();
+}
+
 /** Draw document pixels; `clear` is false when drawing on a prepainted checkerboard. */
 export function drawDocument(ctx: CanvasRenderingContext2D, doc: Document, onReady?: () => void, clear = true): void {
   if (clear) ctx.clearRect(0, 0, doc.width, doc.height);
@@ -265,8 +355,16 @@ export function drawDocument(ctx: CanvasRenderingContext2D, doc: Document, onRea
     ctx.fillRect(0, 0, doc.width, doc.height);
   }
   renderMotionEcho(ctx, doc, (target, layer) => renderLayer(target, layer, onReady, doc.width, doc.height));
-  for (const layer of doc.layers) paintCreativeLayer(ctx, layer, doc, (target, adjusted) =>
-    renderLayer(target, adjusted, onReady, doc.width, doc.height));
+  for (let index = 0; index < doc.layers.length; index++) {
+    const layer = doc.layers[index];
+    const below = doc.layers[index - 1];
+    if (layer.adjustment) {
+      applyAdjustmentLayer(ctx, layer, doc.layers.slice(0, index), doc, onReady);
+    } else if (layer.clipToBelow && below) {
+      renderClippedLayer(ctx, layer, below, onReady, doc.width, doc.height);
+    } else paintCreativeLayer(ctx, layer, doc, (target, adjusted) =>
+      renderLayer(target, adjusted, onReady, doc.width, doc.height));
+  }
   renderCreative(ctx, doc);
 }
 
@@ -285,6 +383,7 @@ export async function prepareImages(doc: Document): Promise<void> {
   const visit = (layers: Layer[]): void => {
     for (const layer of layers) {
       if (layer.type === 'raster' && layer.image) sources.push(layer.image);
+      if (layer.type === 'raster' && layer.cutoutMask?.enabled && layer.cutoutMask.data) sources.push(layer.cutoutMask.data);
       if (layer.type === 'group') visit(layer.children);
     }
   };

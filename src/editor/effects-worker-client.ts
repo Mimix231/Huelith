@@ -29,10 +29,10 @@ export function installEffectsWorker(): () => void {
   }
 
   type Profile = 'economy' | 'balanced' | 'responsive';
-  const profileOptions: Record<Profile, { graphMb: number; edgeMb: number; silhouetteMb: number; supersedeWindowMs: number }> = {
-    economy: { graphMb: 64, edgeMb: 16, silhouetteMb: 32, supersedeWindowMs: 650 },
-    balanced: { graphMb: 192, edgeMb: 64, silhouetteMb: 80, supersedeWindowMs: 450 },
-    responsive: { graphMb: 384, edgeMb: 160, silhouetteMb: 192, supersedeWindowMs: 220 },
+  const profileOptions: Record<Profile, { graphMb: number; edgeMb: number; silhouetteMb: number; sourceMb: number; supersedeWindowMs: number }> = {
+    economy: { graphMb: 64, edgeMb: 16, silhouetteMb: 32, sourceMb: 64, supersedeWindowMs: 650 },
+    balanced: { graphMb: 192, edgeMb: 64, silhouetteMb: 80, sourceMb: 128, supersedeWindowMs: 450 },
+    responsive: { graphMb: 384, edgeMb: 160, silhouetteMb: 192, sourceMb: 256, supersedeWindowMs: 220 },
   };
   let profile: Profile = 'balanced';
   function updateBudget(): void {
@@ -113,6 +113,7 @@ export function installEffectsWorker(): () => void {
     evicted?: number[];
   }>) => {
     for (const sourceId of event.data.evicted ?? []) residentSources.delete(sourceId);
+    if ((event.data as {kind?: string}).kind === 'evicted') return;
     const finished = running;
     running = null;
     if (finished) supersededRunning.delete(finished.id);

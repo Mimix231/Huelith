@@ -13,6 +13,30 @@ This checklist covers **Huelith 0.2.0**, the first post-rename alpha. All unchec
 - [ ] Because the native bundle identifier changed, test installation alongside 0.1, installer upgrade/uninstall behavior, and file association handling before distributing a public setup.
 - [ ] Compare the supplied `README.md` against the project owner's replacement copy. Its referenced artwork/screenshots must be added separately to the repository if not present in the archive.
 
+## Phase AJ — Guided Subject Segmentation (Implementation 6)
+
+- [ ] Start Remove Background on a uniform white backdrop with a contrasting subject: new Smart mode removes the outside and retains the subject.
+- [ ] Draw a subject rectangle around an illustrated character containing white costume elements, keep strokes on white details, and remove strokes on the background; the protected areas must remain when exported.
+- [ ] Use Color mode on a logo and Manual mode on a noisy backdrop; changing a method must not accidentally overwrite the other mode's saved corrections.
+- [ ] Open full Mask Workspace in every theme, inspect the grayscale alpha view, toggle guides, resize the dialog, and exit with Escape without closing Huelith Studio.
+- [ ] Sample a background color from a rotated/scaled pasted image and confirm the sampled coordinate corresponds to the actual source pixels.
+- [ ] Undo/redo subject guide marks, adjust edge protection and segmentation detail, save/reopen the effect, and ensure the original layer remains unchanged.
+- [ ] Compare saved image, animation and preview results; actual transparency, not a white paint overlay, must be exported.
+- [ ] Verify CPU-only operation offline (no automatic downloads). Note: semantic AI and GPU graph-cut are not implemented, and ambiguous subjects may require manual masking.
+- [ ] Run `npm run test:phase-aj`, `npm run check`, and `npm run desktop:build` on a machine with installed frontend/Rust dependencies.
+
+## Phase AI — Persistent animation layer effects (Implementation 6)
+
+- [ ] Create six animation frames with different drawings on a layer with the same layer ID. Add Hyper Outline, Spectrum Glow, and Digital Glitch **once** to that layer.
+- [ ] Play, pause, scrub, duplicate/reorder frames and change FPS. Every frame displays the same applied effect stack and order.
+- [ ] Change one effect slider on any frame. All other frames inherit the new setting without manually applying the effect again.
+- [ ] Disable, remove, and reorder effects. No removed effect reappears after switching to a frame that previously contained a copy.
+- [ ] Save/reopen as `.huelith`, export APNG, sprite sheet and PNG frame ZIP. Preview and export must match the corresponding paused editor frame.
+- [ ] Test older `.spectrum` and `.huelith` animations with FX stored on only one cel; current/source pixel art must remain intact.
+- [ ] Test nested groups, direct Effect editors, Studio Apply/Cancel, undo/redo, animation thumbnails and onion skins.
+- [ ] Under high effect load, do not lose effects due to dropped playback frames; frame rate may decrease but effect visibility must remain correct.
+- [ ] Confirm the detailed inventories in `docs/changelog/v0.1-alpha.md` and `docs/changelog/v0.2-alpha.md` cover every registered 0.1 catalog item and all 0.2 features.
+
 ## Phase T — distinct effects and animation
 
 - [ ] VHS shows tape tracking/scanlines, Chromatic Shift separates RGB channels, and Digital Glitch shifts pixel blocks. Their output must not collapse into the same effect.
@@ -33,6 +57,28 @@ This checklist covers **Huelith 0.2.0**, the first post-rename alpha. All unchec
 - [ ] In the checkerboard mask editor, add Keep Subject and Remove Background strokes, change brush size, undo, reset marks, save/reopen and export PNG.
 - [ ] Verify the original subject can be restored and the raster source is not destroyed when the Remove Background effect is disabled or removed.
 - [ ] Confirm previews match the final processed image and that large images do not freeze the interface.
+
+## Implementation 2 — Phases W, X and Y
+
+- [ ] Open Shape Studio in each theme. Choose and draw all 13 shapes. Verify new vector shapes transform, save, reopen and export as SVG paths.
+- [ ] Pencil and Eraser are separate tools. Pencil draws crisp square pixels, Undo/Redo works, and Mirror X correctly mirrors brush, pencil, and eraser strokes.
+- [ ] Foreground/background color squares open the new picker, can swap with X and reset with D; test HEX/RGB/hue controls, opacity, saved palettes and different themes.
+- [ ] Drag a Gradient fill and use Fill canvas. Test all eight gradient modes, multiple stops, spiral twist/repeats/rotation, freeform/mesh colors and draggable point handles.
+- [ ] Save and reopen `.huelith` and older `.spectrum` projects. Confirm all added gradient and vector data persists, including animation-cel content.
+- [ ] Draw a Freehand path with smoothing zero. Confirm every segment has editable anchors; test node hover cursor, moving/adding/deleting nodes and Corner/Smooth/Symmetric handling. Verify line tool still has four points.
+- [ ] Export gradients in PNG and SVG. Complex gradient SVG content is raster-embedded intentionally; do not claim native editable SVG gradient objects.
+- [ ] Stress-test 1080p/4K gradient edits on CPU-only mode. No fake FPS claims; measure latency. Do not regress existing filters or effects.
+
+## Implementation 5 — Phases AF, AG, AH (release blockers remain)
+
+- [ ] Verify Economy/Balanced/Responsive budgets keep heavy FX visually identical on both CPU and eligible GPU hardware; measure actual cache hits, memory and response latency.
+- [ ] Stress-test full-resolution 1080p/4K projects with 1, 5, 10, and 20 Effects/Creativity/FX entries. Verify slider output follows the real parameter rather than a displaced proxy.
+- [ ] Play a project with unequal cel durations. Validate no cumulative playback drift when a heavy effect blocks a frame, including speed 0.25×, 0.5×, 1×, 1.5×, 2×, and export (which must use saved cel durations).
+- [ ] Test Original keyframes with Linear, Hold, Ease In/Out and verify saving/reopening interpolation metadata in new `.huelith` and legacy `.spectrum` files.
+- [ ] Test timeline Home/End/PageUp/PageDown keys, onion skins, ruler visibility, grid, 10px geometric snapping and Alt bypass.
+- [ ] Confirm title badge says **0.2**, not 0.1; preserve legal named Spectrum effects, old settings and recovery DBs.
+- [ ] `npm run release:check` passes in a configured npm/Rust environment (this source package has **not** passed that gate here).
+- [ ] Installed Windows NSIS build launches, edits, saves, exports, recovers documents, and uninstalls without disrupting earlier projects. Check CPU-only fallback and GPU device reporting.
 
 ## Build and regression gate
 
@@ -300,3 +346,100 @@ These tests must be performed in the actual Tauri desktop application. Source an
 - [ ] Stress-test sliders and color-wheel changes on multi-layer 1080p and 4K artwork. Record UI frame times, main-thread blocking, peak memory and export duration. Adapt preview quality to avoid UI stalls; do not equate throttling with proven 60 FPS.
 - [ ] Verify every advertised filter and signature FX parameter changes its intended output; compare editor/export output, exercise old `.huelith` projects, animation onion skins, undo/redo and custom window close.
 - [ ] Run actual `npm install`, `npm run check`, `npm run build`, `npm run test:ui` and native Windows `npm run desktop:build` with successful results before publishing v1.0.
+
+---
+
+# Implementation 3 — Phases Z, AA and AB
+
+Automated Node and Chromium checks do not replace an installed Windows acceptance pass. Verify with the actual 0.2.0 application:
+
+- [ ] **Toolbar:** foreground/background swatches do not overlap action buttons; click both swatches, swap and reset; no clipped controls at small window heights.
+- [ ] **Gradient:** own toolbar icon remains available; Shape Studio contains only shape tools, and context controls remain editable.
+- [ ] **Remove Background:** test a clean monochrome backdrop, a detailed white-on-white illustration, a background-color sample, auto on/off, Keep/Remove marks and edge protection. Confirm the source is never destroyed. Complex illustrations may require manual mask work.
+- [ ] **Text:** edit selected text, apply all six Focus Text groups, save/reapply local style preset, rotate and scale selected text, save/reopen the document.
+- [ ] **Originals:** create, edit, save/reopen and export all fifteen Originals. Test Particle Garden determinism, Warp Cage pixel deformation, Light Trails point editing, Pattern Architect symmetry and Gradient Reactor twist/repeat parameters.
+- [ ] **Layers:** group and ungroup without losing contents, edit children, apply effects on a group, verify opacity clipping to a previous layer, and apply an adjustment layer without modifying original layer pixels.
+- [ ] **Rendering:** compare preview and exports, and validate alpha handling of transparent documents, nested groups, animation, multiple adjustments, and large artworks.
+- [ ] **Build:** `npm ci`, `npm run check`, `npm test`, `npm run build`, and `npm run desktop:build -- --bundles nsis` with actual Windows toolchain; no TypeScript or Cargo diagnostics.
+
+Limitations: multi-point cage deformation and a fully automatic subject segmentation model are not implemented. High-resolution adjustment layers currently recompute full affected compositions and can be slow. Painted raster mask layers and clipping of animated effect-group hierarchies require further end-to-end testing.
+
+
+## Huelith 0.2 — Gradient Studio, mask, Originals and theme update
+
+- [x] Gradient retains a dedicated left toolbar action, separate from Shape Studio.
+- [x] Advanced Studio has preview, drag center/nodes, full controls and editable vector persistence.
+- [x] Cutout offers safer connected removal, explicit color-key mode and an actual rendered alpha preview.
+- [x] Non-destructive Keep/Remove marks preserve and restore original pixels.
+- [x] All fifteen Originals have individual live preview and specific starting looks.
+- [x] All thirteen themes have visually distinct non-accent surface treatments.
+- [x] 213 Node tests pass; targeted Chromium pixels pass.
+- [ ] Full TypeScript production build on an installed dependency set.
+- [ ] Windows Tauri native installer build and real artwork manual acceptance.
+- [ ] Semantic white-on-white foreground/background separation (not solved by color-key masks).
+
+
+# Implementation 4 — AC / AD / AE Acceptance Gate
+
+- [ ] Gradient button launches the studio directly, without the old redundant top strip; clicking it a second time reopens the toy box.
+- [ ] Orange sunburst has sharp controllable alternating rays; purple speedlines have luminous streaks. Change width, twist, count, color stops, center, glow and seed and verify each updates the actual pattern.
+- [ ] Save/reopen a gradient-pattern `.huelith` document and export the same full-resolution pixels. Old gradient files and `.spectrum` projects still render.
+- [ ] Levels histogram derives from real image pixels, and Curves and Gradient Map use their existing editable controls. Test Selective Color 0% as identity and its 25%, 50%, 75%, and 100% progression.
+- [ ] Apply Clarity, Texture, Sharpen, Unsharp and Surface Blur on skin, buildings, text and line art; confirm each keeps its identity and no extra softness destroys subjects.
+- [ ] Glow changes opaque images visibly while preserving transparent-layer silhouette glow. Stack Glow, Outline, VHS, Miasma and others with no arbitrary 64-effect cap.
+- [ ] Test all 101 catalog entries at minimum, intermediate and maximum parameters, on alpha PNG, text, vector and opaque images, with full-resolution exports and representative GPU/CPU hardware. This **is not yet completed by automated tests**.
+- [ ] Run `npm ci && npm run check && npm test && npm run build` and the native Tauri Windows build. No release sign-off until passing.
+
+---
+
+## Inspector Cutout — Manual-First Background Removal
+
+- [ ] Selecting a raster layer reveals **Inspector → Remove Background**; no new Remove Background entry appears in Effects/FX.
+- [ ] Select character details using Keep Brush, Freehand Lasso, Polygon Lasso, Rectangle, Ellipse and Line.
+- [ ] Subtract accidental Keep regions with Remove Brush. Selection Eraser removes painted marks rather than editing original image pixels.
+- [ ] Pan and zoom without shifting painted mask coordinates; test image rotation and scale after applying.
+- [ ] Test 4K images and fine edges with native-resolution masks. Check feather, smoothing, expand and contract.
+- [ ] Preview modes **Original**, **Mask**, **Preview** show live transparency; the processed output agrees with the preview.
+- [ ] **Process mask** commits a non-destructive raster mask. Toggle, reopen, edit, delete, undo/redo, save and reload without altering the original pixels.
+- [ ] Export as PNG, WebP, and SVG, then inspect alpha values; the canvas and exports must show consistent cutouts.
+- [ ] Test old `.spectrum` projects with legacy Cutout Effects. Legacy settings remain readable, but new Cutout lives only in Inspector.
+- [ ] Test raster layers in animation projects; ensure saved frames and effects remain intact.
+- [ ] Run `npm ci`, `npm run check`, `npm test`, and `npm run build` on a complete development environment; native Windows installer verification remains pending.
+
+**Scope:** this release intentionally does not include automatic or model-guided segmentation. Results reflect the user's drawn selection; difficult regions still require manual work.
+
+
+## Phase AK — Gradient Designer acceptance (not all verified)
+- [ ] Clicking the Gradient toolbar icon **does not open a blocking studio dialog**.
+- [ ] Dragging across the canvas creates a full-canvas gradient with the drawn direction, even over an existing raster layer.
+- [ ] Dragging either guide endpoint updates the gradient without making a duplicate layer.
+- [ ] Gradient color stops, reverse, type, transform, sliders and named presets survive Save / Reopen / Undo / Redo.
+- [ ] All 26 Huelith transformation recipes have distinct intended results at default values.
+- [ ] The Gradient Transform overlay remains readable across all 13 themes and at narrow window widths.
+- [ ] Export PNG/SVG and animation frame rendering match the edited high-resolution gradient (complex SVG embeds are rasterized intentionally).
+- [ ] Earlier Huelith projects with `gradientPattern: sunburst` or `speedlines` still look the same.
+- [ ] Stress test CPU-only 1080p and 4K updates; measure latency rather than promise 60 FPS.
+- [ ] `npm ci && npm run check && npm test && npm run build`, then Rust/Tauri production build on developer PC.
+
+
+## Phase AL — workspace, Gradient layers, Cutout and playback
+- Dedicated procedural Gradient layer serializes and validates independently of vector shapes.
+- Transformation-editor Apply commits to the selected layer; Cancel discards changes.
+- Existing vector gradients and project IDs remain backward compatible.
+- Gradient layers and their transformations resolve from one track-wide map during animation.
+- Cutout supports keyboard and mouse zoom, free pan, synchronous mask undo/redo and native-size processing.
+- Main editor snapping covers movement and Gradient handles with visual guides.
+- Playback preserves exact layer Effects/Creativity/signature FX; processed cel cache is bounded by memory.
+- Regression suite includes `tests/phase-al-workspaces.test.cjs`, `tests/phase-al-browser.py`.
+- Full dependency-aware TypeScript and native Windows release validation are still required.
+
+## Huelith 0.2 Core Actions — Verification
+- [x] Dimensions, bounds, vectors, and Gradient layers use document-space geometry; source Canvas2D pixel resampling covered by Chromium tests.
+- [x] Animation frames and canonical gradient track maps receive image resize/crop transformations.
+- [x] Trim operation calculates bounds from alpha on a transparent-background document.
+- [x] Rotations and flips process both raster source images and raster mask images with the same operation.
+- [x] Fill/Stroke/Clear Selection pixel behavior is covered by a Chromium native Canvas2D test.
+- [x] New code validates source syntax and preserves the original alpha feature inventory.
+- [x] Numeric transforms, alignment, Huelith-themed context menu, and magnetic object-center snapping are included in the source.
+- [ ] Full dependency-aware TypeScript and Windows/Tauri installer builds require installed dependencies/toolchains.
+- [ ] Interactively validate each light/dark theme and mixed raster/vector/group/text animation projects on the desktop app.

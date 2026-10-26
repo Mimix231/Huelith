@@ -3,11 +3,11 @@ import { create } from 'zustand';
 import { clampEffectAmount, forgetLayerEffectPreview, newEffect, queueLayerEffectPreview } from './fx';
 import { boundedNumber } from './effect-schema';
 import { setInteractiveEffectPreview } from './preview-quality';
-import { syncActiveCel, enableAnimation, insertFrame, deleteFrame, reorderFrame, changeFps, changeOnion, changeFrameDuration, inheritLayerTrackEffects } from './animation';
+import { syncActiveCel, enableAnimation, insertFrame, deleteFrame, reorderFrame, changeFps, changeOnion, changeFrameDuration, ensureTrackEffects, ensureTrackGradients, resolveTrackLayers, setTrackGradient, setTrackEffects } from './animation';
 import { DEFAULT_TEXT_FORMAT, normalizeTextFormat, reflowTextShape, type TextDraft, type TextFormat } from './typography';
 import {
-  createDocument, layerById, makeRaster, makeVector, uid,
-  type Document, type Layer, type Tool, type VectorShape, type Workspace, type Point, type SelectionRect, type BlendMode, type Effect, type EffectKind, type AppearanceMode, type OnionSkinSettings,
+  createDocument, layerById, makeRaster, makeVector, makeGradient, uid,
+  type Document, type Layer, type Tool, type GradientMode, type VectorShape, type Workspace, type Point, type SelectionRect, type BlendMode, type Effect, type EffectKind, type AppearanceMode, type OnionSkinSettings,
 } from './types';
 
 const HISTORY_LIMIT = 40;
@@ -103,16 +103,28 @@ export interface EditorStore {
   activeId: string;
   tool: Tool;
   color: string;
+  backgroundColor: string;
+  backgroundOpacity: number;
   fill: string;
+  gradientMode: GradientMode;
+  setGradientMode: (mode: GradientMode) => void;
+  gradientSettings: Partial<VectorShape>;
+  setGradientSettings: (changes: Partial<VectorShape>) => void;
   strokeWidth: number;
   opacity: number;
   hardness: number;
   smoothing: number;
+  symmetryX: boolean;
+  setSymmetryX: (enabled: boolean) => void;
   zoom: number;
   pan: Point;
   workspace: Workspace;
   appearanceMode: AppearanceMode;
   grid: boolean;
+  rulers: boolean;
+  snap: boolean;
+  setRulers: (enabled: boolean) => void;
+  setSnap: (enabled: boolean) => void;
   selectedShapeId: string | null;
   textDefaults: TextFormat;
   textDraft: TextDraft | null;
@@ -143,6 +155,10 @@ export interface EditorStore {
   clearLayerMask: (id: string) => void;
   setTool: (tool: Tool) => void;
   setColor: (color: string) => void;
+  setBackgroundColor: (color: string) => void;
+  setBackgroundOpacity: (opacity: number) => void;
+  swapColors: () => void;
+  resetColors: () => void;
   setFill: (fill: string) => void;
   setStrokeWidth: (width: number) => void;
   setOpacity: (opacity: number) => void;
@@ -172,6 +188,15 @@ export interface EditorStore {
   redo: () => void;
   markSaved: (id: string, revision: number, path?: string) => void;
   addLayer: (type: 'raster' | 'vector') => void;
+  addGradientLayer: (gradient: VectorShape) => void;
+  updateGradientLayer: (layerId: string, update: (shape: VectorShape) => void) => void;
+  addAdjustmentLayer: () => void;
+  groupSelectedLayer: () => void;
+  ungroupSelectedLayer: () => void;
+  setClipToBelow: (id: string, enabled: boolean) => void;
+  applyCutoutMask: (layerId: string, data: string, width: number, height: number) => void;
+  toggleCutoutMask: (layerId: string) => void;
+  removeCutoutMask: (layerId: string) => void;
   duplicateLayer: () => void;
   removeLayer: () => void;
   selectLayer: (id: string) => void;
@@ -200,12 +225,25 @@ function regenerateLayerIds(layer: Layer): void {
   if (layer.type === 'vector') {
     for (const shape of layer.shapes) shape.id = uid();
   }
+  if (layer.type === 'gradient') layer.gradient.id = uid();
   if (layer.type === 'group') {
     for (const child of layer.children) regenerateLayerIds(child);
   }
 }
 
 function tabFor(doc: Document, path?: string): EditorTab {
+  if (doc.animation) {
+    // Open recovered and legacy files using the same persistent layer FX map
+    // as playback/export. The active cel remains an exact document mirror.
+    const stacks = ensureTrackEffects(doc);
+    // Resolve both layer-wide payloads immediately on open; a legacy frame
+    // mirror cannot override the Gradient Atelier recipe on first playback.
+    const gradients = ensureTrackGradients(doc);
+    doc.layers = resolveTrackLayers(doc.layers, stacks, gradients);
+    const frame = doc.animation.frames[doc.animation.currentFrame];
+    frame.layers = doc.layers;
+    frame.activeLayerId = doc.activeLayerId;
+  }
   return { doc, past: [], future: [], dirty: false, path, revision: 0, savedRevision: 0, savedDoc: doc };
 }
 
@@ -288,18 +326,11 @@ interface FxPreviewSession {
 }
 let fxPreviewSession: FxPreviewSession | null = null;
 
-/** Effects are properties of the animation layer/track, not disposable pixels
- * of the active cel. Commit changes across matching layer IDs on every frame;
- * each cel retains its own raster/vector artwork. */
+/** One canonical stack per animation track/layer. No per-frame copying. */
 function shareLayerEffectsAcrossFrames(doc: Document, layerId: string): void {
   if (!doc.animation) return;
-  const current = layerById(doc, layerId);
-  if (!current) return;
-  const snapshot = structuredClone(current.effects ?? []);
-  for (const frame of doc.animation.frames) {
-    const counterpart = layerById({ ...doc, layers: frame.layers }, layerId);
-    if (counterpart) counterpart.effects = structuredClone(snapshot);
-  }
+  const layer = layerById(doc, layerId);
+  if (layer) setTrackEffects(doc, layerId, layer.effects ?? []);
 }
 
 function applyEffectChanges(doc: Document, layerId: string, effectId: string, changes: Partial<Effect>): void {
@@ -383,16 +414,26 @@ export const useEditor = create<EditorStore>((set, get) => ({
   activeId: first.id,
   tool: 'brush',
   color: '#8e83ff',
+  backgroundColor: '#ffffff',
+  backgroundOpacity: 1,
   fill: '#8e83ff',
+  gradientMode: 'linear',
+  gradientSettings: {gradientTransform:'none',gradientTransformAmount:100,gradientTransformFrequency:2,gradientTransformCount:14,gradientTransformPhase:0,gradientTransformSeed:12},
   strokeWidth: 12,
   opacity: 1,
   hardness: 0.85,
   smoothing: 0.72,
+  symmetryX: false,
+  setSymmetryX: symmetryX => set({ symmetryX }),
   zoom: 0.8,
   pan: { x: 0, y: 0 },
   workspace: layout.theme,
   appearanceMode: layout.appearanceMode,
   grid: false,
+  rulers: false,
+  snap: false,
+  setRulers: rulers => set({ rulers }),
+  setSnap: snap => set({ snap }),
   selectedShapeId: null,
   textDefaults: DEFAULT_TEXT_FORMAT,
   textDraft: null,
@@ -542,8 +583,14 @@ export const useEditor = create<EditorStore>((set, get) => ({
     if (get().textDraft) get().commitTextDraft();
     set({ tool });
   },
-  setColor: color => set({ color }),
+  setColor: color => { if (/^#[0-9a-f]{6}$/i.test(color)) set({ color }); },
+  setBackgroundColor: backgroundColor => { if (/^#[0-9a-f]{6}$/i.test(backgroundColor)) set({ backgroundColor }); },
+  setBackgroundOpacity: backgroundOpacity => set({ backgroundOpacity: Math.max(0, Math.min(1, backgroundOpacity)) }),
+  swapColors: () => set(state => ({ color: state.backgroundColor, backgroundColor: state.color })),
+  resetColors: () => set({ color: '#000000', backgroundColor: '#ffffff', backgroundOpacity: 1 }),
   setFill: fill => set({ fill }),
+  setGradientMode: gradientMode => set({ gradientMode }),
+  setGradientSettings: changes => set(state => ({ gradientSettings: { ...state.gradientSettings, ...changes } })),
   setStrokeWidth: strokeWidth => set({ strokeWidth: Math.max(1, Math.min(120, strokeWidth)) }),
   setOpacity: opacity => set({ opacity: Math.max(0, Math.min(1, opacity)) }),
   setZoom: zoom => set({ zoom: Math.max(0.05, Math.min(32, zoom)) }),
@@ -698,29 +745,21 @@ export const useEditor = create<EditorStore>((set, get) => ({
   makeAnimation: () => get().mutate(doc => enableAnimation(doc)),
   setActiveFrame: index => {
     if (get().textDraft) get().commitTextDraft();
+    if (fxPreviewSession) get().finishEffectPreview();
     set(state => ({
       tabs: state.tabs.map(tab => {
         if (tab.doc.id !== state.activeId || !tab.doc.animation) return tab;
-        if (tab.doc.animation.currentFrame === index) return tab;
         const track = tab.doc.animation;
-        if (!Number.isInteger(index) || index < 0 || index >= track.frames.length) return tab;
-        // Structural sharing is crucial: avoid cloning every cel on each playback tick.
-        // Snapshot only the outgoing working cel and preserve all other frame identities.
-        const frames = [...track.frames];
-        frames[track.currentFrame] = {
-          ...frames[track.currentFrame], layers: tab.doc.layers, activeLayerId: tab.doc.activeLayerId,
-        };
-        const selected = frames[index];
-        const inheritedLayers = inheritLayerTrackEffects(selected.layers, frames);
-        if (inheritedLayers.some((layer, i) => layer !== selected.layers[i])) {
-          frames[index] = { ...selected, layers: inheritedLayers };
-        }
-        const doc: Document = {
-          ...tab.doc, layers: inheritedLayers, activeLayerId: selected.activeLayerId,
-          animation: { ...track, frames, currentFrame: index },
-        };
-        // Scrubbing changes the visible cel but does not pollute undo history.
-        return { ...tab, doc };
+        if (track.currentFrame === index || !Number.isInteger(index) || index < 0 || index >= track.frames.length) return tab;
+        // A playhead move is navigation, NOT a new artwork edit. Mutations
+        // already synchronize the cel; rebuilding frame arrays and thumbnails
+        // on each tick used to cause enormous layout and effect-cache churn.
+        const target = track.frames[index];
+        const canonical = track.trackEffects ?? ensureTrackEffects(tab.doc);
+        const layers = resolveTrackLayers(target.layers, canonical, track.trackGradients ?? ensureTrackGradients(tab.doc));
+        const doc: Document = { ...tab.doc, layers, activeLayerId: target.activeLayerId,
+          animation: {...track,currentFrame:index} };
+        return {...tab,doc};
       }),
       selectedShapeId: null,
       selectedNodeIndex: null,
@@ -748,6 +787,108 @@ export const useEditor = create<EditorStore>((set, get) => ({
     doc.activeLayerId = layer.id;
   }),
 
+  addGradientLayer: gradient => get().mutate(doc => {
+    const next = makeGradient(structuredClone(gradient), `Gradient ${doc.layers.filter(layer => layer.type === 'gradient').length + 1}`);
+    const index = doc.layers.findIndex(layer => layer.id === doc.activeLayerId);
+    const insertAt = index < 0 ? doc.layers.length : index + 1;
+    doc.layers.splice(insertAt, 0, next);
+    if (doc.animation) {
+      // A Gradient is persistent procedural content, not a painted frame.
+      // Insert the same stable layer ID in *every* cel; otherwise an Atelier
+      // creation mid-animation vanishes as soon as the user presses Play.
+      const animation = doc.animation;
+      for (let i = 0; i < animation.frames.length; i++) {
+        if (i === animation.currentFrame) continue;
+        const layers = animation.frames[i].layers;
+        layers.splice(Math.min(insertAt, layers.length), 0, structuredClone(next));
+      }
+      ensureTrackGradients(doc)[next.id] = structuredClone(next.gradient);
+      ensureTrackEffects(doc)[next.id] = [];
+    }
+    doc.activeLayerId = next.id;
+  }),
+  updateGradientLayer: (layerId, update) => get().mutate(doc => {
+    const visit = (layers: Layer[]): boolean => {
+      for (const layer of layers) {
+        if (layer.id === layerId && layer.type === 'gradient' && !layer.locked) { update(layer.gradient); return true; }
+        if (layer.type === 'group' && visit(layer.children)) return true;
+      }
+      return false;
+    };
+    if (visit(doc.layers)) {
+      const layer = layerById(doc,layerId);
+      if (layer?.type === 'gradient') setTrackGradient(doc, layerId, layer.gradient);
+    }
+  }),
+  addAdjustmentLayer: () => get().mutate(doc => {
+    const position = doc.layers.findIndex(layer => layer.id === doc.activeLayerId);
+    const layer = makeVector('Adjustment layer');
+    layer.adjustment = true;
+    layer.effects = [{ id: uid(), kind: 'brightness', enabled: true, amount: 100,
+      studioCategory: 'creativity' }];
+    doc.layers.splice(Math.max(0, position + 1), 0, layer);
+    doc.activeLayerId = layer.id;
+  }),
+  // A group with its own editable effects is a non-destructive adjustment
+  // container. Effects are applied to its children, not the source layers.
+  groupSelectedLayer: () => get().mutate(doc => {
+    const index = doc.layers.findIndex(layer => layer.id === doc.activeLayerId);
+    if (index < 0) return;
+    const item = doc.layers[index];
+    const group: Layer = { id: uid(), type: 'group', name: `Group · ${item.name}`,
+      visible: true, locked: false, opacity: 1, blend: 'source-over', x: 0, y: 0,
+      children: [item], effects: [] };
+    doc.layers.splice(index, 1, group);
+    doc.activeLayerId = group.id;
+  }),
+  ungroupSelectedLayer: () => get().mutate(doc => {
+    const index = doc.layers.findIndex(layer => layer.id === doc.activeLayerId);
+    const item = doc.layers[index];
+    if (!item || item.type !== 'group') return;
+    doc.layers.splice(index, 1, ...item.children);
+    doc.activeLayerId = item.children[0]?.id ?? null;
+  }),
+  setClipToBelow: (id, enabled) => get().mutate(doc => {
+    const index = doc.layers.findIndex(layer => layer.id === id);
+    if (index <= 0 || doc.layers[index].locked) return;
+    doc.layers[index].clipToBelow = enabled;
+  }),
+
+  applyCutoutMask: (layerId, data, width, height) => get().mutate(doc => {
+    const layer = layerById(doc, layerId);
+    if (layer?.type !== 'raster' || layer.locked || !/^data:image\/png;base64,/i.test(data)) return;
+    layer.cutoutMask = { data, width, height, enabled: true };
+    // Cutout is not an effect. Remove obsolete cutout steps on this layer
+    // when the user explicitly applies a new Inspector mask.
+    layer.effects = (layer.effects ?? []).filter(effect => effect.kind !== 'cutout');
+    if (doc.animation) {
+      const track = ensureTrackEffects(doc);
+      track[layerId] = (track[layerId] ?? []).filter(effect => effect.kind !== 'cutout');
+      for (const frame of doc.animation.frames) {
+        const cel = layerById({ ...doc, layers: frame.layers }, layerId);
+        if (cel?.type === 'raster') cel.cutoutMask = structuredClone(layer.cutoutMask);
+      }
+    }
+  }),
+  toggleCutoutMask: layerId => get().mutate(doc => {
+    const layer = layerById(doc, layerId);
+    if (layer?.type !== 'raster' || layer.locked || !layer.cutoutMask) return;
+    const enabled = !layer.cutoutMask.enabled;
+    layer.cutoutMask.enabled = enabled;
+    for (const frame of doc.animation?.frames ?? []) {
+      const cel = layerById({ ...doc, layers: frame.layers }, layerId);
+      if (cel?.type === 'raster' && cel.cutoutMask) cel.cutoutMask.enabled = enabled;
+    }
+  }),
+  removeCutoutMask: layerId => get().mutate(doc => {
+    const layer = layerById(doc, layerId);
+    if (layer?.type !== 'raster' || layer.locked) return;
+    delete layer.cutoutMask;
+    for (const frame of doc.animation?.frames ?? []) {
+      const cel = layerById({ ...doc, layers: frame.layers }, layerId);
+      if (cel?.type === 'raster') delete cel.cutoutMask;
+    }
+  }),
   duplicateLayer: () => get().mutate(doc => {
     const index = doc.layers.findIndex(layer => layer.id === doc.activeLayerId);
     if (index < 0) return;
@@ -760,7 +901,16 @@ export const useEditor = create<EditorStore>((set, get) => ({
 
   removeLayer: () => get().mutate(doc => {
     if (doc.layers.length <= 1) return;
-    doc.layers = doc.layers.filter(layer => layer.id !== doc.activeLayerId);
+    const removedId = doc.activeLayerId;
+    const removed = layerById(doc, removedId);
+    doc.layers = doc.layers.filter(layer => layer.id !== removedId);
+    if (removed?.type === 'gradient' && doc.animation) {
+      // Removing a procedural track removes it from every cel. It cannot
+      // spontaneously reappear when the playhead reaches an old frame.
+      for (const frame of doc.animation.frames) frame.layers = frame.layers.filter(layer => layer.id !== removedId);
+      if (doc.animation.trackGradients && removedId) delete doc.animation.trackGradients[removedId];
+      if (doc.animation.trackEffects && removedId) delete doc.animation.trackEffects[removedId];
+    }
     doc.activeLayerId = doc.layers.at(-1)?.id ?? null;
   }),
 
@@ -819,7 +969,7 @@ export const useEditor = create<EditorStore>((set, get) => ({
   previewStudioEffects: (layerId, effects) => {
     const tab = activeTab(get());
     const layer = layerById(tab.doc, layerId);
-    if (!layer || layer.locked || effects.length > 64) return;
+    if (!layer || layer.locked) return;
     if (!studioPreviewSession || studioPreviewSession.documentId !== tab.doc.id || studioPreviewSession.layerId !== layerId) {
       get().cancelStudioEffects();
       get().finishEffectPreview();
@@ -850,13 +1000,9 @@ export const useEditor = create<EditorStore>((set, get) => ({
           const layers = tab.doc.layers.map(layer => studioEffectPath(layer, layerId, effects));
           const doc: Document = { ...tab.doc, layers, updatedAt: new Date().toISOString() };
           if (doc.animation) {
-            doc.animation = {
-              ...doc.animation,
-              frames: doc.animation.frames.map((frame, index) => ({
-                ...frame, layers: index === doc.animation!.currentFrame ? layers
-                  : frame.layers.map(layer => studioEffectPath(layer, layerId, effects)),
-              })),
-            };
+            // This is the only authoritative write, not one copy per cel.
+            doc.animation = { ...doc.animation, frames: [...doc.animation.frames] };
+            setTrackEffects(doc, layerId, effects);
           }
           return {
             ...tab, doc, past: trimHistory([...tab.past, session.original]), future: [],
@@ -879,7 +1025,7 @@ export const useEditor = create<EditorStore>((set, get) => ({
   addEffect: (id, kind) => get().mutate(doc => {
     const layer = layerById(doc, id);
     if (layer && !layer.locked) {
-      layer.effects = [...(layer.effects ?? []), newEffect(kind)].slice(0, 64);
+      layer.effects = [...(layer.effects ?? []), newEffect(kind)];
       shareLayerEffectsAcrossFrames(doc, id);
     }
   }),
@@ -887,7 +1033,7 @@ export const useEditor = create<EditorStore>((set, get) => ({
   appendEffects: (id, effects) => get().mutate(doc => {
     const layer = layerById(doc, id);
     if (layer && !layer.locked) {
-      layer.effects = [...(layer.effects ?? []), ...effects.map(effect => ({ ...effect, id: uid() }))].slice(0, 64);
+      layer.effects = [...(layer.effects ?? []), ...effects.map(effect => ({ ...effect, id: uid() }))];
       shareLayerEffectsAcrossFrames(doc, id);
     }
   }),
@@ -964,7 +1110,10 @@ export const useEditor = create<EditorStore>((set, get) => ({
 
   removeEffect: (layerId, effectId) => get().mutate(doc => {
     const layer = layerById(doc, layerId);
-    if (layer && !layer.locked) layer.effects = layer.effects?.filter(effect => effect.id !== effectId);
+    if (layer && !layer.locked) {
+      layer.effects = layer.effects?.filter(effect => effect.id !== effectId);
+      shareLayerEffectsAcrossFrames(doc, layerId);
+    }
   }),
 
   moveEffect: (layerId, effectId, direction) => get().mutate(doc => {
@@ -974,6 +1123,7 @@ export const useEditor = create<EditorStore>((set, get) => ({
     const target = index + direction;
     if (index < 0 || target < 0 || target >= layer.effects.length) return;
     [layer.effects[index], layer.effects[target]] = [layer.effects[target], layer.effects[index]];
+    shareLayerEffectsAcrossFrames(doc, layerId);
   }),
 
   addShape: shape => get().mutate(doc => {

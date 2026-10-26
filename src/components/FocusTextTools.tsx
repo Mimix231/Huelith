@@ -1,10 +1,11 @@
 import { useState } from 'react';
+import { DEFAULT_TEXT_FORMAT } from '../editor/typography';
 import type { TextDraft, TextFormat } from '../editor/typography';
 import { useEditor } from '../editor/store';
 import BufferedColorPicker from './BufferedColorPicker';
 import './FocusTextTools.css';
 
-type ToolGroup = 'Type' | 'Paragraph' | 'Decorate' | 'Shadow' | 'Transform';
+type ToolGroup = 'Type' | 'Paragraph' | 'Decorate' | 'Shadow' | 'Transform' | 'Presets';
 interface Action {
   label: string;
   title: string;
@@ -14,6 +15,20 @@ interface Action {
 
 export default function FocusTextTools({ draft }: { draft: TextDraft }) {
   const [group, setGroup] = useState<ToolGroup>('Type');
+  const [presetName, setPresetName] = useState('');
+  const [presets, setPresets] = useState<Record<string, TextFormat>>(() => {
+    try {
+      const input: unknown = JSON.parse(localStorage.getItem('huelith-text-presets-v1') ?? '{}');
+      return input && typeof input === 'object' && !Array.isArray(input) ? input as Record<string, TextFormat> : {};
+    } catch { return {}; }
+  });
+  const savePreset = (): void => {
+    const name = presetName.trim().slice(0, 48); if (!name) return;
+    const clean: TextFormat = Object.fromEntries(Object.keys(DEFAULT_TEXT_FORMAT).map(key =>
+      [key, draft[key as keyof TextFormat]])) as unknown as TextFormat;
+    const next = { ...presets, [name]: clean }; setPresets(next);
+    try { localStorage.setItem('huelith-text-presets-v1', JSON.stringify(next)); } catch { /* Private browsing */ }
+  };
   const set = (patch: Partial<TextFormat>): void => useEditor.getState().setTextFormat(patch);
   const toggle = <K extends keyof TextFormat>(key: K, value: TextFormat[K], fallback: TextFormat[K]): void => {
     set({ [key]: draft[key] === value ? fallback : value });
@@ -64,6 +79,12 @@ export default function FocusTextTools({ draft }: { draft: TextDraft }) {
       action('Y +', 'Move shadow down', () => adjust('textShadowY', 2)),
       action('Y −', 'Move shadow up', () => adjust('textShadowY', -2)),
     ],
+    Presets: [
+      action('Default', 'Reset to standard text formatting', () => set(DEFAULT_TEXT_FORMAT)),
+      action('Headline', 'Bold prominent display text', () => set({ fontWeight: '800', fontSize: 72, letterSpacing: 0.5, lineHeight: 1.1 })),
+      action('Caption', 'Small readable caption', () => set({ fontWeight: '400', fontSize: 24, lineHeight: 1.35, letterSpacing: 0 })),
+      action('Poster', 'Wide headline for posters', () => set({ fontWeight: '900', fontSize: 94, letterSpacing: 3, lineHeight: 1.05 })),
+    ],
     Transform: [
       action('Reset style', 'Reset advanced text style', () => set({ textDecoration: 'none', textTransform: 'none',
         fontVariant: 'normal', textPadding: 0, textBackground: 'none', textShadowBlur: 0,
@@ -71,13 +92,25 @@ export default function FocusTextTools({ draft }: { draft: TextDraft }) {
       action('Tight', 'Compact line spacing', () => set({ lineHeight: 1 })),
       action('Normal', 'Normal line spacing', () => set({ lineHeight: 1.25 })),
       action('Airy', 'Generous line spacing', () => set({ lineHeight: 1.75 })),
+      action('Rotate +15°', 'Rotate selected text clockwise', () => {
+        if (draft.id) useEditor.getState().updateShape(draft.id, shape => { shape.rotation = ((shape.rotation ?? 0) + 15) % 360; });
+      }),
+      action('Rotate −15°', 'Rotate selected text counterclockwise', () => {
+        if (draft.id) useEditor.getState().updateShape(draft.id, shape => { shape.rotation = ((shape.rotation ?? 0) - 15 + 360) % 360; });
+      }),
+      action('Wider', 'Increase selected text horizontal scaling', () => {
+        if (draft.id) useEditor.getState().updateShape(draft.id, shape => { shape.textScaleX = Math.min(30, (shape.textScaleX ?? 1) * 1.1); });
+      }),
+      action('Narrower', 'Decrease selected text horizontal scaling', () => {
+        if (draft.id) useEditor.getState().updateShape(draft.id, shape => { shape.textScaleX = Math.max(0.05, (shape.textScaleX ?? 1) / 1.1); });
+      }),
     ],
   };
 
   return (
     <section className="focus-style-panel" aria-label="Advanced text styles">
       <nav className="focus-style-groups" aria-label="Text style sections">
-        {(['Type', 'Paragraph', 'Decorate', 'Shadow', 'Transform'] as const).map(name => (
+        {(['Type', 'Paragraph', 'Decorate', 'Shadow', 'Transform', 'Presets'] as const).map(name => (
           <button type="button" key={name} aria-pressed={group === name} className={group === name ? 'selected' : ''}
             onClick={() => setGroup(name)}>{name}</button>
         ))}
@@ -86,6 +119,14 @@ export default function FocusTextTools({ draft }: { draft: TextDraft }) {
         {controls[group].map(item => <button type="button" key={item.title} title={item.title}
           aria-pressed={item.active ?? false} className={item.active ? 'selected' : ''}
           onPointerDown={event => event.preventDefault()} onClick={item.run}>{item.label}</button>)}
+        {group === 'Presets' && <div className="focus-text-presets">
+          <label>Save current text style <input aria-label="Preset name" placeholder="My text style" value={presetName}
+            maxLength={48} onChange={event => setPresetName(event.target.value)}/></label>
+          <button type="button" onClick={savePreset} disabled={!presetName.trim()}>Save preset</button>
+          {Object.entries(presets).map(([name, values]) => <button type="button" key={name}
+            title={`Apply saved typography preset ${name}`} onClick={() => set(values as Partial<TextFormat>)}>{name}</button>)}
+          <small>Presets store style controls, not the text content.</small>
+        </div>}
         {group === 'Decorate' && draft.textBackground !== 'none' && <label className="focus-style-color">Background
           <BufferedColorPicker label="Text background color" value={draft.textBackground}
             onCommit={textBackground => set({ textBackground })} /></label>}

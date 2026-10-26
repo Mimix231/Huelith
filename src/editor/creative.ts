@@ -5,11 +5,15 @@ const uid = (): string => globalThis.crypto?.randomUUID?.() ?? `creative-${Date.
 
 export type CreativeKind =
   | 'colorSculptor' | 'atmosphere' | 'lightSculptor' | 'materialForge' | 'shockDesigner'
-  | 'livingInk' | 'motionEcho' | 'paletteFlow' | 'sceneCards' | 'timeSculptor';
+  | 'livingInk' | 'motionEcho' | 'paletteFlow' | 'sceneCards' | 'timeSculptor'
+  | 'particleGarden' | 'warpCage' | 'lightTrails' | 'patternArchitect' | 'gradientReactor';
 
+export type CreativeInterpolation = 'linear' | 'hold' | 'easeInOut';
 export interface CreativeKeyframe {
   frame: number;
   value: number | string;
+  /** Segment interpolation toward the next keyframe; old tracks default to linear. */
+  interpolation?: CreativeInterpolation;
 }
 
 export interface CreativeObject {
@@ -53,6 +57,11 @@ export const CREATIVE_DEFINITIONS: CreativeDefinition[] = [
   { kind: 'paletteFlow', name: 'Palette Flow', description: 'Deform a two-color field through flowing spatial coordinates.', color: '#e070cd', controls: { frequency: scale(5, 1, 20), speed: scale(8, -60, 60), warp: scale(40), angle: scale(45, -180, 180) } },
   { kind: 'sceneCards', name: 'Scene Cards', description: 'Give a selected layer depth for keyframed parallax camera motion.', color: '#4bcab0', controls: { depth: scale(40, -200, 200), cameraX: scale(0, -500, 500), cameraY: scale(0, -500, 500) } },
   { kind: 'timeSculptor', name: 'Time Sculptor', description: 'Keyframe editable positions, opacity and visual parameters.', color: '#f6b75a', controls: { offsetX: scale(0, -700, 700), offsetY: scale(0, -700, 700), rotation: scale(0, -360, 360), scale: scale(100, 5, 300) } },
+  { kind: 'particleGarden', name: 'Particle Garden', description: 'Design reproducible emitters with gravity, spread and flowing particles.', color: '#ffbb72', controls: { count: scale(70, 1, 300), gravity: scale(12, -100, 100), speed: scale(50), spread: scale(80), particleSize: scale(4, 1, 25) } },
+  { kind: 'warpCage', name: 'Warp Cage', description: 'A localized non-destructive spatial warp using movable cage coordinates.', color: '#7bb4ff', controls: { warpX: scale(16, -200, 200), warpY: scale(0, -200, 200), falloff: scale(65, 10, 100), grid: scale(5, 2, 12) } },
+  { kind: 'lightTrails', name: 'Light Trails', description: 'Draw smooth luminous paths with Bézier-like curved segments and glow.', color: '#86e7ff', controls: { width: scale(8, 1, 45), glow: scale(32, 0, 100), reveal: scale(100), pulse: scale(0, 0, 100) } },
+  { kind: 'patternArchitect', name: 'Pattern Architect', description: 'Create radial, mirrored and tiled parametric ornamental motifs.', color: '#79daa9', controls: { symmetry: scale(12, 2, 64), rings: scale(4, 1, 16), rotation: scale(0, -180, 180), shape: scale(0, 0, 3), spacing: scale(60) } },
+  { kind: 'gradientReactor', name: 'Gradient Reactor', description: 'Animated twisting color fields with variable angular turns.', color: '#dd8eff', controls: { twist: scale(50, -200, 200), repeats: scale(3, 1, 24), rotation: scale(0, -180, 180), falloff: scale(70), speed: scale(0, -100, 100) } },
 ];
 
 export function creativeDefinition(kind: CreativeKind): CreativeDefinition {
@@ -68,7 +77,7 @@ export function newCreative(kind: CreativeKind, width: number, height: number, l
     radius: Math.min(width, height) * 0.32, intensity: 65, color: def.color,
     secondary: '#4f3fd1', seed: 12041, layerId,
     controls: Object.fromEntries(Object.entries(def.controls).map(([key, item]) => [key, item.default])),
-    ...(kind === 'livingInk' ? { points: [
+    ...((kind === 'livingInk' || kind === 'lightTrails') ? { points: [
       { x: width * 0.32, y: height * 0.56 },
       { x: width * 0.4, y: height * 0.38 },
       { x: width * 0.52, y: height * 0.48 },
@@ -92,7 +101,9 @@ export function keyframeValue(object: CreativeObject, property: string, frame: n
     const right = track[index];
     const left = track[index - 1];
     if (frame > right.frame) continue;
-    const alpha = (frame - left.frame) / Math.max(1, right.frame - left.frame);
+    const fraction = (frame - left.frame) / Math.max(1, right.frame - left.frame);
+    const alpha = left.interpolation === 'hold' ? 0 : left.interpolation === 'easeInOut'
+      ? fraction * fraction * (3 - 2 * fraction) : fraction;
     if (typeof left.value === 'number' && typeof right.value === 'number') {
       return left.value + (right.value - left.value) * alpha;
     }
@@ -133,7 +144,9 @@ export function setCreativeKeyframe(object: CreativeObject, property: string, fr
   if ((typeof value !== 'number' || !Number.isFinite(value)) &&
       (typeof value !== 'string' || !/^#[\da-f]{6}$/i.test(value))) return;
   object.tracks ??= {};
-  object.tracks[property] = [...(object.tracks[property] ?? []).filter(item => item.frame !== frame), { frame, value }]
+  const existing = object.tracks[property]?.find(item => item.frame === frame);
+  object.tracks[property] = [...(object.tracks[property] ?? []).filter(item => item.frame !== frame),
+    { frame, value, ...(existing?.interpolation ? {interpolation:existing.interpolation} : {}) }]
     .sort((a, b) => a.frame - b.frame);
 }
 
@@ -155,6 +168,7 @@ export function validCreative(value: unknown): value is CreativeObject {
     for (const [key, values] of Object.entries(o.tracks)) {
       if (!/^[A-Za-z][\w]{0,35}$/.test(key) || !Array.isArray(values) || values.length > 1000 ||
         !values.every(item => item && Number.isInteger(item.frame) && item.frame >= 0 && item.frame < 1000 &&
+          (item.interpolation === undefined || ['linear', 'hold', 'easeInOut'].includes(item.interpolation)) &&
           (safe(item.value) || (typeof item.value === 'string' && /^#[\da-f]{6}$/i.test(item.value))))) return false;
     }
   }

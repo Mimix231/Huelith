@@ -39,7 +39,16 @@ function updateNode(shape: VectorShape, operation: Extract<DragOperation, { kind
     if (node.out) { node.out.x += dx; node.out.y += dy; }
   } else {
     const control = node[handle];
-    if (control) { control.x += dx; control.y += dy; }
+    if (control) {
+      control.x += dx; control.y += dy;
+      if (node.nodeMode && node.nodeMode !== 'corner') {
+        const other = handle === 'in' ? 'out' : 'in';
+        const length = node.nodeMode === 'symmetric' ? Math.hypot(control.x-node.x, control.y-node.y)
+          : Math.hypot((node[other]?.x ?? node.x)-node.x, (node[other]?.y ?? node.y)-node.y);
+        const distance = Math.hypot(control.x-node.x, control.y-node.y) || 1;
+        node[other] = {x: node.x-(control.x-node.x)*length/distance, y: node.y-(control.y-node.y)*length/distance};
+      }
+    }
   }
   Object.assign(shape, shapeBounds(shape));
 }

@@ -1,4 +1,6 @@
+import { isAnimationPlayback } from '../editor/fx';
 import { loadPreferences, PREFERENCES_EVENT } from '../settings/preferences';
+import { frameDocument } from '../editor/animation';
 import {
   useCallback,
   useEffect,
@@ -8,9 +10,11 @@ import {
   type MouseEvent as ReactMouseEvent,
 } from 'react';
 import { activeLayer, activeTab, studioPreviewLayer, useEditor } from '../editor/store';
-import { decodeImage, drawChecker, drawShape, renderLayer } from '../editor/render';
-import { contains, normalizeRect, rotate, shapeBounds, smoothPath } from '../editor/geometry';
+import { decodeImage, drawChecker, drawShape, renderLayer, renderClippedLayer, applyAdjustmentLayer } from '../editor/render';
+import { contains, normalizeRect, rotate, shapeBounds, smoothPath, splitPathSegment } from '../editor/geometry';
 import { previewDrag, type DragOperation } from '../editor/operations';
+import { drawViewportRulers, snapPoint } from '../editor/workspace-guides';
+import {snapBounds,snapHandle,type SnapGuide} from '../editor/smart-snapping';
 import { uid, type Layer, type Point, type SelectionRect, type VectorShape } from '../editor/types';
 import { drawBrushDab, stabilizedPoint, strokeSamples } from '../editor/brush';
 import FocusTextEditor from './FocusTextEditor';
@@ -44,6 +48,8 @@ type Gesture =
       layerId: string; shapeId: string | null; bounds: SelectionRect; rotation: number }
   | { kind: 'line-point'; layerId: string; shapeId: string; index: number; start: Point; last: Point }
   | { kind: 'pen-node'; nodeIndex: number; start: Point; last: Point }
+  | { kind: 'gradient-point'; layerId: string; shapeId: string; index: number; last: Point }
+  | {kind:'gradient-guide';shapeId:string;layerId:string;endpoint:'start'|'end';last:Point}
   | { kind: 'node'; layerId: string; shapeId: string; index: number; handle: 'anchor' | 'in' | 'out'; start: Point; last: Point }
   | { kind: 'shape'; start: Point; last: Point; shape: VectorShape }
   | { kind: 'loading'; start: Point; last: Point; layerId: string; documentId: string;
@@ -87,6 +93,7 @@ export default function Canvas({ onError }: CanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const hostRef = useRef<HTMLDivElement>(null);
   const gesture = useRef<Gesture | null>(null);
+  const alignmentGuides=useRef<SnapGuide[]>([]);
   const raf = useRef<number>(0);
   const [size, setSize] = useState({ width: 800, height: 600 });
   const [cursor, setCursor] = useState<Point | null>(null);
@@ -185,6 +192,8 @@ export default function Canvas({ onError }: CanvasProps) {
   const zoom = useEditor(state => state.zoom);
   const pan = useEditor(state => state.pan);
   const grid = useEditor(state => state.grid);
+  const rulers = useEditor(state => state.rulers);
+  const snap = useEditor(state => state.snap);
   const color = useEditor(state => state.color);
   const fill = useEditor(state => state.fill);
   const strokeWidth = useEditor(state => state.strokeWidth);
@@ -315,14 +324,15 @@ export default function Canvas({ onError }: CanvasProps) {
     }
 
     // Ghost cels are reference-only: never recorded into the active frame or exported.
-    if (doc.animation?.onion.enabled) {
+    if (doc.animation?.onion.enabled && !isAnimationPlayback()) {
       const { frames, currentFrame, onion } = doc.animation;
       const ghost = (index: number, distance: number): void => {
         const frame = frames[index];
         if (!frame) return;
         ctx.save();
         ctx.globalAlpha *= onion.opacity / Math.pow(1.6, distance - 1);
-        for (const ghostLayer of frame.layers) renderLayer(ctx, ghostLayer, invalidate, doc.width, doc.height);
+        for (const ghostLayer of frameDocument(doc, index).layers)
+          renderLayer(ctx, ghostLayer, invalidate, doc.width, doc.height);
         ctx.restore();
       };
       for (let distance = onion.previous; distance >= 1; distance--) {
@@ -348,8 +358,14 @@ export default function Canvas({ onError }: CanvasProps) {
       ? { ...doc, creative: doc.creative.map(item => item.id === creativePreview.id ? creativePreview : item) }
       : doc;
     renderMotionEcho(ctx, creativeDoc, (target, layer) => renderLayer(target, layer, invalidate, doc.width, doc.height));
-    for (const layer of layers) {
-      if (drawing && working && layer.id === working.layerId && layer.type === 'raster' && layer.visible) {
+    for (let layerIndex = 0; layerIndex < layers.length; layerIndex++) {
+      const layer = layers[layerIndex];
+      const below = layers[layerIndex - 1];
+      if (layer.adjustment) {
+        applyAdjustmentLayer(ctx, layer, layers.slice(0, layerIndex), doc, invalidate, doc.background === 'transparent');
+      } else if (layer.clipToBelow && below) {
+        renderClippedLayer(ctx, layer, below, invalidate, doc.width, doc.height);
+      } else if (drawing && working && layer.id === working.layerId && layer.type === 'raster' && layer.visible) {
         ctx.save();
         ctx.globalAlpha = layer.opacity;
         ctx.globalCompositeOperation = layer.blend;
@@ -369,7 +385,7 @@ export default function Canvas({ onError }: CanvasProps) {
     const selectedCreative = creativePanelOpen && selectedCreativeId
       ? creativeDoc.creative?.find(item => item.id === selectedCreativeId) : undefined;
     if (selectedCreative) {
-      if (selectedCreative.kind === 'livingInk') {
+      if ((selectedCreative.kind === 'livingInk' || selectedCreative.kind === 'lightTrails')) {
         ctx.save();
         ctx.fillStyle = '#fff4bf'; ctx.strokeStyle = '#704edc'; ctx.lineWidth = 1.5 / zoom;
         for (const p of selectedCreative.points ?? []) {
@@ -413,10 +429,39 @@ export default function Canvas({ onError }: CanvasProps) {
     ctx.restore();
 
     const active = layers.find(layer => layer.id === doc.activeLayerId);
-    const selected = active?.type === 'vector' ? active.shapes.find(shape => shape.id === selectedShapeId) : undefined;
+    const selected = active?.type === 'gradient' ? active.gradient : active?.type === 'vector' ? active.shapes.find(shape => shape.id === selectedShapeId) : undefined;
+    const guideShape = tool === 'gradient' && draft?.kind === 'gradient' ? draft : selected?.kind === 'gradient' && tool === 'gradient' ? selected : null;
+    if (guideShape && (guideShape.gradientStartX !== undefined || guideShape.gradientEndX !== undefined)) {
+      const gx = guideShape.x + (active?.x ?? 0), gy = guideShape.y + (active?.y ?? 0);
+      const start = {x:gx+(guideShape.gradientStartX ?? 0)*guideShape.width,y:gy+(guideShape.gradientStartY ?? .5)*guideShape.height};
+      const end = {x:gx+(guideShape.gradientEndX ?? 1)*guideShape.width,y:gy+(guideShape.gradientEndY ?? .5)*guideShape.height};
+      ctx.save(); ctx.lineWidth=1.4/zoom;ctx.strokeStyle='#f5f9ff';ctx.fillStyle='#6959ce';ctx.setLineDash([4/zoom,3/zoom]);
+      ctx.beginPath();ctx.moveTo(start.x,start.y);ctx.lineTo(end.x,end.y);ctx.stroke();ctx.setLineDash([]);
+      for(const point of [start,end]){ctx.beginPath();ctx.arc(point.x,point.y,6/zoom,0,Math.PI*2);ctx.fill();ctx.stroke();}
+      ctx.restore();
+    }
     const bounds = selected && active ? shapeBounds(selected, active) : tool === 'move' && active && !selectedShapeId
       ? layerBounds(active, doc.width, doc.height) : null;
     const drag = gesture.current;
+    if (snap && alignmentGuides.current.length && drag) {
+      ctx.save();ctx.strokeStyle='#71f2e0';ctx.lineWidth=1.25/zoom;ctx.setLineDash([5/zoom,3/zoom]);
+      for(const guide of alignmentGuides.current){
+        ctx.beginPath();if(guide.axis==='x'){ctx.moveTo(guide.at,0);ctx.lineTo(guide.at,doc.height);}
+        else{ctx.moveTo(0,guide.at);ctx.lineTo(doc.width,guide.at);}ctx.stroke();
+        ctx.save();ctx.setLineDash([]);ctx.fillStyle='#8cece9';ctx.font=`${11/zoom}px Inter, sans-serif`;
+        if(guide.axis==='x')ctx.fillText(`${Math.round(guide.at)}`,guide.at+4/zoom,16/zoom);
+        else ctx.fillText(`${Math.round(guide.at)}`,7/zoom,guide.at-4/zoom);ctx.restore();
+      }ctx.restore();
+    }
+    if (snap && drag && ['shape','node','line-point','gradient-guide','gradient-point'].includes(drag.kind)) {
+      const nearest = snapPoint(drag.last);
+      ctx.save();
+      ctx.strokeStyle = '#5de5d9';ctx.lineWidth = 1 / zoom;
+      ctx.setLineDash([6 / zoom, 4 / zoom]);
+      ctx.beginPath();ctx.moveTo(nearest.x, 0);ctx.lineTo(nearest.x, doc.height);
+      ctx.moveTo(0,nearest.y);ctx.lineTo(doc.width,nearest.y);ctx.stroke();
+      ctx.setLineDash([]);ctx.restore();
+    }
 
     if (bounds && !active?.locked && (tool === 'move' || tool === 'node' || tool === 'text' || selected?.kind === 'text')) {
       const outline = bounds;
@@ -473,6 +518,17 @@ export default function Canvas({ onError }: CanvasProps) {
       ctx.restore();
     }
 
+    if (tool === 'node' && selected?.kind === 'gradient' && selected.gradientPoints?.length && active) {
+      ctx.save();
+      for (let index = 0; index < selected.gradientPoints.length; index++) {
+        const item = selected.gradientPoints[index];
+        const px = selected.x + item.x * selected.width + active.x;
+        const py = selected.y + item.y * selected.height + active.y;
+        ctx.beginPath();ctx.arc(px, py, 6/zoom, 0, Math.PI * 2);
+        ctx.fillStyle = '#fff';ctx.fill();ctx.strokeStyle='#7451cf';ctx.lineWidth=2/zoom;ctx.stroke();
+      }
+      ctx.restore();
+    }
     if (tool === 'node' && selected?.nodes?.length && active) {
       ctx.save();
       ctx.lineWidth = 1.2 / zoom;
@@ -505,6 +561,11 @@ export default function Canvas({ onError }: CanvasProps) {
       ctx.strokeRect(rectangle.x, rectangle.y, rectangle.width, rectangle.height);
       ctx.restore();
     }
+    if (rulers) {
+      ctx.save();ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      drawViewportRulers(ctx, size, doc, zoom, pan);
+      ctx.restore();
+    }
     if (perf.current.node) {
       perf.current.paints++;
       perf.current.paintMs += performance.now() - startPaint;
@@ -512,7 +573,7 @@ export default function Canvas({ onError }: CanvasProps) {
     };
     paintFrame.current();
     return () => { paintFrame.current = () => {}; };
-  }, [doc, size, zoom, pan, grid, checkerSize, draft, drawing, selectedShapeId, selectedNodeIndex, selection, tool, fxBypassLayerId, creativePanelOpen, selectedCreativeId, creativePreview, creativeDrawMode, textEdit?.id, textEdit?.layerId, invalidate]);
+  }, [doc, size, zoom, pan, grid, rulers, checkerSize, draft, drawing, selectedShapeId, selectedNodeIndex, selection, tool, fxBypassLayerId, creativePanelOpen, selectedCreativeId, creativePreview, creativeDrawMode, textEdit?.id, textEdit?.layerId, invalidate]);
 
   function dab(current: DrawGesture, point: Point, pressure: number, finalize = false): void {
     const editor = useEditor.getState();
@@ -520,10 +581,11 @@ export default function Canvas({ onError }: CanvasProps) {
     const layer = document.layers.find(item => item.id === current.layerId);
     if (document.id !== current.documentId || !layer || layer.type !== 'raster') return;
     const last = current.last;
-    const filtered = stabilizedPoint(last, point, editor.smoothing, finalize);
+    const isPencil = editor.tool === 'pencil';
+    const filtered = isPencil ? { x: Math.floor(point.x), y: Math.floor(point.y) } : stabilizedPoint(last, point, editor.smoothing, finalize);
     const distance = Math.hypot(filtered.x - last.x, filtered.y - last.y);
     const radius = editor.strokeWidth / 2;
-    const steps = Math.max(0.7, radius * 0.3);
+    const steps = isPencil ? 0.85 : Math.max(0.7, radius * 0.3);
     const ctx = current.ctx;
     ctx.save();
     const mask = editor.selection;
@@ -541,12 +603,25 @@ export default function Canvas({ onError }: CanvasProps) {
     for (const sample of path) {
       const position = { x: sample.x - layer.x, y: sample.y - layer.y };
       const opacityAtPoint = editor.opacity * Math.max(0.1, pressure || 1);
+      if (isPencil) {
+        ctx.fillStyle = editor.color;
+        ctx.globalAlpha = opacityAtPoint;
+        const size = Math.max(1, Math.round(editor.strokeWidth));
+        ctx.fillRect(Math.floor(position.x - radius + .5), Math.floor(position.y - radius + .5), size, size);
+        if (editor.symmetryX) ctx.fillRect(Math.floor(document.width - 1 - sample.x - layer.x - radius + .5), Math.floor(position.y - radius + .5), size, size);
+        ctx.globalAlpha = 1;
+        continue;
+      }
       drawBrushDab(ctx, position, {
         radius: radius * Math.max(0.2, pressure || 1),
         hardness: editor.hardness,
         opacity: opacityAtPoint,
         color: editor.color,
         erase: current.erase,
+      });
+      if (editor.symmetryX) drawBrushDab(ctx, {x:document.width - sample.x - layer.x,y:position.y}, {
+        radius: radius * Math.max(.2,pressure||1), hardness:editor.hardness,opacity:opacityAtPoint,
+        color:editor.color,erase:current.erase,
       });
     }
     ctx.restore();
@@ -614,8 +689,10 @@ export default function Canvas({ onError }: CanvasProps) {
 
   function pointerDown(event: ReactPointerEvent<HTMLCanvasElement>): void {
     if (event.button !== 0 && event.button !== 1) return;
-    const point = position(event);
-    setCursor(point);
+    const raw = position(event);
+    const snapTool = tool === 'pen' || ['rectangle','ellipse','roundedRect','triangle','polygon','star','arrow','heart','ring','diamond','speechBubble','crescent','cross','line','gradient'].includes(tool);
+    const point = snap && snapTool && !event.altKey ? snapPoint(raw) : raw;
+    setCursor(raw);
     event.currentTarget.setPointerCapture(event.pointerId);
     event.currentTarget.focus({ preventScroll: true });
     const state = useEditor.getState();
@@ -629,7 +706,7 @@ export default function Canvas({ onError }: CanvasProps) {
     }
     const activeCreative = state.creativePanelOpen && state.selectedCreativeId
       ? doc.creative?.find(item => item.id === state.selectedCreativeId) : undefined;
-    if (activeCreative && activeCreative.kind === 'livingInk' && !state.creativeDrawMode) {
+    if (activeCreative && (activeCreative.kind === 'livingInk' || activeCreative.kind === 'lightTrails') && !state.creativeDrawMode) {
       const index = (activeCreative.points ?? []).findIndex(vertex =>
         Math.hypot(vertex.x - point.x, vertex.y - point.y) < 10 / zoom);
       if (index >= 0) {
@@ -637,7 +714,7 @@ export default function Canvas({ onError }: CanvasProps) {
         return;
       }
     }
-    if (activeCreative && state.creativeDrawMode && activeCreative.kind === 'livingInk') {
+    if (activeCreative && state.creativeDrawMode && (activeCreative.kind === 'livingInk' || activeCreative.kind === 'lightTrails')) {
       gesture.current = { kind: 'creative-ink', id: activeCreative.id, points: [point] };
       return;
     }
@@ -674,6 +751,19 @@ export default function Canvas({ onError }: CanvasProps) {
         return;
       }
     }
+    if (tool === 'gradient' && (layer?.type === 'vector' || layer?.type === 'gradient')) {
+      const existing = layer.type === 'gradient' ? layer.gradient : layer.shapes.find(item => item.id === selectedShapeId && item.kind === 'gradient');
+      if (existing && existing.gradientStartX !== undefined) {
+        for(const end of ['start','end'] as const){
+          const x=existing.x+layer.x+(end==='start' ? existing.gradientStartX ?? 0 : existing.gradientEndX ?? 1)*existing.width;
+          const y=existing.y+layer.y+(end==='start' ? existing.gradientStartY ?? .5 : existing.gradientEndY ?? .5)*existing.height;
+          if(Math.hypot(point.x-x,point.y-y) <= 12 / zoom){
+            gesture.current={kind:'gradient-guide',shapeId:existing.id,layerId:layer.id,endpoint:end,last:point};
+            return;
+          }
+        }
+      }
+    }
     if (tool === 'marquee') {
       gesture.current = { kind: 'marquee', start: point, last: point };
       state.setSelection(null);
@@ -694,6 +784,16 @@ export default function Canvas({ onError }: CanvasProps) {
     if (tool === 'node') {
       const vectorLayer = layer?.type === 'vector' ? layer : null;
       const selected = vectorLayer?.shapes.find(shape => shape.id === selectedShapeId);
+      if (selected?.kind === 'gradient' && selected.gradientPoints?.length && vectorLayer) {
+        for (let i=0; i<selected.gradientPoints.length;i++) {
+          const handle=selected.gradientPoints[i];
+          const at={x:selected.x+handle.x*selected.width+vectorLayer.x,y:selected.y+handle.y*selected.height+vectorLayer.y};
+          if (Math.hypot(point.x-at.x,point.y-at.y)<=12/zoom) {
+            gesture.current={kind:'gradient-point',layerId:vectorLayer.id,shapeId:selected.id,index:i,last:point};
+            return;
+          }
+        }
+      }
       if (selected?.kind === 'line' && selected.controls && vectorLayer) {
         const targets = [
           { x: selected.x, y: selected.y },
@@ -757,7 +857,7 @@ export default function Canvas({ onError }: CanvasProps) {
       }
       return;
     }
-    if (tool === 'brush' || tool === 'eraser') {
+    if (tool === 'brush' || tool === 'eraser' || tool === 'pencil') {
       if (layer?.locked || (layer && !layer.visible)) return;
       if (layer?.type === 'raster' && ((layer.scaleX ?? 1) !== 1 || (layer.scaleY ?? 1) !== 1 || layer.rotation)) {
         onError?.(new Error('Rasterize transformed layers or paint on a new layer.'));
@@ -803,7 +903,7 @@ export default function Canvas({ onError }: CanvasProps) {
       }
       return;
     }
-    if (['rectangle', 'ellipse', 'roundedRect', 'triangle', 'polygon', 'star', 'arrow', 'heart', 'ring', 'line', 'freehand'].includes(tool)) {
+    if (['rectangle', 'ellipse', 'roundedRect', 'triangle', 'polygon', 'star', 'arrow', 'heart', 'ring', 'diamond', 'speechBubble', 'crescent', 'cross', 'gradient', 'line', 'freehand'].includes(tool)) {
       const kind = tool === 'rectangle' ? 'rect' : tool === 'freehand' ? 'path' : tool;
       const shape: VectorShape = {
         id: uid(), kind: kind as VectorShape['kind'], x: point.x, y: point.y, width: 0, height: 0,
@@ -813,14 +913,35 @@ export default function Canvas({ onError }: CanvasProps) {
         sides: kind === 'star' ? 5 : kind === 'polygon' ? 6 : undefined,
         cornerRadius: kind === 'roundedRect' ? 16 : undefined,
         innerRatio: kind === 'star' ? 0.45 : kind === 'ring' ? 0.58 : undefined,
+        ...(kind === 'gradient' ? {
+          gradientPoints: useEditor.getState().gradientMode === 'mesh'
+            ? [{x:0,y:0,color},{x:1,y:0,color:useEditor.getState().backgroundColor},{x:0,y:1,color:useEditor.getState().backgroundColor},{x:1,y:1,color}]
+            : [{x:0,y:0,color},{x:1,y:1,color:useEditor.getState().backgroundColor}],
+          gradientMode: useEditor.getState().gradientMode, gradientStops: [{ id: uid(), position: 0, color, opacity: useEditor.getState().opacity }, { id: uid(), position: 1, color: useEditor.getState().backgroundColor, opacity: useEditor.getState().backgroundOpacity }] } : {}),
       };
+      if (kind === 'gradient') {
+        shape.x=0; shape.y=0; shape.width=doc.width;shape.height=doc.height;
+        shape.fill='none';shape.stroke='none';shape.strokeWidth=0;
+        Object.assign(shape,useEditor.getState().gradientSettings);
+        shape.gradientStartX=point.x/doc.width;shape.gradientStartY=point.y/doc.height;
+        shape.gradientEndX=(point.x+.001)/doc.width;shape.gradientEndY=point.y/doc.height;
+        shape.gradientMode=useEditor.getState().gradientMode;
+      }
       gesture.current = { kind: 'shape', start: point, last: point, shape };
       setDraft(shape);
     }
   }
 
   function pointerMove(event: ReactPointerEvent<HTMLCanvasElement>): void {
-    const point = position(event);
+    const raw = position(event);
+    const activeGesture = gesture.current;
+    const point = snap && !event.altKey && (
+      activeGesture?.kind === 'shape' && activeGesture.shape.kind !== 'path' ||
+      activeGesture?.kind === 'pen-node' || activeGesture?.kind === 'move' ||
+      activeGesture?.kind === 'node' || activeGesture?.kind === 'gradient-guide' ||
+      activeGesture?.kind === 'gradient-point' || activeGesture?.kind === 'line-point' ||
+      activeGesture?.kind === 'transform'
+    ) ? snapPoint(raw) : raw;
     setCursor(point);
     const current = gesture.current;
     if (!current) {
@@ -830,7 +951,7 @@ export default function Canvas({ onError }: CanvasProps) {
         ? selectedLayer.shapes.find(shape => shape.id === activeState.selectedShapeId) : undefined;
       const activeCreative = activeState.creativePanelOpen && activeState.selectedCreativeId
         ? doc.creative?.find(o => o.id === activeState.selectedCreativeId) : undefined;
-      if (activeCreative?.kind === 'livingInk' && activeCreative.points?.some(vertex =>
+      if ((activeCreative?.kind === 'livingInk' || activeCreative?.kind === 'lightTrails') && activeCreative.points?.some(vertex =>
         Math.hypot(vertex.x - point.x, vertex.y - point.y) < 10 / zoom)) {
         setHoverCursor('crosshair');
         return;
@@ -840,6 +961,15 @@ export default function Canvas({ onError }: CanvasProps) {
         return;
       }
       let nextCursor = tool === 'hand' ? 'grab' : tool === 'move' ? 'default' : 'crosshair';
+      if (tool === 'node' && selectedShape?.kind === 'gradient' && selectedLayer?.type === 'vector') {
+        if (selectedShape.gradientPoints?.some(handle => Math.hypot(point.x-selectedShape.x-handle.x*selectedShape.width-selectedLayer.x,point.y-selectedShape.y-handle.y*selectedShape.height-selectedLayer.y) < 12/zoom)) nextCursor='grab';
+      }
+      if (tool === 'node' && selectedLayer?.type === 'vector' && !selectedLayer.locked && selectedShape) {
+        const targets = selectedShape.kind === 'line'
+          ? [{ x: selectedShape.x, y: selectedShape.y }, ...(selectedShape.controls ?? []), { x: selectedShape.x + selectedShape.width, y: selectedShape.y + selectedShape.height }]
+          : (selectedShape.nodes ?? []).flatMap(node => [node, ...(node.in ? [node.in] : []), ...(node.out ? [node.out] : [])]);
+        if (targets.some(target => Math.hypot(point.x - target.x - selectedLayer.x, point.y - target.y - selectedLayer.y) < 11 / zoom)) nextCursor = 'grab';
+      }
       if ((tool === 'move' || tool === 'text' || selectedShape?.kind === 'text') && selectedLayer && !selectedLayer.locked) {
         const bounds = selectedShape ? shapeBounds(selectedShape, selectedLayer)
           : layerBounds(selectedLayer, doc.width, doc.height);
@@ -900,6 +1030,17 @@ export default function Canvas({ onError }: CanvasProps) {
       } else {
         dab(current, point, event.pointerType === 'pen' ? event.pressure || 1 : 1);
       }
+    } else if (current.kind === 'gradient-point') {
+      current.last=point;
+      const vector=doc.layers.find(item=>item.id===current.layerId);
+      const shape=vector?.type==='vector'?vector.shapes.find(item=>item.id===current.shapeId):undefined;
+      if (vector?.type === 'vector' && shape?.gradientPoints) {
+        const draftShape=structuredClone(shape);
+        draftShape.gradientPoints![current.index]={...draftShape.gradientPoints![current.index],
+          x:Math.max(0,Math.min(1,(point.x-vector.x-shape.x)/Math.max(1,shape.width))),
+          y:Math.max(0,Math.min(1,(point.y-vector.y-shape.y)/Math.max(1,shape.height)))};
+        setDraft(draftShape);
+      }
     } else if (current.kind === 'pen-node') {
       const shape = penDraft.current;
       const node = shape?.nodes?.[current.nodeIndex];
@@ -911,15 +1052,42 @@ export default function Canvas({ onError }: CanvasProps) {
         setDraft(structuredClone(shape!));
       }
       current.last = point;
-    } else if (current.kind === 'node' || current.kind === 'line-point' || current.kind === 'move' || current.kind === 'transform' || current.kind === 'marquee') {
+    } else if (current.kind === 'move') {
+      if(snap&&!event.altKey){
+        const layer=doc.layers.find(item=>item.id===current.layerId);
+        const shape=layer?.type==='vector'?layer.shapes.find(item=>item.id===current.shapeId):undefined;
+        const bounds=shape&&layer?shapeBounds(shape,layer):layer?layerBounds(layer,doc.width,doc.height):null;
+        if(bounds){const aligned=snapBounds(bounds,doc,{x:raw.x-current.start.x,y:raw.y-current.start.y},current.layerId,zoom);
+          current.last={x:current.start.x+aligned.dx,y:current.start.y+aligned.dy};alignmentGuides.current=aligned.guides;
+        }else current.last=point;
+      }else{current.last=raw;alignmentGuides.current=[];}invalidate();
+    } else if(current.kind==='transform'){
+      if(snap&&!event.altKey&&current.mode==='scale'){
+        const aligned=snapHandle(raw,doc,zoom);current.last=aligned.point;alignmentGuides.current=aligned.guides;
+      }else{current.last=raw;alignmentGuides.current=[];}invalidate();
+    } else if (current.kind === 'node' || current.kind === 'line-point' || current.kind === 'marquee') {
       current.last = point;
       invalidate();
+    } else if (current.kind === 'gradient-guide') {
+      current.last=point;
+      const layer=doc.layers.find(item=>item.id===current.layerId);
+      const original=layer?.type==='gradient'?layer.gradient:layer?.type==='vector'?layer.shapes.find(item=>item.id===current.shapeId):undefined;
+      if ((layer?.type==='gradient' || layer?.type==='vector') && original) {
+        const x=(point.x-layer.x-original.x)/Math.max(1,original.width);
+        const y=(point.y-layer.y-original.y)/Math.max(1,original.height);
+        setDraft({...original,...(current.endpoint==='start'
+          ? {gradientStartX:x,gradientStartY:y}
+          : {gradientEndX:x,gradientEndY:y})});
+      }
     } else if (current.kind === 'shape') {
       const shape = current.shape;
       if (shape.kind === 'path') {
         shape.points?.push(point);
         const bounds = shapeBounds(shape);
         Object.assign(shape, bounds);
+      } else if (shape.kind === 'gradient') {
+        shape.gradientEndX=point.x/Math.max(1,doc.width);
+        shape.gradientEndY=point.y/Math.max(1,doc.height);
       } else if (shape.kind === 'line') {
         shape.width = point.x - current.start.x;
         shape.height = point.y - current.start.y;
@@ -965,6 +1133,7 @@ export default function Canvas({ onError }: CanvasProps) {
 
   function pointerUp(): void {
     const current = gesture.current;
+    alignmentGuides.current=[];
     if (!current) return;
     if (current.kind === 'loading') {
       current.finish = true;
@@ -991,22 +1160,52 @@ export default function Canvas({ onError }: CanvasProps) {
       const bounds = normalizeRect(current.start, current.last);
       state.setSelection(bounds.width > 2 && bounds.height > 2 ? bounds : null);
     }
+    if (current.kind === 'gradient-point') {
+      const vector=doc.layers.find(item=>item.id===current.layerId);
+      const shape=vector?.type==='vector'?vector.shapes.find(item=>item.id===current.shapeId):undefined;
+      if (vector?.type === 'vector' && shape?.gradientPoints) {
+        const gradientPoint= {x:Math.max(0,Math.min(1,(current.last.x-vector.x-shape.x)/Math.max(1,shape.width))),
+          y:Math.max(0,Math.min(1,(current.last.y-vector.y-shape.y)/Math.max(1,shape.height)))};
+        state.updateShape(shape.id, item => { if(item.gradientPoints?.[current.index]) Object.assign(item.gradientPoints[current.index], gradientPoint); });
+      }
+      setDraft(null);return;
+    }
+    if (current.kind === 'gradient-guide') {
+      const active=doc.layers.find(item=>item.id===current.layerId);
+      const original=active?.type==='gradient'?active.gradient:active?.type==='vector'?active.shapes.find(item=>item.id===current.shapeId):undefined;
+      if ((active?.type==='gradient' || active?.type==='vector') && original) {
+        const x=(current.last.x-active.x-original.x)/Math.max(1,original.width);
+        const y=(current.last.y-active.y-original.y)/Math.max(1,original.height);
+        const apply = (shape: VectorShape) => {
+          if(current.endpoint==='start'){shape.gradientStartX=x;shape.gradientStartY=y;}
+          else{shape.gradientEndX=x;shape.gradientEndY=y;}
+        };
+        if (active.type === 'gradient') state.updateGradientLayer(active.id, apply);
+        else state.updateShape(original.id, apply);
+      }
+      setDraft(null);
+      return;
+    }
     if (current.kind === 'pen-node') return;
     if (current.kind === 'shape') {
       const shape = current.shape;
       if (shape.kind === 'path' && shape.points && shape.points.length >= 2) {
-        if (smoothing > 0) {
-          shape.nodes = smoothPath(shape.points, smoothing);
-          delete shape.points;
-        }
+        shape.nodes = smoothPath(shape.points, smoothing);
+        delete shape.points;
         Object.assign(shape, shapeBounds(shape));
       }
       const valid = shape.kind === 'path' ? (shape.nodes?.length ?? shape.points?.length ?? 0) >= 2
+        : shape.kind === 'gradient' ? Math.hypot((shape.gradientEndX ?? 0)-(shape.gradientStartX ?? 0),(shape.gradientEndY ?? 0)-(shape.gradientStartY ?? 0)) > 0.002
         : Math.abs(shape.width) > 2 || Math.abs(shape.height) > 2;
       if (valid) {
-        state.addShape(shape);
-        state.selectShape(shape.id);
-        state.setTool(shape.kind === 'line' ? 'node' : 'move');
+        if (shape.kind === 'gradient') {
+          state.addGradientLayer(shape);
+          state.selectShape(null);
+        } else {
+          state.addShape(shape);
+          state.selectShape(shape.id);
+        }
+        state.setTool(shape.kind === 'gradient' ? 'gradient' : shape.kind === 'line' || shape.kind === 'path' ? 'node' : 'move');
       }
       setDraft(null);
     }
@@ -1123,10 +1322,51 @@ export default function Canvas({ onError }: CanvasProps) {
         onPointerUp={pointerUp}
         onPointerCancel={() => { gesture.current = null; useEditor.getState().previewCreative(null); setDraft(null); setDrawing(null); invalidate(); }}
         onDoubleClick={event => {
+          if (tool === 'node') {
+            const point=position(event);
+            const editor=useEditor.getState();
+            const currentLayer=activeLayer(editor);
+            const selected=currentLayer?.type==='vector'?currentLayer.shapes.find(item=>item.id===editor.selectedShapeId):undefined;
+            if (selected?.kind==='gradient' && selected.gradientMode==='freeform' && currentLayer?.type==='vector') {
+              const x=(point.x-currentLayer.x-selected.x)/Math.max(1,selected.width);
+              const y=(point.y-currentLayer.y-selected.y)/Math.max(1,selected.height);
+              if (x>=0 && x<=1 && y>=0 && y<=1 && (selected.gradientPoints?.length ?? 0) < 36) {
+                editor.updateShape(selected.id,shape=>{shape.gradientPoints=[...(shape.gradientPoints??[]),{x,y,color:editor.color}];});
+                return;
+              }
+            }
+          }
+          if (tool === 'node') {
+            const point = position(event);
+            const currentState = useEditor.getState();
+            const vector = activeLayer(currentState);
+            const path = vector?.type === 'vector' ? vector.shapes.find(item => item.id === currentState.selectedShapeId && item.kind === 'path') : undefined;
+            if (path?.nodes && vector?.type === 'vector') {
+              const local = {x: point.x-vector.x,y:point.y-vector.y};
+              let closest = { segment: -1, distance: Infinity, t: .5 };
+              const mix = (p: Point, q: Point, t: number): Point => ({x:p.x+(q.x-p.x)*t,y:p.y+(q.y-p.y)*t});
+              for (let i = 0; i < path.nodes.length-1; i++) {
+                const a = path.nodes[i], b = path.nodes[i+1];
+                for (let k=1;k<40;k++) {
+                  const t = k/40;
+                  const ab=mix(a,a.out??a,t),bc=mix(a.out??a,b.in??b,t),cd=mix(b.in??b,b,t);
+                  const pt=mix(mix(ab,bc,t),mix(bc,cd,t),t);
+                  const d=Math.hypot(pt.x-local.x,pt.y-local.y);
+                  if (d<closest.distance) closest={segment:i,distance:d,t};
+                }
+              }
+              if (closest.segment>=0 && closest.distance < 16/zoom) {
+                currentState.updateShape(path.id, item => splitPathSegment(item,closest.segment,closest.t));
+                currentState.selectNode(closest.segment+1);
+                return;
+              }
+            }
+          }
           if (selectableShape(position(event), doc.layers, zoom, true)) editText(event);
           else if (tool === 'pen') window.dispatchEvent(new Event('huelith-finish-pen'));
         }}
-        onContextMenu={event => event.preventDefault()}
+        onContextMenu={event => {event.preventDefault();
+          window.dispatchEvent(new CustomEvent('huelith-canvas-context',{detail:{x:event.clientX,y:event.clientY}}));}}
       />
       {focusMode && (
         <button className="focus-exit" type="button"

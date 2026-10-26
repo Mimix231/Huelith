@@ -152,7 +152,7 @@ export function defaultParameters(kind: EffectKind): EffectParameters {
   if (kind === 'outline') {
     values.outlineStyle = 'neon'; values.silhouetteMode = 'auto'; values.secondaryColor = '#8d55ff';
   }
-  if (kind === 'cutout') { values.decontaminate = 0; values.backgroundAuto = 1; values.maskBrushSize = 24; values.maskStrokes = []; }
+  if (kind === 'cutout') { values.segmentationMode = 'smart'; values.segmentationQuality = 152; values.decontaminate = 0; values.backgroundAuto = 1; values.backgroundEdgeGuard = 24; values.maskBrushSize = 24; values.maskStrokes = []; }
   if (kind === 'balance') { values.highlightsRed = 10; values.shadowsBlue = 8; }
   if (kind === 'mixer') { values.redGreen = 9; values.blueRed = 7; }
   if (kind === 'gradientmap') values.stops = structuredClone(DEFAULT_GRADIENT_STOPS);

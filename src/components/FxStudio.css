@@ -90,3 +90,23 @@
  background-color:#dedede;background-image:linear-gradient(45deg,#aaaaaa 25%,transparent 25%),linear-gradient(-45deg,#aaaaaa 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#aaaaaa 75%),linear-gradient(-45deg,transparent 75%,#aaaaaa 75%);background-size:20px 20px;background-position:0 0,0 10px,10px -10px,-10px 0}
 .cutout-paintboard img {position:absolute;pointer-events:none;user-select:none;max-width:none;object-fit:fill;transform-origin:center}
 .cutout-paintboard svg {position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
+/* The cutout editor previews the actual mask over a checkerboard, not source pixels. */
+.cutout-paintboard .cutout-live-result{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none;object-fit:fill;image-rendering:auto;}
+.cutout-editor .fx-customize-row select{max-width:215px;background:var(--panel-bg);color:var(--text);border:1px solid var(--border);border-radius:7px;padding:5px;}
+
+.fx-levels-histogram{display:grid;gap:7px;padding:10px;border:1px solid var(--border);border-radius:8px}.fx-levels-histogram strong{font-size:11px}.fx-levels-histogram svg{width:100%;height:90px;background:linear-gradient(90deg,#1114,#8884,#fff4);border-radius:5px}.fx-levels-histogram small{font-size:10px;color:var(--muted)}
+
+/* Phase AJ — full-size local mask workspace. */
+.huelith-expand-mask{width:100%;margin:7px 0;padding:8px 12px;background:var(--active-bg,#7e79ba30);color:var(--text);border:1px solid var(--accent,#8978dc);border-radius:7px;font:inherit;cursor:pointer}
+.huelith-mask-workspace{display:flex;flex-direction:column;overflow:auto;gap:12px;padding:14px}
+.huelith-mask-workspace>header{display:flex;align-items:center;gap:14px;flex-wrap:wrap;border-bottom:1px solid var(--border);padding-bottom:10px}
+.huelith-mask-workspace h2{margin:0;font-size:17px}.huelith-mask-workspace>header span{font-size:12px;opacity:.7;flex:1}
+.huelith-mask-workspace>header button{background:var(--active-bg,#565483);color:var(--text);border:1px solid var(--border);padding:8px 14px;border-radius:8px;cursor:pointer}
+.huelith-mask-workspace .cutout-editor{display:grid;grid-template-columns:minmax(190px,280px) minmax(300px,1fr);column-gap:16px;align-items:start;max-height:none}
+.huelith-mask-workspace .cutout-editor .cutout-paintboard{grid-column:2;grid-row:1 / span 11;max-height:min(72vh,760px);height:auto;min-height:250px;align-self:start}
+.huelith-mask-workspace .cutout-editor .cutout-toolbar{grid-column:1}
+.huelith-mask-workspace .cutout-editor .fx-level{grid-column:1}
+.huelith-mask-workspace .cutout-editor .fx-complex-header,.huelith-mask-workspace .cutout-editor .fx-subtle,.huelith-mask-workspace .cutout-editor .cutout-visibility{grid-column:1}
+.cutout-visibility{display:flex;gap:8px;flex-wrap:wrap;font-size:11px;margin:8px 0}
+.cutout-visibility label{display:flex;gap:4px;align-items:center}
+@media(max-width:750px){.huelith-mask-workspace .cutout-editor{display:flex;flex-direction:column}.huelith-mask-workspace .cutout-editor .cutout-paintboard{width:100%;min-height:200px}}
