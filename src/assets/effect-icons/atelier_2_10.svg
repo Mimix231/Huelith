@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="Huelith effect atelier_2_10">
+<defs><linearGradient id="s" x1="0" y1="0" x2="1" y2="1"><stop stop-color="hsl(242 70% 67%)"/><stop offset="1" stop-color="hsl(352 82% 60%)"/></linearGradient></defs>
+<rect x="1" y="1" width="46" height="46" rx="12" fill="#191b30" stroke="hsl(242 45% 38%)"/>
+<g stroke="url(#s)" fill="none" stroke-width="1.94" stroke-linecap="round" stroke-linejoin="round" transform="rotate(130 24 24)"><path d="M10 34Q14 15 21 24T38 13M8 24Q22 34 40 14"/><path d="M24 24L29.1 37.0"/><path d="M24 24L13.2 32.9"/><path d="M24 24L12.2 16.4"/><path d="M24 24L27.6 10.5"/><path d="M24 24L38.0 23.2"/></g><circle cx="21" cy="22" r="1" fill="hsl(332 90% 68%)" stroke="none"/><circle cx="34" cy="31" r="2" fill="hsl(332 90% 68%)" stroke="none"/>
+<path d="M7 40h18" stroke="hsl(242 80% 78%)" stroke-width="2" opacity=".65"/>
+</svg>

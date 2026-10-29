@@ -1,0 +1,736 @@
+[
+  {
+    "id": "atelier_0_0",
+    "name": "Chromatic Adaptation",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_0_1",
+    "name": "Shadow Chromaticity",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_0_2",
+    "name": "Highlight Chromaticity",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_0_3",
+    "name": "Three-Way Grade",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_0_4",
+    "name": "Cross Process",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_0_5",
+    "name": "Bleach Bypass",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_0_6",
+    "name": "Teal & Amber",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_0_7",
+    "name": "Channel Compression",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_0_8",
+    "name": "Luma-Chroma Separation",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_0_9",
+    "name": "Filmic Shoulder",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_0_10",
+    "name": "Filmic Toe",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_0_11",
+    "name": "Logarithmic Grade",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_0_12",
+    "name": "Selective Chromaticity",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_0_13",
+    "name": "Gamut Soft Clip",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_0_14",
+    "name": "Palette Quantizer",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_0_15",
+    "name": "Split Tone Spectrum",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_1_0",
+    "name": "Directional Light Shafts",
+    "exposed": 5,
+    "inert": []
+  },
+  {
+    "id": "atelier_1_1",
+    "name": "Specular Glints",
+    "exposed": 5,
+    "inert": []
+  },
+  {
+    "id": "atelier_1_2",
+    "name": "Light Scattering",
+    "exposed": 4,
+    "inert": []
+  },
+  {
+    "id": "atelier_1_3",
+    "name": "Silhouette Rimlight",
+    "exposed": 1,
+    "inert": []
+  },
+  {
+    "id": "atelier_1_4",
+    "name": "Sunburst Rays",
+    "exposed": 5,
+    "inert": []
+  },
+  {
+    "id": "atelier_1_5",
+    "name": "Atmospheric Fog",
+    "exposed": 1,
+    "inert": []
+  },
+  {
+    "id": "atelier_1_6",
+    "name": "Cinematic Haze",
+    "exposed": 4,
+    "inert": []
+  },
+  {
+    "id": "atelier_1_7",
+    "name": "Underwater Caustics",
+    "exposed": 5,
+    "inert": [
+      "angle",
+      "centerY"
+    ]
+  },
+  {
+    "id": "atelier_1_8",
+    "name": "Lightning Flash",
+    "exposed": 5,
+    "inert": []
+  },
+  {
+    "id": "atelier_1_9",
+    "name": "Ambient Wrap Lighting",
+    "exposed": 1,
+    "inert": []
+  },
+  {
+    "id": "atelier_1_10",
+    "name": "Sparkling Highlights",
+    "exposed": 4,
+    "inert": []
+  },
+  {
+    "id": "atelier_1_11",
+    "name": "Sunrise Illumination",
+    "exposed": 1,
+    "inert": []
+  },
+  {
+    "id": "atelier_1_12",
+    "name": "Moonlight Casting",
+    "exposed": 1,
+    "inert": []
+  },
+  {
+    "id": "atelier_1_13",
+    "name": "Shadowed Mist",
+    "exposed": 5,
+    "inert": []
+  },
+  {
+    "id": "atelier_2_0",
+    "name": "Charcoal Drawing",
+    "exposed": 4,
+    "inert": []
+  },
+  {
+    "id": "atelier_2_1",
+    "name": "Sidewalk Chalk",
+    "exposed": 4,
+    "inert": []
+  },
+  {
+    "id": "atelier_2_2",
+    "name": "Soft Pastel",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_2_3",
+    "name": "Opaque Gouache",
+    "exposed": 1,
+    "inert": []
+  },
+  {
+    "id": "atelier_2_4",
+    "name": "Woodcut Engraving",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_2_5",
+    "name": "Copper Etching",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_2_6",
+    "name": "Charcoal Hatching",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_2_7",
+    "name": "Ink Stippling",
+    "exposed": 4,
+    "inert": []
+  },
+  {
+    "id": "atelier_2_8",
+    "name": "Colored Pencils",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_2_9",
+    "name": "Oil Impasto",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_2_10",
+    "name": "Watercolor Bleeding",
+    "exposed": 4,
+    "inert": []
+  },
+  {
+    "id": "atelier_2_11",
+    "name": "Lithographic Press",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_2_12",
+    "name": "Felt-Tip Drawing",
+    "exposed": 3,
+    "inert": [
+      "angle"
+    ]
+  },
+  {
+    "id": "atelier_2_13",
+    "name": "Wax Crayon",
+    "exposed": 4,
+    "inert": []
+  },
+  {
+    "id": "atelier_2_14",
+    "name": "Airbrush Spray",
+    "exposed": 4,
+    "inert": []
+  },
+  {
+    "id": "atelier_2_15",
+    "name": "Stained Glass",
+    "exposed": 4,
+    "inert": []
+  },
+  {
+    "id": "atelier_2_16",
+    "name": "Graphite Shading",
+    "exposed": 4,
+    "inert": []
+  },
+  {
+    "id": "atelier_2_17",
+    "name": "Dry Brush Painting",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_3_0",
+    "name": "Polar Warp",
+    "exposed": 5,
+    "inert": []
+  },
+  {
+    "id": "atelier_3_1",
+    "name": "Pinch Lens",
+    "exposed": 5,
+    "inert": []
+  },
+  {
+    "id": "atelier_3_2",
+    "name": "Barrel Distortion",
+    "exposed": 5,
+    "inert": []
+  },
+  {
+    "id": "atelier_3_3",
+    "name": "Pincushion Distortion",
+    "exposed": 5,
+    "inert": []
+  },
+  {
+    "id": "atelier_3_4",
+    "name": "Oblique Shear",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_3_5",
+    "name": "Noise Displacement",
+    "exposed": 4,
+    "inert": []
+  },
+  {
+    "id": "atelier_3_6",
+    "name": "Sine Fold",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_3_7",
+    "name": "Quadrant Kaleidoscope",
+    "exposed": 5,
+    "inert": []
+  },
+  {
+    "id": "atelier_3_8",
+    "name": "Warped Waves",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_3_9",
+    "name": "Spiral Vortex",
+    "exposed": 5,
+    "inert": []
+  },
+  {
+    "id": "atelier_3_10",
+    "name": "Crystal Shatter",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_3_11",
+    "name": "Mirror Slices",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_3_12",
+    "name": "Pixel Sorting",
+    "exposed": 2,
+    "inert": []
+  },
+  {
+    "id": "atelier_3_13",
+    "name": "Curved Glass",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_4_0",
+    "name": "Manga Screentones",
+    "exposed": 3,
+    "inert": [
+      "angle"
+    ]
+  },
+  {
+    "id": "atelier_4_1",
+    "name": "Diagonal Screentone",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_4_2",
+    "name": "Crosshatch Ink",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_4_3",
+    "name": "Impact Speedlines",
+    "exposed": 5,
+    "inert": []
+  },
+  {
+    "id": "atelier_4_4",
+    "name": "Black Ink Shadows",
+    "exposed": 1,
+    "inert": []
+  },
+  {
+    "id": "atelier_4_5",
+    "name": "Cel Highlight Bands",
+    "exposed": 1,
+    "inert": []
+  },
+  {
+    "id": "atelier_4_6",
+    "name": "Color Registration",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_4_7",
+    "name": "Energy Eyes",
+    "exposed": 4,
+    "inert": []
+  },
+  {
+    "id": "atelier_4_8",
+    "name": "Manga Shadow Bands",
+    "exposed": 1,
+    "inert": []
+  },
+  {
+    "id": "atelier_4_9",
+    "name": "Sharp Contour Ink",
+    "exposed": 1,
+    "inert": []
+  },
+  {
+    "id": "atelier_4_10",
+    "name": "Two-Tone Comic Ink",
+    "exposed": 1,
+    "inert": []
+  },
+  {
+    "id": "atelier_4_11",
+    "name": "Panel Perspective",
+    "exposed": 1,
+    "inert": []
+  },
+  {
+    "id": "atelier_4_12",
+    "name": "Anime Energy Lines",
+    "exposed": 5,
+    "inert": []
+  },
+  {
+    "id": "atelier_4_13",
+    "name": "Flat Anime Colors",
+    "exposed": 1,
+    "inert": []
+  },
+  {
+    "id": "atelier_4_14",
+    "name": "Scratch Ink",
+    "exposed": 4,
+    "inert": []
+  },
+  {
+    "id": "atelier_4_15",
+    "name": "Retro Comic Misprint",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_5_0",
+    "name": "Brushed Aluminum",
+    "exposed": 4,
+    "inert": []
+  },
+  {
+    "id": "atelier_5_1",
+    "name": "Gold Foil",
+    "exposed": 4,
+    "inert": []
+  },
+  {
+    "id": "atelier_5_2",
+    "name": "Reflective Chrome",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_5_3",
+    "name": "Ceramic Glaze",
+    "exposed": 1,
+    "inert": []
+  },
+  {
+    "id": "atelier_5_4",
+    "name": "Frosted Acrylic",
+    "exposed": 4,
+    "inert": []
+  },
+  {
+    "id": "atelier_5_5",
+    "name": "Woven Linen",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_5_6",
+    "name": "Aged Parchment",
+    "exposed": 4,
+    "inert": []
+  },
+  {
+    "id": "atelier_5_7",
+    "name": "Sandstone Grain",
+    "exposed": 4,
+    "inert": []
+  },
+  {
+    "id": "atelier_5_8",
+    "name": "Leather Texture",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_5_9",
+    "name": "Carbon Fiber",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_5_10",
+    "name": "Iridescent Film",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_5_11",
+    "name": "Concrete Pores",
+    "exposed": 4,
+    "inert": []
+  },
+  {
+    "id": "atelier_5_12",
+    "name": "Gemstone Facets",
+    "exposed": 3,
+    "inert": [
+      "angle"
+    ]
+  },
+  {
+    "id": "atelier_5_13",
+    "name": "Polished Wood",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_6_0",
+    "name": "Databent Stripes",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_6_1",
+    "name": "Bitplane Crush",
+    "exposed": 1,
+    "inert": []
+  },
+  {
+    "id": "atelier_6_2",
+    "name": "Chromatic Ghost",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_6_3",
+    "name": "Damaged Data Blocks",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_6_4",
+    "name": "Tracking Roll",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_6_5",
+    "name": "Codec Mosaic",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_6_6",
+    "name": "Pixel Rearrangement",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_6_7",
+    "name": "Broken LCD",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_6_8",
+    "name": "Signal Static",
+    "exposed": 4,
+    "inert": []
+  },
+  {
+    "id": "atelier_6_9",
+    "name": "Green Phosphor",
+    "exposed": 1,
+    "inert": []
+  },
+  {
+    "id": "atelier_6_10",
+    "name": "RGB Subpixel Mask",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_6_11",
+    "name": "Color Data Tears",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_6_12",
+    "name": "Corrupted Sectors",
+    "exposed": 4,
+    "inert": []
+  },
+  {
+    "id": "atelier_6_13",
+    "name": "Dot Matrix Display",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_7_0",
+    "name": "Film Halation",
+    "exposed": 2,
+    "inert": []
+  },
+  {
+    "id": "atelier_7_1",
+    "name": "Anamorphic Streak",
+    "exposed": 2,
+    "inert": []
+  },
+  {
+    "id": "atelier_7_2",
+    "name": "Lens Ghost",
+    "exposed": 4,
+    "inert": []
+  },
+  {
+    "id": "atelier_7_3",
+    "name": "Edge Focus Vignette",
+    "exposed": 4,
+    "inert": []
+  },
+  {
+    "id": "atelier_7_4",
+    "name": "Prismatic Lens",
+    "exposed": 4,
+    "inert": [
+      "frequency"
+    ]
+  },
+  {
+    "id": "atelier_7_5",
+    "name": "Star Filter",
+    "exposed": 2,
+    "inert": []
+  },
+  {
+    "id": "atelier_7_6",
+    "name": "Cinematic Contrast Curve",
+    "exposed": 1,
+    "inert": []
+  },
+  {
+    "id": "atelier_7_7",
+    "name": "Film Negative",
+    "exposed": 1,
+    "inert": []
+  },
+  {
+    "id": "atelier_7_8",
+    "name": "Silver Retention",
+    "exposed": 1,
+    "inert": []
+  },
+  {
+    "id": "atelier_7_9",
+    "name": "Lens Curvature",
+    "exposed": 5,
+    "inert": []
+  },
+  {
+    "id": "atelier_7_10",
+    "name": "Rolling Shutter",
+    "exposed": 3,
+    "inert": []
+  },
+  {
+    "id": "atelier_7_11",
+    "name": "Split Diopter",
+    "exposed": 5,
+    "inert": [
+      "frequency",
+      "centerY"
+    ]
+  },
+  {
+    "id": "atelier_7_12",
+    "name": "Optical Color Fringe",
+    "exposed": 5,
+    "inert": []
+  },
+  {
+    "id": "atelier_7_13",
+    "name": "Golden Lens Flare",
+    "exposed": 5,
+    "inert": []
+  }
+]

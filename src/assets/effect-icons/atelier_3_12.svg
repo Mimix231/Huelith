@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="Huelith effect atelier_3_12">
+<defs><linearGradient id="s" x1="0" y1="0" x2="1" y2="1"><stop stop-color="hsl(92 70% 67%)"/><stop offset="1" stop-color="hsl(202 82% 60%)"/></linearGradient></defs>
+<rect x="1" y="1" width="46" height="46" rx="12" fill="#191b30" stroke="hsl(92 45% 38%)"/>
+<g stroke="url(#s)" fill="none" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" transform="rotate(156 24 24)"><path d="M12 12l24 24M36 12L12 36"/><circle cx="24" cy="24" r="9"/><path d="M24 24L25.8 37.9"/><path d="M24 24L14.3 34.1"/><path d="M24 24L10.1 22.7"/><path d="M24 24L16.3 12.3"/><path d="M24 24L28.4 10.7"/><path d="M24 24L37.1 19.1"/><path d="M24 24L36.0 31.2"/></g><circle cx="35" cy="19" r="1" fill="hsl(182 90% 68%)" stroke="none"/><circle cx="19" cy="28" r="2" fill="hsl(182 90% 68%)" stroke="none"/><circle cx="32" cy="12" r="1" fill="hsl(182 90% 68%)" stroke="none"/><circle cx="16" cy="21" r="2" fill="hsl(182 90% 68%)" stroke="none"/>
+<path d="M7 40h20" stroke="hsl(92 80% 78%)" stroke-width="2" opacity=".65"/>
+</svg>

@@ -11,7 +11,7 @@ function load(name, dependencies={}) {
  new Function('require','module','exports',code)((id)=>{if(!(id in dependencies))throw Error(`Missing module: ${id}`);return dependencies[id]},mod,mod.exports);
  return mod.exports;
 }
-const schema=load('src/editor/effect-schema.ts');
+const schema=load('src/editor/effect-schema.ts',{'./expansion-120':{EXPANSION_120:[]}});
 const presetStore=new Map();
 global.localStorage={getItem:key=>presetStore.get(key)??null,setItem:(key,value)=>presetStore.set(key,value)};
 let counter=0;

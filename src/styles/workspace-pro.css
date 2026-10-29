@@ -128,3 +128,10 @@
   color: var(--text); border: 1px solid var(--border); border-radius: 5px; padding: 2px 5px;
   font: inherit; font-size: 11px;
 }
+/* Independent Huelith tool families: native themed picker, not browser menus. */
+.h-tool-picker{width:248px;display:grid;gap:4px;padding:13px;background:var(--panel-bg);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-lg)}
+.h-tool-picker>strong{font-size:12px;letter-spacing:.3px;color:var(--accent);padding:3px 5px}
+.h-tool-picker>small{font-size:10px;color:var(--muted);padding:0 5px 9px}
+.h-tool-picker button{display:flex;align-items:center;gap:10px;padding:9px 11px;background:transparent;border:1px solid transparent;border-radius:var(--radius-sm);color:var(--text);cursor:pointer;text-align:left;font:inherit}
+.h-tool-picker button svg{width:19px;height:19px;color:var(--accent)}
+.h-tool-picker button:hover,.h-tool-picker button[aria-pressed=true]{background:var(--accent-soft);border-color:var(--accent-line)}

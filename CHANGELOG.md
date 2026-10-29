@@ -2,6 +2,13 @@
 
 Huelith is the new name for the image editor previously released as Spectrum. The first public release was **0.1.0**; **0.2.0** begins with Phases T, U, and V. This changelog documents released source features, not a claim that every workflow is bug-free or that all native acceleration is complete.
 
+### Order 1 — Procedural Gradient Patterns (AM, October 2026)
+- **Gradient Atelier → Patterns**: one-click Black & White Burst and Comic Explosion presets, radial sunburst and anime speed-line generators.
+- Real non-blended palette modes: Hard stops, Bands, Alternating, Stepped, Pattern palette; original Smooth gradients unchanged.
+- Editable sharp ray pairs, ray width, center, rotation, twist, taper, softness, and color swatches; true pixel-aspect-correct geometry.
+- Gradient layers remain editable, transformable, and saved in the project; added full-resolution Chromium pixel tests and release note inventory cleanup.
+- Updated `docs/changelog/v0.2-alpha.md` to describe active 0.2 features, excluding the retired guided-segmentation UI and obsolete gradient popover.
+
 ### Cutout redesign — Inspector-based, manual-first background removal
 - Moved **Remove Background** out of the selectable Effects/FX library and into a dedicated **Inspector** operation on raster layers.
 - Added **Huelith Cutout**, a large mask workspace with Keep, Remove, Eraser, Freehand Lasso, Polygon Lasso, Line, Rectangle, Ellipse and Pan tools.
@@ -170,3 +177,61 @@ The first public alpha already contained the following implemented **features an
 - Added canonical animation-wide document geometry handling and native raster/mask pixel resampling.
 - Added regression coverage for coordinate geometry, gradients, cel consistency, selection pixels, and image transforms.
 - See `docs/HUELITH_CORE_ACTIONS_AND_MAGNETIC_SNAPPING.md` for verified scope and limitations.
+
+## Huelith 0.2.0 — Order 2 (AM Smart Transform)
+- Precision on-canvas resize/rotation controls, movable pivot, and canvas + center snapping guides.
+- Native Gradient layer transformation without flattening and track-aware animation commits.
+- Color Bands control activates real pattern rendering; nine formerly invisible procedural field recipes now render on existing Gradient patterns.
+- Gradient Atelier number chips removed; new pixel-level and geometry regression coverage.
+- See `docs/HUELITH_AM2_SMART_TRANSFORM.md` for behavior and test limitations.
+
+### Order 2 — Smart Transform follow-up fixes
+- Changed **Ctrl+T** to select the entire active layer for on-canvas transformation, without opening a dialog.
+- Moved the optional numeric Precision Transform dialog shortcut to **Ctrl+Alt+T**.
+- Enabled magnetic snapping by default, and replaced cursor-coordinate scaling snaps with final-geometry snaps.
+- Improved visual alignment lines and added a magnetic intersection (+) indicator.
+- Confined new editing and selection gestures to the document canvas, while keeping workspace panning available.
+- Stopped the Move tool from grabbing a layer without a valid hit-test.
+
+### Professional Brush Engine & Line Art (v0.2-alpha)
+- Added a dedicated Ink Pen with a continuous filled-contour renderer, variable-width strokes, pointer stabilization, taper, and pressure handling.
+- Added configurable paint flow, brush spacing, and a 1–2000 px brush-size range; preserved hard-edged Pixel Pencil behavior.
+- Added the Huelith Brush Atelier with theme-aware controls, actual-renderer preview, six distinct built-in brush presets, and locally saved custom presets.
+- Reduced redundant live-ink work using one scheduled preview per animation frame, with one native-resolution document-history commit per stroke.
+- Added regression checks for stroke continuity, interpolation, taper, pressure width, flow, and Canvas2D pixels.
+
+### Drawing, selection, retouch and editable Cutout geometry
+- Added functional Paint Bucket, Magic Wand, Freehand Lasso, Polygon Selection, Magnetic Lasso, Smudge, Blur Brush, Sharpen Brush, Dodge, Burn, Pattern Brush and Symmetry Brush.
+- Added independent selection and retouch tool pickers using Huelith's theme surfaces.
+- Added irregular pixel-accurate selections that constrain brush strokes and raster selection operations.
+- Cutout now supports reselecting/moving drawn shapes, resizing rectangle/ellipse outlines with four handles, editing line endpoints and path nodes, and undoing those edits.
+- Saved Cutout masks now optionally retain editable shapes and baseline-mask compatibility in `.huelith` documents.
+- Added Canvas2D pixel tests for flood fill, magnetic edge snapping, retouching, shape geometry editing and mask undo.
+
+### Cutout editable controls and compilation corrections
+- Fixed seven TypeScript issues involving the selected layer prop, optional gesture positions, ES2022 array history, mouse/pointer coordinates, refs and mutable effect stacks.
+- Displayed and activated editable Cutout grips immediately after committing geometric strokes.
+- Added distinct Bézier endpoint and tangent-control dots, visible at different zoom levels, including on reopened editable masks.
+- Added native Chromium grip-rendering tests and source-level regression tests.
+
+
+## v0.2-alpha — Layer Timeline, Exposures and Playback
+- Added an editable per-layer animation exposure sheet with selective held cels, frame annotations, and batch editing.
+- Added in/out playback regions, ping-pong and one-shot playback with duration-aware timing.
+- Added idle-time preload of nearby frame source images and viewport-windowed cel rendering.
+- Preserved layer-global FX and native Gradient-layer behavior throughout frame navigation and export.
+- Added tests for project persistence, undo/redo, multi-frame operations, holds, and playback timing.
+
+## 0.2-alpha — Meme Creator & desktop workspace refinements
+- Added nine non-destructive meme layouts with editable caption, layout and optional comparison-image layers.
+- Added a Huelith-specific Meme Creator interface with live preview, font and outline controls and draggable caption positioning.
+- Added Edit menu and context menu commands for meme creation and export shortcuts for PNG/JPEG/WebP.
+- Modernized desktop surface depth and theme-specific contrast across 13 workspace identities, including a Sakura light/dark palette and distinct theme emblems.
+- Enabled outside-canvas hit testing exclusively for existing selected-layer transform handles.
+- Corrected the Animation Studio idle-preload timer TypeScript branch and preserved original v0.2-alpha scope.
+
+## v0.2-alpha — Expanded Creativity
+- Added 120 independent operations across eight creative families with native non-destructive Canvas2D rendering and dedicated visual icons.
+- Added searchable Creativity category navigation, favorite operations and recent filters.
+- Corrected unexpected brightness and alpha loss in Gaussian, Box, Motion, Radial, Lens and Surface Blur, and transparent border artifacts in Glass and Frosted Glass.
+- Added Chromium pixel-identity and color-preservation regression coverage.

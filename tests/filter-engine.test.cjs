@@ -31,7 +31,7 @@ test('68+ filters have stable unique ids, distinct categories, and operational c
   assert.ok(catalog.length >= 68);
   assert.equal(new Set(catalog.map(item => item.kind)).size, catalog.length);
   assert.deepEqual([...new Set(catalog.map(item => item.group))],
-    ['Color & light', 'Detail & texture', 'Stylize', 'Creative effects', 'Signature FX']);
+    ['Color & light', 'Detail & texture', 'Stylize', 'Creative effects', 'Signature FX', 'Color Science', 'Lighting & Atmosphere', 'Artistic Painting', 'Distortion & Geometry', 'Anime & Comics', 'Materials & Surfaces', 'Digital & Experimental', 'Cinematic & Optical']);
   assert.equal(FILTERS.length, catalog.length);
   for (const item of catalog) {
     assert.ok(item.initial >= item.min && item.initial <= item.max, item.kind);

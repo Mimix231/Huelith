@@ -74,7 +74,7 @@ test('Frame scheduler, worker budgets and overlay controls are actually wired',(
   const worker=read('src/editor/effects-worker.ts'),client=read('src/editor/effects-worker-client.ts');
   assert.match(worker,/sourceBudgetBytes/);assert.match(worker,/evictSources/);
   for(const m of [64,128,256]) assert.ok(client.includes(`sourceMb: ${m}`));
-  assert.match(read('src/components/AnimationTimeline.tsx'),/timelineFrameAt/);
+  assert.match(read('src/components/AnimationTimeline.tsx'),/timelineRegionAt/);
   assert.match(read('src/components/AnimationTimeline.tsx'),/Playback speed/);
   assert.match(read('src/components/CreativeLab.tsx'),/Keyframe interpolation/);
   assert.match(read('src/components/Canvas.tsx'),/drawViewportRulers/);

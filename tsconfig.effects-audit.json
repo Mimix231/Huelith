@@ -1,0 +1,4 @@
+{
+ "compilerOptions": {"target":"ES2022","module":"ESNext","moduleResolution":"Bundler","lib":["DOM","ES2022"],"strict":true,"noEmit":true,"types":[],"skipLibCheck":true,"allowImportingTsExtensions":true},
+ "include": ["src/editor/expansion-120.ts","src/editor/stylize-reconstruction.ts","src/editor/studio-catalog.ts","src/editor/effect-schema.ts"]
+}

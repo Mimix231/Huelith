@@ -1,4 +1,4 @@
-import { setAsyncEffectsProcessor, type AsyncEffectsProcessor } from './fx';
+import { setAsyncEffectsProcessor, type AsyncEffectsProcessor, type EffectImage } from './fx';
 import type { Effect } from './types';
 import { isInteractiveEffectPreview } from './preview-quality';
 
@@ -9,8 +9,12 @@ interface Job {
   sourceId: number;
   queuedAt: number;
   effects: Effect[];
-  complete: (image: ImageBitmap) => void;
+  complete: (image: EffectImage) => void;
 }
+
+let rendererProblem: string | null = null;
+/** The UI can report a worker failure even if it occurred before Studio opened. */
+export function effectsRendererProblem(): string | null { return rendererProblem; }
 
 /**
  * One running job, at most one pending job per layer, and a worker-side copy
@@ -18,16 +22,38 @@ interface Job {
  * after the first source transfer; it never queues dozens of megapixel copies.
  */
 export function installEffectsWorker(): () => void {
-  if (typeof Worker === 'undefined' || typeof OffscreenCanvas === 'undefined' ||
-    typeof createImageBitmap === 'undefined') return () => {};
+  // Native-size processing belongs in the dedicated worker. On browsers
+  // missing worker/bitmap support we deliberately do not start a second,
+  // main-thread effect engine that would freeze the entire editor.
+  const unavailable = (reason: string): (() => void) => {
+    rendererProblem=reason;
+    const notify = () => {
+      if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('huelith-renderer-error', {
+        detail: { message: reason },
+      }));
+    };
+    let warned = false;
+    const displaySafe: AsyncEffectsProcessor = (_source, _effects, _layer, _complete) => {
+      if (!warned) { warned = true; notify(); }
+      // Keep the canvas responsive and retain its last accurate frame.
+      // Export still uses the authoritative full-resolution graph.
+      return true;
+    };
+    setAsyncEffectsProcessor(displaySafe);
+    return () => { rendererProblem=null;setAsyncEffectsProcessor(null); };
+  };
+  if (typeof Worker === 'undefined' || typeof createImageBitmap === 'undefined') {
+    return unavailable('Native effect previews require Web Workers and createImageBitmap. Update WebView2 or use a modern browser.');
+  }
 
   let worker: Worker;
   try {
     worker = new Worker(new URL('./effects-worker.ts', import.meta.url), { type: 'module' });
-  } catch {
-    return () => {};
+  } catch (error) {
+    return unavailable(`Could not initialize the Huelith effects worker: ${String(error)}`);
   }
 
+  rendererProblem=null;
   type Profile = 'economy' | 'balanced' | 'responsive';
   const profileOptions: Record<Profile, { graphMb: number; edgeMb: number; silhouetteMb: number; sourceMb: number; supersedeWindowMs: number }> = {
     economy: { graphMb: 64, edgeMb: 16, silhouetteMb: 32, sourceMb: 64, supersedeWindowMs: 650 },
@@ -59,8 +85,13 @@ export function installEffectsWorker(): () => void {
   const recentlyDisplayed = new Map<string, number>();
   const supersededRunning = new Set<number>();
   let disposed = false;
+  const reportError = (message: string): void => {
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('huelith-renderer-error', {
+      detail: {message},
+    }));
+  };
 
-  function fail(): void {
+  function fail(reason='Huelith effect worker stopped unexpectedly'): void {
     if (disposed) return;
     if (typeof window !== 'undefined' && typeof window.removeEventListener === 'function') window.removeEventListener('huelith-aurora-preferences-changed', updateBudget);
     disposed = true;
@@ -70,8 +101,11 @@ export function installEffectsWorker(): () => void {
     recentlyDisplayed.clear();
     supersededRunning.clear();
     worker.terminate();
-    setAsyncEffectsProcessor(null);
-    if (typeof window !== 'undefined') window.dispatchEvent(new Event('huelith-worker-fallback'));
+    rendererProblem=reason;
+    // Prevent synchronous CPU rendering inside the React canvas paint loop.
+    // A failed worker must never cause the unresponsive-window problem again.
+    setAsyncEffectsProcessor(() => true);
+    reportError(reason);
   }
 
   async function dispatch(): Promise<void> {
@@ -134,7 +168,14 @@ export function installEffectsWorker(): () => void {
     }
     if (event.data.error) {
       event.data.result?.close();
-      fail();
+      // An invalid or unsupported individual effect should not tear down the
+      // entire worker. Preserve the last correct preview and continue.
+      const reason=event.data.error;
+      if (reason.startsWith('Uncached effect source ')) {
+        residentSources.delete(finished.sourceId);
+        latest.set(finished.layer, {...finished,id:nextId++,queuedAt:performance.now()});
+      } else reportError(`Effect ${finished.effects.at(-1)?.kind ?? 'render'}: ${reason}`);
+      void dispatch();
       return;
     }
     if (event.data.result) {
@@ -157,7 +198,11 @@ export function installEffectsWorker(): () => void {
     }
     void dispatch();
   };
-  worker.onerror = fail;
+  worker.onerror = event => {
+    event.preventDefault?.();
+    fail('Huelith effects worker encountered an unrecoverable error. The last correct preview is retained; restart the application after checking the renderer log.');
+  };
+  worker.onmessageerror = () => fail('The effects worker returned an unreadable result.');
 
   const process: AsyncEffectsProcessor = (source, effects, layer, complete) => {
     if (disposed) return false;
@@ -209,6 +254,7 @@ export function installEffectsWorker(): () => void {
     recentlyDisplayed.clear();
     supersededRunning.clear();
     worker.terminate();
+    rendererProblem=null;
     setAsyncEffectsProcessor(null);
   };
 }

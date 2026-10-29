@@ -8,6 +8,8 @@ import BufferedColorPicker from './BufferedColorPicker';
 import { EFFECT_CONTROLS, EFFECT_PARAMETERS, FX_PRESETS } from '../editor/fx';
 import { applyStudioRecipe, resetStudioEffect, saveStudioRecipe, studioRecipes } from '../editor/studio-presets';
 import { FILTER_CATALOG } from '../editor/effect-catalog';
+import { EXPANSION_120 } from '../editor/expansion-120';
+import { STUDIO_APPS, STUDIO_APP_BY_ID, appOperationCount, appContainsKind } from '../editor/studio-apps';
 import {
   appliedStudioItems, createStudioFilter, createStudioPreset, moveStudioItem, CREATIVITY_FILTERS,
   LAYER_EFFECTS, STUDIO_CATEGORIES, type AppliedStudioItem, type StudioCategory,
@@ -15,6 +17,7 @@ import {
 import type { EditorStore } from '../editor/store';
 import { layerById, type BlendMode, type Effect, type Layer, type VectorShape } from '../editor/types';
 import { useEditor } from '../editor/store';
+import { effectsRendererProblem } from '../editor/effects-worker-client';
 import './FxStudio.css';
 
 interface Props {
@@ -80,8 +83,27 @@ function ResponsiveSlider({ value, min, max, step, label, unit = '', onPreview, 
 /** One Studio transaction: temporary preview, explicit Apply, or full Cancel. */
 export default function FxStudio({ state, active, activeShape, onClose }: Props) {
   const [category, setCategory] = useState<StudioCategory>('creativity');
+  const [selectedApp,setSelectedApp]=useState<string|null>(null);
+  const [previewStatus,setPreviewStatus]=useState<'idle'|'queued'|'working'>('idle');
+  const [favoriteKinds,setFavoriteKinds]=useState<string[]>(()=>{
+    try{const parsed=JSON.parse(localStorage.getItem('huelith-favorite-effects-v1')??'[]');return Array.isArray(parsed)?parsed.filter(v=>typeof v==='string').slice(0,160):[];}catch{return [];}
+  });
+  const [recentKinds,setRecentKinds]=useState<string[]>(()=>{
+    try{const parsed=JSON.parse(localStorage.getItem('huelith-recent-effects-v1')??'[]');return Array.isArray(parsed)?parsed.filter(v=>typeof v==='string').slice(0,18):[];}catch{return [];}
+  });
+  function toggleFavorite(kind:string):void{
+    setFavoriteKinds(previous=>{const next=previous.includes(kind)?previous.filter(id=>id!==kind):[kind,...previous].slice(0,160);
+      try{localStorage.setItem('huelith-favorite-effects-v1',JSON.stringify(next));}catch{/* storage disabled */}
+      return next;});
+  }
+  function rememberRecent(kind:string):void{
+    setRecentKinds(previous=>{const next=[kind,...previous.filter(id=>id!==kind)].slice(0,18);
+      try{localStorage.setItem('huelith-recent-effects-v1',JSON.stringify(next));}catch{/* storage disabled */}
+      return next;});
+  }
+
   const [query, setQuery] = useState('');
-  const [warning, setWarning] = useState('');
+  const [warning, setWarning] = useState(()=>effectsRendererProblem()??'');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [presetName, setPresetName] = useState('');
   const [presetVersion, setPresetVersion] = useState(0);
@@ -91,11 +113,28 @@ export default function FxStudio({ state, active, activeShape, onClose }: Props)
   const current = useRef<Effect[]>([]);
   const scheduled = useRef<number | null>(null);
   const pending = useRef<{ layerId: string; effects: Effect[] } | null>(null);
+  const openingTimer=useRef<number | null>(null);
+  const openingFrame=useRef<number | null>(null);
+  const openGeneration=useRef(0);
   const writable = Boolean(active && !active.locked);
   const applied = appliedStudioItems(active?.effects ?? []);
   const relevant = applied.filter(item => item.category === category);
   const term = query.trim().toLowerCase();
+  const app=selectedApp?STUDIO_APP_BY_ID.get(selectedApp):undefined;
+  const browsingApp=Boolean(app);
+  const hubVisible=category==='creativity' && !browsingApp && !term;
   const matches = (label: string): boolean => label.toLowerCase().includes(term);
+
+  function cancelOpening():void {
+    openGeneration.current++;
+    if(openingFrame.current!==null){cancelAnimationFrame(openingFrame.current);openingFrame.current=null;}
+    if(openingTimer.current!==null){clearTimeout(openingTimer.current);openingTimer.current=null;}
+  }
+  const openApp=(id:string):void=>{
+    const next=STUDIO_APP_BY_ID.get(id);if(!next)return;
+    setSelectedApp(id);setCategory(next.destination);setQuery('');
+  };
+  const backToHub=():void=>{setSelectedApp(null);setCategory('creativity');setQuery('');};
 
   function flushPreview(): void {
     if (scheduled.current !== null) cancelAnimationFrame(scheduled.current);
@@ -115,14 +154,31 @@ export default function FxStudio({ state, active, activeShape, onClose }: Props)
   function begin(title: string, tab: StudioCategory, id: string, changes: Effect[]): void {
     if (!active || active.locked) return;
     const original = active.effects ?? [];
-    setWarning('');
+    if (changes.length) rememberRecent(changes[0].kind);
+    setWarning(effectsRendererProblem()??'');
     setEditorNotice('');
     setShowAdvanced(false);
     const next = [...original, ...changes];
     current.current = next;
     setWorking(next);
     setEditing({ title, category: tab, id, layerId: active.id });
-    useEditor.getState().previewStudioEffects(active.id, next);
+    // Render the editor chrome *before* a full-resolution effects pass begins.
+    // Two turns ensure the first paint is not blocked by React event handling.
+    // Outdated openings cannot repaint a newly selected editor or document.
+    cancelOpening();
+    const generation=++openGeneration.current;
+    setPreviewStatus('queued');
+    openingFrame.current=requestAnimationFrame(()=>{
+      openingFrame.current=null;
+      openingTimer.current=window.setTimeout(()=>{
+        openingTimer.current=null;
+        if(generation!==openGeneration.current)return;
+        if(useEditor.getState().tabs.some(tab=>tab.doc.id===state.activeId && tab.doc.layers.some(layer=>layer.id===active.id))){
+          setPreviewStatus('working');
+          schedulePreview(active.id,current.current);
+        }
+      },0);
+    });
   }
 
   function reopen(item: AppliedStudioItem): void {
@@ -131,6 +187,7 @@ export default function FxStudio({ state, active, activeShape, onClose }: Props)
 
   function change(effectId: string, patch: Partial<Effect>, sliderPreview = false): void {
     if (!editing) return;
+    cancelOpening();
     const next = current.current.map(effect => effect.id !== effectId ? effect : {
       ...effect,
       ...patch,
@@ -144,6 +201,7 @@ export default function FxStudio({ state, active, activeShape, onClose }: Props)
 
   function replaceEffect(effectId: string, convert: (effect: Effect) => Effect): void {
     if (!editing) return;
+    cancelOpening();
     const next = current.current.map(effect => effect.id === effectId ? convert(effect) : effect);
     current.current = next;
     setWorking(next);
@@ -172,12 +230,15 @@ export default function FxStudio({ state, active, activeShape, onClose }: Props)
 
   function apply(): void {
     if (!editing) return;
+    cancelOpening();
     flushPreview();
     useEditor.getState().commitStudioEffects(editing.layerId, current.current);
     setEditing(null);
   }
 
   function cancel(): void {
+    cancelOpening();
+    setPreviewStatus('idle');
     if (scheduled.current !== null) cancelAnimationFrame(scheduled.current);
     scheduled.current = null;
     pending.current = null;
@@ -190,6 +251,22 @@ export default function FxStudio({ state, active, activeShape, onClose }: Props)
     if (editing) cancel();
     onClose();
   }
+
+  // A worker failure must be visible and actionable; never silently leave
+  // controls stuck on "Rendering" or launch a main-thread software pass.
+  useEffect(()=>{
+    const error=(event:Event)=>{
+      const message=(event as CustomEvent<{message?:string}>).detail?.message;
+      if(message){setWarning(message);setPreviewStatus('idle');}
+    };
+    const complete=()=>setPreviewStatus('idle');
+    window.addEventListener('huelith-renderer-error',error);
+    window.addEventListener('huelith-exact-fx-frame',complete);
+    return()=>{
+      window.removeEventListener('huelith-renderer-error',error);
+      window.removeEventListener('huelith-exact-fx-frame',complete);
+    };
+  },[]);
 
   const dismissRef = useRef(dismiss);
   dismissRef.current = dismiss;
@@ -206,14 +283,15 @@ export default function FxStudio({ state, active, activeShape, onClose }: Props)
     return () => {
       document.removeEventListener('keydown', onKey, true);
       if (scheduled.current !== null) cancelAnimationFrame(scheduled.current);
-        useEditor.getState().cancelStudioEffects();
+      cancelOpening();
+      useEditor.getState().cancelStudioEffects();
       useEditor.getState().setFxBypassLayer(null);
     };
   }, []);
 
   const editingEffects = editing ? appliedStudioItems(working).find(item => item.id === editing.id)?.effects ?? [] : [];
   const shownLibrary = category === 'creativity' ? CREATIVITY_FILTERS : category === 'effects' ? LAYER_EFFECTS : [];
-  const groupNames = ['Color & light', 'Detail & texture', 'Stylize'];
+  const groupNames = ['Color & light', 'Detail & texture', 'Stylize', ...new Set(EXPANSION_120.map(item=>item.group))];
 
   return (
     <div className="fx-overlay huelith-studio-v3" id="huelith-fx-studio" role="dialog"
@@ -223,10 +301,12 @@ export default function FxStudio({ state, active, activeShape, onClose }: Props)
           {editing ? (
             <button type="button" className="studio-icon-button" aria-label="Cancel and return to Studio"
               onClick={cancel}><ArrowBack fontSize="small" /></button>
-          ) : <span className="fx-overlay-symbol"><AutoAwesome fontSize="small" /></span>}
-          <div><strong>{editing?.title ?? 'Huelith Studio'}</strong>
+          ) : browsingApp ? <button type="button" className="studio-icon-button" aria-label="Back to Creativity app hub"
+            title="Back to apps" onClick={backToHub}><ArrowBack fontSize="small" /></button>
+            : <span className="fx-overlay-symbol"><AutoAwesome fontSize="small" /></span>}
+          <div><strong>{editing?.title ?? app?.name ?? 'Huelith Studio'}</strong>
             <small>{editing ? `${STUDIO_CATEGORIES[editing.category]} · non-destructive editor`
-              : 'Create, refine, and revisit'}</small></div>
+              : browsingApp ? 'Creativity · App hub / ' + app?.name : 'Your creative applications'}</small></div>
         </div>
         <button type="button" aria-label="Close FX studio" className="fx-close" onClick={dismiss}>
           <Close fontSize="small" />
@@ -252,6 +332,8 @@ export default function FxStudio({ state, active, activeShape, onClose }: Props)
               onPointerLeave={() => useEditor.getState().setFxBypassLayer(null)}
               onBlur={() => useEditor.getState().setFxBypassLayer(null)}>◉ Before / after</button>
           </div>
+          {warning && <p className="studio-edit-notice studio-renderer-warning" role="alert">⚠ {warning}</p>}
+          {previewStatus==='queued' && <p className="studio-edit-notice" role="status">Preparing full-quality preview…</p>}
           {editorNotice && <p className="studio-edit-notice" role="status">{editorNotice}</p>}
           <div className="studio-effect-scroll">
             {editingEffects.map((effect, index) => {
@@ -344,7 +426,7 @@ export default function FxStudio({ state, active, activeShape, onClose }: Props)
           <div className="fx-studio-tabs" role="tablist" aria-label="Huelith Studio categories">
             {(['creativity', 'effects', 'fx'] as const).map(tab => (
               <button key={tab} type="button" role="tab" aria-selected={category === tab}
-                className={category === tab ? 'active' : ''} onClick={() => { setCategory(tab); setQuery(''); }}>
+                className={category === tab ? 'active' : ''} onClick={() => { setSelectedApp(null); setCategory(tab); setQuery(''); }}>
                 {tab === 'creativity' ? <Tune fontSize="small" /> : tab === 'effects'
                   ? <Palette fontSize="small" /> : <AutoAwesome fontSize="small" />}
                 <span>{STUDIO_CATEGORIES[tab]}</span>
@@ -359,21 +441,46 @@ export default function FxStudio({ state, active, activeShape, onClose }: Props)
             {warning && <p role="alert" className="fx-notice">{warning}</p>}
             {!active && <p className="fx-notice">Select a layer to work on.</p>}
             {active?.locked && <p className="fx-notice">Unlock this layer to edit its appearance.</p>}
-            {category !== 'fx' && <div className="fx-filter-groups">
-              {(category === 'creativity' ? groupNames : ['Stylize', 'Creative effects']).map(group => {
-                const entries = shownLibrary.filter(item => (item.group === group || (category === 'effects' && group === 'Stylize' && item.group === 'Stylize')) && matches(item.label));
+            {hubVisible && <div className="studio-hub" aria-label="Creativity app hub">
+              <div className="studio-hub-intro"><strong>Choose your creative app</strong>
+                <span>Focused tools. One non-destructive Huelith canvas.</span></div>
+              <div className="studio-hub-grid">
+                {STUDIO_APPS.map(item=><button key={item.id} type="button" className={`studio-hub-app tone-${item.accent}`}
+                  aria-label={`Open ${item.name}`} onClick={()=>openApp(item.id)}>
+                  <span className="studio-hub-glyph" aria-hidden="true">{item.symbol}</span>
+                  <span className="studio-hub-copy"><strong>{item.name}</strong><small>{item.summary}</small></span>
+                  <span className="studio-hub-count">{appOperationCount(item,favoriteKinds,recentKinds)}</span>
+                </button>)}
+              </div>
+            </div>}
+            {browsingApp && <div className="studio-app-breadcrumb">
+              <button type="button" onClick={backToHub}>← All apps</button>
+              <span>{app?.symbol} {app?.name}</span>
+              <small>{appOperationCount(app!,favoriteKinds,recentKinds)} tools</small>
+            </div>}
+            {!hubVisible && category !== 'fx' && <div className="fx-filter-groups">
+              {(category === 'creativity' ? (app?.id==='favorites'?['Favorites']:app?.id==='recent'?['Recent']:
+                 app?.groups??(term?groupNames:[])) : ['Stylize', 'Creative effects']).map(group => {
+                const entries = shownLibrary.filter(item =>
+                  (group==='Favorites'?favoriteKinds.includes(item.kind):group==='Recent'?recentKinds.includes(item.kind):item.group === group)
+                  && (!app||appContainsKind(app,item.kind,favoriteKinds,recentKinds)) && matches(item.label));
                 if (!entries.length) return null;
                 return <section key={group}>
                   <h3>{group}</h3><div className="fx-filter-grid">
-                    {entries.map(item => <button key={item.kind} type="button" className="fx-filter-card"
-                      disabled={!writable} onClick={() => {
-                        const effect = createStudioFilter(item.kind);
-                        begin(item.kind === 'cutout' ? 'Remove background' : item.label, category, effect.id, [effect]);
-                      }} title={`Open ${item.label} editor`}>
-                      <EffectIcon kind={item.kind} className="fx-filter-mark" />
-                      <EffectPreview kind={item.kind} className="fx-filter-live-preview" />
-                      <span>{item.kind === 'cutout' ? 'Remove background' : item.label}</span>
-                    </button>)}
+                    {entries.map(item => <div className="fx-filter-tile" key={item.kind}>
+                      <button type="button" className="fx-filter-card"
+                        disabled={!writable} onClick={() => {
+                          const effect = createStudioFilter(item.kind);
+                          begin(item.kind === 'cutout' ? 'Remove background' : item.label, category, effect.id, [effect]);
+                        }} title={`Open ${item.label} editor`}>
+                        <EffectIcon kind={item.kind} className="fx-filter-mark" />
+                        {!item.kind.startsWith('atelier_') && <EffectPreview kind={item.kind} onDemand className="fx-filter-live-preview" />}
+                        <span>{item.kind === 'cutout' ? 'Remove background' : item.label}</span>
+                      </button>
+                      <button type="button" className={`fx-favorite-toggle ${favoriteKinds.includes(item.kind)?'active':''}`}
+                        aria-label={`${favoriteKinds.includes(item.kind)?'Remove':'Add'} ${item.label} ${favoriteKinds.includes(item.kind)?'from':'to'} favorites`}
+                        title="Favorite this operation" onClick={()=>toggleFavorite(item.kind)}>{favoriteKinds.includes(item.kind)?'★':'☆'}</button>
+                    </div>)}
                   </div>
                 </section>;
               })}
@@ -388,7 +495,7 @@ export default function FxStudio({ state, active, activeShape, onClose }: Props)
                     begin(name, 'fx', effects[0].studioGroupId!, effects);
                   }}>
                   <div className="fx-preset-visual"><EffectIcon kind={name} className="fx-preset-art" />
-                    <EffectPreview preset={name} className="fx-preset-live-preview" /></div>
+                    <EffectPreview preset={name} onDemand className="fx-preset-live-preview" /></div>
                   <strong>{name}</strong><small>Editable preset</small>
                 </button>)}
               </div>

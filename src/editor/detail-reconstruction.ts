@@ -26,20 +26,21 @@ export function boxKernel(source: HTMLCanvasElement, effect: Effect): HTMLCanvas
   const result = make(source);
   const output = context(result).createImageData(width, height);
   // Sliding windows are O(width × height), not O(pixels × radius), even on 4K artwork.
+  const straight = (at:number,c:number)=>c===3?image.data[at+3]:image.data[at+c]*image.data[at+3]/255;
   const horizontalCount = radiusX * 2 + 1;
   const verticalCount = radiusY * 2 + 1;
   for (let y = 0; y < height; y++) {
     const sums = [0, 0, 0, 0];
     for (let dx = -radiusX; dx <= radiusX; dx++) {
       const at = (y * width + clamp(dx, 0, width - 1)) * 4;
-      for (let c = 0; c < 4; c++) sums[c] += image.data[at + c];
+      for (let c = 0; c < 4; c++) sums[c] += straight(at,c);
     }
     for (let x = 0; x < width; x++) {
       const index = (y * width + x) * 4;
       for (let c = 0; c < 4; c++) tmp[index + c] = sums[c] / horizontalCount;
       const removed = (y * width + clamp(x - radiusX, 0, width - 1)) * 4;
       const added = (y * width + clamp(x + radiusX + 1, 0, width - 1)) * 4;
-      for (let c = 0; c < 4; c++) sums[c] += image.data[added + c] - image.data[removed + c];
+      for (let c = 0; c < 4; c++) sums[c] += straight(added,c) - straight(removed,c);
     }
   }
   for (let x = 0; x < width; x++) {
@@ -50,7 +51,9 @@ export function boxKernel(source: HTMLCanvasElement, effect: Effect): HTMLCanvas
     }
     for (let y = 0; y < height; y++) {
       const index = (y * width + x) * 4;
-      for (let c = 0; c < 4; c++) output.data[index + c] = sums[c] / verticalCount;
+      const alpha = sums[3] / verticalCount;
+      for (let c = 0; c < 3; c++) output.data[index + c] = alpha>0.001 ? sums[c]/verticalCount*255/alpha : 0;
+      output.data[index+3]=alpha;
       const removed = (clamp(y - radiusY, 0, height - 1) * width + x) * 4;
       const added = (clamp(y + radiusY + 1, 0, height - 1) * width + x) * 4;
       for (let c = 0; c < 4; c++) sums[c] += tmp[added + c] - tmp[removed + c];

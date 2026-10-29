@@ -28,8 +28,8 @@ const count = group => FILTER_CATALOG.filter(item => item.group === group).lengt
 test('D–H inventory preserves 24 color, 21 detail, 32 stylize, 2 creative effects and 22 native FX', () => {
   assert.deepEqual([count('Color & light'), count('Detail & texture'), count('Stylize'),
     count('Creative effects'), count('Signature FX')], [24, 21, 32, 2, 22]);
-  assert.equal(CREATIVITY_FILTERS.length, 72);
-  assert.equal(LAYER_EFFECTS.length, 6);
+  assert.equal(CREATIVITY_FILTERS.length, 192);
+  assert.equal(LAYER_EFFECTS.length, 7);
   assert.equal(SIGNATURE_FX_NAMES.length, 22);
 });
 

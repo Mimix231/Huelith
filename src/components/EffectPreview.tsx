@@ -52,10 +52,11 @@ function renderSample(kind?: EffectKind, preset?: string): string {
   return composite.toDataURL('image/png');
 }
 
-function EffectPreview({ kind, preset, className }: {
+function EffectPreview({ kind, preset, className, onDemand = false }: {
   kind?: EffectKind;
   preset?: string;
   className?: string;
+  onDemand?: boolean;
 }) {
   const key = preset ? `preset:${preset}` : `filter:${kind}`;
   const [image, setImage] = useState(previewCache.get(key) ?? '');
@@ -84,19 +85,34 @@ function EffectPreview({ kind, preset, className }: {
     // dozens of synchronous Canvas2D processors in the same frame.
     let observer: IntersectionObserver | undefined;
     let cancelJob: (() => void) | undefined;
-    if ('IntersectionObserver' in window && element.current) {
+    let parent:HTMLElement|null=null;
+    let requested=false;
+    const askRender=()=>{
+      if(requested||canceled)return;
+      requested=true;
+      cancelJob=queueThumbnail(render);
+    };
+    if(onDemand){
+      // Order 7 thumbnails run the same CPU pixel kernels as export. Browsing
+      // dozens of cards must NEVER launch those jobs automatically. The
+      // checked-in SVG icon provides an immediate, distinct preview; optional
+      // accurate thumbnails render only for a card the user actually hovers.
+      parent=element.current?.closest('button')??null;
+      parent?.addEventListener('pointerenter',askRender,{passive:true});
+      parent?.addEventListener('focusin',askRender,{passive:true});
+    } else if ('IntersectionObserver' in window && element.current) {
       observer = new IntersectionObserver(entries => {
         if (entries.some(entry => entry.isIntersecting)) {
-          observer?.disconnect();
-          cancelJob = queueThumbnail(render);
+          observer?.disconnect();askRender();
         }
       }, { rootMargin: '50px' });
       observer.observe(element.current);
-    } else {
-      cancelJob = queueThumbnail(render);
-    }
-    return () => { canceled = true; observer?.disconnect(); cancelJob?.(); };
-  }, [key, kind, preset]);
+    } else askRender();
+    return () => { canceled = true; observer?.disconnect(); cancelJob?.();
+      parent?.removeEventListener('pointerenter',askRender);
+      parent?.removeEventListener('focusin',askRender);
+    };
+  }, [key, kind, preset, onDemand]);
 
   return <img ref={element} className={className} src={image || undefined}
     aria-hidden="true" alt="" loading="lazy" draggable={false} />;

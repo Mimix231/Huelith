@@ -10,7 +10,7 @@ import {
   FlipToFront, GridOn, History, Image, Layers,
   Lock, LockOpen, Menu as MenuIcon, Mouse, Palette, PanTool,
   RadioButtonUnchecked, Rectangle, Redo, Save, Settings, ShapeLine,
-  TextFields, Undo, Visibility, VisibilityOff, ZoomIn, ZoomOut, HorizontalRule, CropFree, Tune, ViewSidebar,
+  TextFields, Undo, Visibility, VisibilityOff, ZoomIn, ZoomOut, HorizontalRule, CropFree, Tune, ViewSidebar, Gesture, AutoFixHigh, FormatColorFill, BlurOn, WbSunny, Whatshot, MovieFilter,
 } from '@mui/icons-material';
 import { activeLayer, activeTab, useEditor, type EditorStore } from './editor/store';
 import { flattenLayers, validSize, type BlendMode, type Tool, type Workspace } from './editor/types';
@@ -36,12 +36,15 @@ import GradientDesignerToolbar from './components/GradientDesignerToolbar';
 import { reflowTextShape } from './editor/typography';
 import type { AppearanceMode } from './editor/types';
 import Canvas from './components/Canvas';
+import MemeCreator from './components/MemeCreator';
+import {applyMemeToDocument,type MemeCommit} from './editor/meme-creator';
 import ActionWorkspace, {type ActionWorkspaceMode, type LayerTransform} from './components/ActionWorkspace';
 import {alignLayer, rasterAssets, commitRasterize} from './editor/layer-actions';
 import {prepareSelectionEdit,type SelectionAction} from './editor/selection-actions';
 import {applyDocumentAction, prepareRasterAction, swapRasterSources, transparentTrimBounds, type DocumentAction, type ResampleMode} from './editor/document-actions';
 import AnimationTimeline from './components/AnimationTimeline';
 import CreativeLab from './components/CreativeLab';
+import BrushStudio from './components/BrushStudio';
 import AuroraSettings from './components/settings/AuroraSettings';
 import { loadPreferences, PREFERENCES_EVENT } from './settings/preferences';
 import { configureNativeBackend, configureNativeCacheBudget } from './settings/native-aurora';
@@ -69,6 +72,8 @@ import './styles/studio-experience.css';
 import './components/StudioColorPicker.css';
 import './styles/wxy.css';
 import './styles/theme-identities.css';
+import './styles/workspace-modern.css';
+import './styles/huelith-hybrid-shell.css';
 
 interface ToolEntry {
   id: Tool;
@@ -83,9 +88,22 @@ const tools: ToolEntry[] = [
   { id: 'marquee', label: 'Rectangular selection', icon: <CropFree />, shortcut: 'M' },
   { id: 'hand', label: 'Pan', icon: <PanTool />, shortcut: 'H' },
   { id: 'brush', label: 'Brush', icon: <Brush />, shortcut: 'B' },
+  { id: 'ink', label: 'Ink Pen', icon: <Create />, shortcut: '' },
   { id: 'eraser', label: 'Eraser', icon: <EraserGlyph />, shortcut: 'E' },
   { id: 'pencil', label: 'Pixel pencil', icon: <Edit />, shortcut: 'N' },
   { id: 'eyedropper', label: 'Eyedropper', icon: <Colorize />, shortcut: 'I' },
+  { id: 'magicWand', label: 'Magic Wand', icon: <AutoAwesome />, shortcut: '' },
+  { id: 'lassoSelect', label: 'Freehand Lasso', icon: <Gesture />, shortcut: '' },
+  { id: 'polySelect', label: 'Polygon Selection', icon: <CropFree />, shortcut: '' },
+  { id: 'magneticLasso', label: 'Magnetic Lasso', icon: <AutoFixHigh />, shortcut: '' },
+  { id: 'bucket', label: 'Paint Bucket', icon: <FormatColorFill />, shortcut: 'G' },
+  { id: 'smudge', label: 'Smudge', icon: <BlurOn />, shortcut: '' },
+  { id: 'blurBrush', label: 'Blur Brush', icon: <BlurOn />, shortcut: '' },
+  { id: 'sharpenBrush', label: 'Sharpen Brush', icon: <AutoFixHigh />, shortcut: '' },
+  { id: 'dodge', label: 'Dodge', icon: <WbSunny />, shortcut: '' },
+  { id: 'burn', label: 'Burn', icon: <Whatshot />, shortcut: '' },
+  { id: 'patternBrush', label: 'Pattern Brush', icon: <AutoAwesome />, shortcut: '' },
+  { id: 'symmetryBrush', label: 'Symmetry Brush', icon: <Brush />, shortcut: '' },
   { id: 'rectangle', label: 'Rectangle', icon: <Rectangle />, shortcut: 'R' },
   { id: 'ellipse', label: 'Ellipse', icon: <RadioButtonUnchecked />, shortcut: 'O' },
   { id: 'roundedRect', label: 'Rounded rectangle', icon: <Rectangle />, shortcut: 'U' },
@@ -124,14 +142,29 @@ function makeTheme(workspace: Workspace, appearanceMode: AppearanceMode) {
     ?? (material ? '#6750a4' : studio ? '#176e8d'
     : classic ? '#b4c7df' : midnight ? '#80b4ff' : '#a5a5ff');
   const isLight = appearanceMode === 'light';
+  const lightSurfaces:Record<string,[string,string]>={
+    glass:['#f4f7ff','#ffffff'],material:['#f7f4fb','#ffffff'],classic:['#f5f5f5','#ffffff'],
+    midnight:['#ebf0fa','#f7faff'],studio:['#f2f9f9','#ffffff'],
+    strawberry:['#fff4f6','#fffafb'],melon:['#f1fff9','#fbfffd'],peach:['#fff6f1','#fffaf7'],
+    lemon:['#fffdf0','#fffef9'],mango:['#fff7e8','#fffaf3'],sakura:['#fff8fc','#fffafd'],
+    blossom:['#f8f4ff','#fdfbff'],shadow:['#f5f4fa','#fafaff'],
+  };
+  const darkSurfaces:Record<string,[string,string]>={
+    glass:['#16192a','#24283a'],material:['#1c1a22','#292633'],classic:['#171b23','#292b33'],
+    midnight:['#10182a','#1c2740'],studio:['#151c23','#222e36'],
+    strawberry:['#291921','#3b2734'],melon:['#142922','#223c35'],peach:['#2b201e','#40302d'],
+    lemon:['#292714','#3a3825'],mango:['#2c2118','#423022'],sakura:['#231829','#33233b'],
+    blossom:['#241b34','#362841'],shadow:['#171721','#252431'],
+  };
+  const surfaces=(isLight?lightSurfaces:darkSurfaces)[workspace];
   return createTheme({
     palette: {
       mode: isLight ? 'light' : 'dark',
       primary: { main: primary },
       secondary: { main: isLight ? '#435d77' : '#a5bad4' },
       background: {
-        default: isLight ? '#faf9fc' : '#171924',
-        paper: isLight ? '#ffffff' : '#242738',
+        default: surfaces?.[0] ?? (isLight ? '#faf9fc' : '#171924'),
+        paper: surfaces?.[1] ?? (isLight ? '#ffffff' : '#242738'),
       },
     },
     shape: { borderRadius: material ? 18 : classic || studio || workspace === 'shadow' ? 4 : 12 },
@@ -181,17 +214,22 @@ function ActionIcon({ title, children, onClick, active = false, disabled = false
   );
 }
 
+const SELECTION_TOOL_IDS=['marquee','magicWand','lassoSelect','polySelect','magneticLasso'] as const;
+const RETOUCH_TOOL_IDS=['bucket','smudge','blurBrush','sharpenBrush','dodge','burn','patternBrush','symmetryBrush'] as const;
+const ADDITIONAL_TOOL_IDS=[...SELECTION_TOOL_IDS,...RETOUCH_TOOL_IDS] as readonly string[];
 const SHAPE_TOOL_IDS = ['rectangle', 'ellipse', 'roundedRect', 'triangle', 'polygon', 'star', 'arrow', 'heart', 'ring', 'diamond', 'speechBubble', 'crescent', 'cross'] as const;
 
 function ToolRail({ state, openNew }: { state: EditorStore; openNew: () => void }) {
   const [shapeAnchor, setShapeAnchor] = useState<HTMLElement | null>(null);
   const [shapeSearch, setShapeSearch] = useState('');
+  const [selectionAnchor,setSelectionAnchor]=useState<HTMLElement|null>(null);
+  const [retouchAnchor,setRetouchAnchor]=useState<HTMLElement|null>(null);
   const [lastShape, setLastShape] = useState<Tool>('rectangle');
   const shapeActive = SHAPE_TOOL_IDS.includes(state.tool as typeof SHAPE_TOOL_IDS[number]);
   return (
     <aside className="toolrail" aria-label="Editing tools">
       <div className="rail-heading">TOOLS</div>
-      {tools.filter(tool => tools.indexOf(tool) <= 7 && tool.id !== 'rectangle' && !SHAPE_TOOL_IDS.includes(tool.id as typeof SHAPE_TOOL_IDS[number])).map(tool => (
+      {tools.filter(tool => tools.indexOf(tool) <= 7 && tool.id !== 'rectangle' && !ADDITIONAL_TOOL_IDS.includes(tool.id) && !SHAPE_TOOL_IDS.includes(tool.id as typeof SHAPE_TOOL_IDS[number])).map(tool => (
         <ActionIcon
           key={tool.id}
           title={`${tool.label} (${tool.shortcut})`}
@@ -204,6 +242,22 @@ function ToolRail({ state, openNew }: { state: EditorStore; openNew: () => void 
           {tool.icon}
         </ActionIcon>
       ))}
+      <ActionIcon title="Selection Studio — Magic Wand, Lasso, Polygon, Magnetic Lasso" active={SELECTION_TOOL_IDS.includes(state.tool as typeof SELECTION_TOOL_IDS[number])}
+        onClick={event=>setSelectionAnchor(event.currentTarget)}><CropFree /></ActionIcon>
+      <Popover open={Boolean(selectionAnchor)} anchorEl={selectionAnchor} onClose={()=>setSelectionAnchor(null)} anchorOrigin={{vertical:'center',horizontal:'right'}}
+        slotProps={{paper:{className:'huelith-popup'}}}>
+        <div className="h-tool-picker" aria-label="Huelith Selection Studio"><strong>✦ Selection Studio</strong><small>Choose how to isolate your artwork</small>
+          {tools.filter(item=>SELECTION_TOOL_IDS.includes(item.id as typeof SELECTION_TOOL_IDS[number])).map(item=><button key={item.id} aria-pressed={state.tool===item.id}
+            onClick={()=>{state.setTool(item.id);setSelectionAnchor(null);}}>{item.icon}<span>{item.label}</span></button>)}</div>
+      </Popover>
+      <ActionIcon title="Painting & Retouch Studio — Fill, Smudge, Blur, Sharpen, Dodge, Burn, Pattern" active={RETOUCH_TOOL_IDS.includes(state.tool as typeof RETOUCH_TOOL_IDS[number])}
+        onClick={event=>setRetouchAnchor(event.currentTarget)}><AutoFixHigh /></ActionIcon>
+      <Popover open={Boolean(retouchAnchor)} anchorEl={retouchAnchor} onClose={()=>setRetouchAnchor(null)} anchorOrigin={{vertical:'center',horizontal:'right'}}
+        slotProps={{paper:{className:'huelith-popup'}}}>
+        <div className="h-tool-picker" aria-label="Huelith Retouch Studio"><strong>◈ Painting & Retouch</strong><small>Independent, purpose-built pixel engines</small>
+          {tools.filter(item=>RETOUCH_TOOL_IDS.includes(item.id as typeof RETOUCH_TOOL_IDS[number])).map(item=><button key={item.id} aria-pressed={state.tool===item.id}
+            onClick={()=>{state.setTool(item.id);setRetouchAnchor(null);}}>{item.icon}<span>{item.label}</span></button>)}</div>
+      </Popover>
       <ActionIcon title="Shapes — select a shape" active={shapeActive} onClick={event => setShapeAnchor(event.currentTarget)}>
         {tools.find(item => item.id === (shapeActive ? state.tool : lastShape))?.icon ?? <Rectangle />}
       </ActionIcon>
@@ -218,7 +272,7 @@ function ToolRail({ state, openNew }: { state: EditorStore; openNew: () => void 
             }}>{item.icon}<span>{item.label}</span></button>)}
         </div>
       </Popover>
-      {tools.filter(tool => tools.indexOf(tool) > 7 && tool.id !== 'rectangle' && !SHAPE_TOOL_IDS.includes(tool.id as typeof SHAPE_TOOL_IDS[number])).map(tool => (
+      {tools.filter(tool => tools.indexOf(tool) > 7 && tool.id !== 'rectangle' && !ADDITIONAL_TOOL_IDS.includes(tool.id) && !SHAPE_TOOL_IDS.includes(tool.id as typeof SHAPE_TOOL_IDS[number])).map(tool => (
         <ActionIcon
           key={tool.id}
           title={`${tool.label} (${tool.shortcut})`}
@@ -246,7 +300,7 @@ function ToolRail({ state, openNew }: { state: EditorStore; openNew: () => void 
       <ActionIcon title="Show canvas rulers" active={state.rulers} onClick={() => state.setRulers(!state.rulers)}>
         <HorizontalRule />
       </ActionIcon>
-      <ActionIcon title="Snap geometric points to 10px grid (Alt overrides)" active={state.snap} onClick={() => state.setSnap(!state.snap)}>
+      <ActionIcon title="Magnetic snapping: canvas edges, centers, other layers, and 10px grid (Alt overrides)" active={state.snap} onClick={() => state.setSnap(!state.snap)}>
         <CropFree />
       </ActionIcon>
       <ActionIcon title="Reset canvas position" onClick={() => { state.setZoom(1); state.setPan({ x: 0, y: 0 }); }}>
@@ -286,11 +340,12 @@ function CompactSlider({
 }
 
 function ContextToolbar({ state }: { state: EditorStore }) {
+  const [brushAnchor,setBrushAnchor]=useState<HTMLElement|null>(null);
   const entry = tools.find(item => item.id === state.tool);
-  const drawing = state.tool === 'brush' || state.tool === 'eraser' || state.tool === 'pencil';
-  const colorTool = ['brush', 'pencil', 'gradient', 'rectangle', 'ellipse', 'roundedRect', 'triangle', 'polygon', 'star', 'arrow', 'heart', 'ring', 'line', 'pen', 'freehand'].includes(state.tool);
+  const drawing = ['brush','ink','eraser','pencil','smudge','blurBrush','sharpenBrush','dodge','burn','patternBrush','symmetryBrush'].includes(state.tool);
+  const colorTool = ['brush', 'ink', 'pencil', 'bucket', 'patternBrush','symmetryBrush', 'gradient', 'rectangle', 'ellipse', 'roundedRect', 'triangle', 'polygon', 'star', 'arrow', 'heart', 'ring', 'line', 'pen', 'freehand'].includes(state.tool);
   const shapeTool = ['diamond', 'speechBubble', 'crescent', 'cross', 'rectangle', 'ellipse', 'roundedRect', 'triangle', 'polygon', 'star', 'arrow', 'heart', 'ring', 'line', 'pen', 'freehand'].includes(state.tool);
-  const selectionTool = state.tool === 'marquee';
+  const selectionTool = SELECTION_TOOL_IDS.includes(state.tool as typeof SELECTION_TOOL_IDS[number]);
   const selectedVector = activeLayer(state)?.type === 'vector' ? activeLayer(state) as Extract<ReturnType<typeof activeLayer>, {type:'vector'}> : undefined;
   const selectedPath = selectedVector?.shapes.find(item => item.id === state.selectedShapeId && item.kind === 'path');
   const moveTool = state.tool === 'move' || state.tool === 'node';
@@ -337,26 +392,50 @@ function ContextToolbar({ state }: { state: EditorStore }) {
         </label>
       )}
       {(drawing || shapeTool) && (
-        <CompactSlider label="Size" value={state.strokeWidth} min={1} max={120}
+        <CompactSlider label="Size" value={state.strokeWidth} min={1} max={drawing ? Math.max(250,state.strokeWidth) : 120}
           display={`${state.strokeWidth}px`} onChange={state.setStrokeWidth} />
       )}
       {drawing && state.tool !== 'pencil' && (
         <>
-          <CompactSlider label="Hardness" value={Math.round(state.hardness * 100)} min={2} max={100}
-            display={`${Math.round(state.hardness * 100)}%`} onChange={value => state.setHardness(value / 100)} />
-          <CompactSlider label="Smoothing" value={Math.round(state.smoothing * 100)} min={0} max={95}
-            display={`${Math.round(state.smoothing * 100)}%`} onChange={value => state.setSmoothing(value / 100)} />
+          {!['ink','smudge','blurBrush','sharpenBrush','dodge','burn','patternBrush'].includes(state.tool) && <CompactSlider label="Hardness" value={Math.round(state.hardness * 100)} min={2} max={100}
+            display={`${Math.round(state.hardness * 100)}%`} onChange={value => state.setHardness(value / 100)} />}
+          {!['smudge','blurBrush','sharpenBrush','dodge','burn','patternBrush'].includes(state.tool) &&
+            <CompactSlider label="Smoothing" value={Math.round(state.smoothing * 100)} min={0} max={95}
+              display={`${Math.round(state.smoothing * 100)}%`} onChange={value => state.setSmoothing(value / 100)} />}
           <CompactSlider label="Opacity" value={Math.round(state.opacity * 100)} min={1} max={100}
             display={`${Math.round(state.opacity * 100)}%`} onChange={value => state.setOpacity(value / 100)} />
         </>
       )}
+      {(state.tool==='brush'||state.tool==='ink'||state.tool==='eraser') && <>
+        <button type="button" className="h-brush-atelier-trigger" onClick={e=>setBrushAnchor(e.currentTarget)}
+          aria-label="Open Brush Atelier">✦ Brush Atelier</button>
+        <Popover open={Boolean(brushAnchor)} anchorEl={brushAnchor} onClose={()=>setBrushAnchor(null)}
+          anchorOrigin={{vertical:'bottom',horizontal:'left'}} slotProps={{paper:{className:'huelith-popup'}}}>
+          <BrushStudio state={state} onClose={()=>setBrushAnchor(null)}/>
+        </Popover>
+      </>}
       {state.tool === 'pencil' && <span className="context-instruction">Pixel-perfect hard-edge pencil · uses foreground color</span>}
-      {drawing && <label className="context-instruction" title="Mirror paint strokes around the vertical canvas center">
+      {(drawing && !['smudge','blurBrush','sharpenBrush','dodge','burn','patternBrush'].includes(state.tool)) && <label className="context-instruction" title="Mirror paint strokes around the vertical canvas center">
         <input type="checkbox" checked={state.symmetryX} onChange={event => state.setSymmetryX(event.target.checked)}/> Mirror X
       </label>}
+      {(['magicWand','bucket'].includes(state.tool)) && <>
+        <CompactSlider label="Tolerance" value={state.rasterToolTolerance} min={0} max={100} display={`${state.rasterToolTolerance}%`} onChange={state.setRasterToolTolerance}/>
+        <label className="context-instruction"><input type="checkbox" checked={state.rasterToolContiguous} onChange={event=>state.setRasterToolContiguous(event.target.checked)}/> Contiguous</label>
+      </>}
+      {(['smudge','blurBrush','sharpenBrush','dodge','burn','patternBrush'].includes(state.tool)) &&
+        <CompactSlider label="Strength" value={Math.round(state.rasterToolStrength*100)} min={1} max={100}
+          display={`${Math.round(state.rasterToolStrength*100)}%`} onChange={value=>state.setRasterToolStrength(value/100)}/>}
+      {state.tool==='patternBrush'&&<label className="context-instruction">Pattern <select value={state.rasterPattern}
+        onChange={event=>state.setRasterPattern(event.target.value as 'star'|'dots'|'hatches')}>
+        <option value="star">Stars</option><option value="dots">Dots</option><option value="hatches">Hatches</option>
+      </select></label>}
+      {state.tool==='symmetryBrush'&&<span className="context-instruction">Mirrored drawing about the canvas center</span>}
       {selectionTool && (
         <>
-          <span className="context-instruction">Drag to select an area</span>
+          <span className="context-instruction">{state.tool==='magicWand'?'Click a color to select matching regions':
+            state.tool==='polySelect'?'Click vertices; double-click or Enter to complete':
+            state.tool==='magneticLasso'?'Drag along object edges':
+            state.tool==='lassoSelect'?'Draw an irregular closed selection':'Drag to select an area'}</span>
           <Button size="small" disabled={!state.selection} onClick={() => state.setSelection(null)}>Deselect</Button>
         </>
       )}
@@ -907,8 +986,8 @@ function Inspector({ state }: { state: EditorStore }) {
 
       {cutoutOpen && active?.type === 'raster' && <CutoutWorkspace key={active.id} layer={active}
         onClose={() => setCutoutOpen(false)}
-        onProcess={(data, width, height) => {
-          state.applyCutoutMask(active.id, data, width, height);
+        onProcess={(data, width, height, editable) => {
+          state.applyCutoutMask(active.id, data, width, height, editable);
           setCutoutOpen(false);
         }} />}
 
@@ -953,13 +1032,17 @@ export default function App() {
   const [errorText, setErrorText] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [actionMode, setActionMode] = useState<ActionWorkspaceMode|null>(null);
+  const [memeOpen,setMemeOpen] = useState(false);
   const [actionBusy,setActionBusy]=useState(false);
   const [canvasMenu,setCanvasMenu]=useState<{x:number;y:number}|null>(null);
   useEffect(()=>{
     const context=(event:Event)=>{const point=(event as CustomEvent<{x:number;y:number}>).detail;setCanvasMenu(point);};
     const hide=()=>setCanvasMenu(null);
+    const openTransform=()=>setActionMode('transform');
     window.addEventListener('huelith-canvas-context',context);window.addEventListener('keydown',hide);
-    return()=>{window.removeEventListener('huelith-canvas-context',context);window.removeEventListener('keydown',hide);};
+    window.addEventListener('huelith-precision-transform',openTransform);
+    return()=>{window.removeEventListener('huelith-canvas-context',context);window.removeEventListener('keydown',hide);
+      window.removeEventListener('huelith-precision-transform',openTransform);};
   },[]);
   useEffect(() => {
     // Backend preferences are application-wide and never written to .huelith
@@ -1076,7 +1159,15 @@ export default function App() {
             // Paste events carry richer data than clipboard.read(). The browser fires one for Ctrl+V.
             return;
           case 't':
-            event.preventDefault();current.setTool('move');setActionMode('transform');return;
+            event.preventDefault();
+            if(event.altKey){setActionMode('transform');return;}
+            // Ctrl+T selects the complete active layer for on-canvas handles.
+            // Numeric transform remains available via Ctrl+Alt+T or by
+            // double-clicking the transform dimensions chip.
+            current.setTool('move');
+            current.selectShape(null);
+            current.setSelection(null);
+            return;
           case 'i':
             if(event.altKey){event.preventDefault();setActionMode('resize-image');return;}break;
           case 'c':
@@ -1196,7 +1287,7 @@ export default function App() {
     if(!layer||layer.type!=='raster'||layer.locked||!selection){handleError('Select an unlocked raster layer and make a rectangular selection.');return;}
     if(actionBusy)return;setActionBusy(true);
     try{
-      const pixels=await prepareSelectionEdit(layer,selection,action,editor.color,editor.strokeWidth,tab.doc.width,tab.doc.height);
+      const pixels=await prepareSelectionEdit(layer,selection,action,editor.color,editor.strokeWidth,tab.doc.width,tab.doc.height,tab.doc.id);
       const latest=activeTab(useEditor.getState());
       if(latest.doc.id!==tab.doc.id||latest.revision!==tab.revision)throw Error('Document changed while preparing the selection edit.');
       editor.mutate(document=>{
@@ -1244,6 +1335,15 @@ export default function App() {
     setActionMode(null);setNotice('Precision transform applied');
   }
 
+  function createMeme(request:MemeCommit):void {
+    try{
+      const editor=useEditor.getState();
+      editor.mutate(document=>{applyMemeToDocument(document,request);});
+      editor.setTool('move');editor.selectShape(null);setMemeOpen(false);
+      setNotice('Editable meme created · Move captions or double-click to edit');
+    }catch(error){handleError(error);}
+  }
+
   function runMenuCommand(id: MenuAction, anchor?: HTMLElement): void {
     setMenuAnchor(null);
     switch (id) {
@@ -1262,6 +1362,10 @@ export default function App() {
       case 'export-frames': guarded(exportAnimation('sequence'), 'Animation frames exported'); break;
       case 'undo': state.undo(); break;
       case 'redo': state.redo(); break;
+      case 'create-meme':setMemeOpen(true);break;
+      case 'export-meme-png':guarded(exportImage('png'),'Meme PNG exported');break;
+      case 'export-meme-jpeg':guarded(exportImage('jpeg'),'Meme JPEG exported');break;
+      case 'export-meme-webp':guarded(exportImage('webp'),'Meme WebP exported');break;
       case 'resize-image': setActionMode('resize-image');break;
       case 'resize-canvas': setActionMode('resize-canvas');break;
       case 'crop-selection': if(state.selection)void commitDocumentAction({kind:'crop',rect:state.selection});else setActionMode('crop');break;
@@ -1334,7 +1438,7 @@ export default function App() {
 
         <header className="titlebar" data-tauri-drag-region>
           <div className="brand" data-tauri-drag-region>
-            <div className="brand-mark">✦</div>
+            <div className="brand-mark" aria-label={`${state.workspace} theme emblem`}><span className="brand-mark__glyph" aria-hidden="true">{({sakura:"❀",blossom:"✿",strawberry:"♥",melon:"◈",peach:"✦",lemon:"☼",mango:"✺",shadow:"◐",midnight:"☾",material:"◆",classic:"▦",studio:"▥",glass:"✧"} as Record<string,string>)[state.workspace]??"✦"}</span></div>
             <span>Huelith</span>
             <span className="badge">0.2</span>
           </div>
@@ -1347,6 +1451,10 @@ export default function App() {
                     ? null : { category, element: event.currentTarget })}>{category}</button>
               ))}
             </nav>
+            <button type="button" className="huelith-create-launcher" onClick={() => setMemeOpen(true)}
+              aria-label="Open Huelith Meme Creator" title="Open Meme Creator">
+              <MovieFilter aria-hidden="true" fontSize="small"/><span>Meme Creator</span><span className="huelith-create-key">✦</span>
+            </button>
             <span className="title-sep" />
             <ActionIcon title="Undo (Ctrl+Z)" onClick={state.undo} disabled={!tab.past.length}><Undo fontSize="small" /></ActionIcon>
             <ActionIcon title="Redo (Ctrl+Y)" onClick={state.redo} disabled={!tab.future.length}><Redo fontSize="small" /></ActionIcon>
@@ -1455,8 +1563,9 @@ export default function App() {
           ))}
         </Menu>
 
+        {memeOpen&&<MemeCreator key={doc.id} doc={doc} onClose={()=>setMemeOpen(false)} onApply={createMeme}/>}
         {actionMode&&<ActionWorkspace key={`${actionMode}-${doc.id}`} mode={actionMode} doc={doc}
-          layer={activeLayer(state)} selectedShapeId={state.selectedShapeId} selection={state.selection} busy={actionBusy}
+          layer={activeLayer(state) ?? null} selectedShapeId={state.selectedShapeId} selection={state.selection} busy={actionBusy}
           onClose={()=>{if(!actionBusy)setActionMode(null);}}
           onDocument={(action,resample)=>{void commitDocumentAction(action,resample);}}
           onTransform={applyPreciseTransform}/>}
@@ -1465,7 +1574,7 @@ export default function App() {
           <section className="h-canvas-menu" role="menu" aria-label="Huelith canvas actions"
             style={{left:Math.min(canvasMenu.x,window.innerWidth-260),top:Math.max(8,Math.min(canvasMenu.y,window.innerHeight-440))}}>
             <header>✦ HUELITH · CANVAS ACTIONS</header>
-            {([['precision-transform','Precision transform','Ctrl+T'],['resize-image','Resize image',''],
+            {([['precision-transform','Precision transform','Ctrl+Alt+T'],['resize-image','Resize image',''],
               ['resize-canvas','Resize canvas',''],['crop-selection','Crop to selection',''],
               ['rotate-cw','Rotate clockwise',''],['flip-horizontal','Flip horizontal',''],
               ['rasterize-layer','Rasterize layer',''],['align-horizontal','Center horizontally',''],['align-vertical','Center vertically',''],
@@ -1541,3 +1650,5 @@ export default function App() {
     </ThemeProvider>
   );
 }
+
+// Brush Atelier uses the active Huelith accent and surface tokens.

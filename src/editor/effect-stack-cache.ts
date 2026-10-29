@@ -1,4 +1,5 @@
 import { applyEffect } from './effect-ops';
+import { EXPANSION_LOOKUP, createExpansion120Job } from './expansion-120';
 import { markImmutableEffectSource } from './immutable-effect-sources';
 import type { Effect } from './types';
 
@@ -92,7 +93,22 @@ export class EffectStackCache {
         current = previous[index].image;
       } else {
         reuse = false;
-        current = applyEffect(current, effect);
+        if (EXPANSION_LOOKUP.has(effect.kind)) {
+          // One authoritative full-quality scanline kernel, shared with
+          // export. Yield *inside* this effect so a rapidly changed slider
+          // cancels work immediately rather than waiting for megabytes of
+          // superseded pixels to finish rendering.
+          const job = createExpansion120Job(current,effect);
+          while (!job.runRows(8)) {
+            await yieldTurn();
+            if (superseded()) {
+              this.remember(sourceId,source,stages);
+              this.lastMetrics={stages:enabled.length,reused,timing};
+              return null;
+            }
+          }
+          current=job.output();
+        } else current = applyEffect(current, effect);
         markImmutableEffectSource(current);
       }
       timing.push({ kind: effect.kind, index, ms: performance.now() - started, cached });

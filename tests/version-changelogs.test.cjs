@@ -10,7 +10,7 @@ const catalogJs = ts.transpileModule(read('src/editor/effect-catalog.ts'), {
   compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS},
 }).outputText;
 const catalogExports = {};
-vm.runInNewContext(catalogJs,{exports:catalogExports,module:{exports:catalogExports}});
+vm.runInNewContext(catalogJs,{exports:catalogExports,module:{exports:catalogExports},require:id=>id==='./expansion-120'?{EXPANSION_120:[]}:undefined});
 const v01 = read('docs/changelog/v0.1-alpha.md');
 const v02 = read('docs/changelog/v0.2-alpha.md');
 
@@ -26,8 +26,15 @@ test('0.1 includes user historical tool list, animation, Studio and 13 theme fam
     'Economy budget profile','Balanced budget profile','Responsive budget profile','Strawberry','Melon','Peach','Lemon','Mango',
     'Sakura','Blossom','Shadow','Glass','Material','Midnight','Classic','Studio']) assert.ok(v01.includes(item),item);
 });
-test('0.2 alpha inventory contains post-rename increments and Phase AI without effect keyframing',()=>{
-  for(const name of ['Particle Garden','Warp Cage','Light Trails','Pattern Architect','Gradient Reactor','Pixel Pencil','Clip Below alpha masking',
-    'One persistent FX stack per animation layer','Effect removal cannot reappear from an older cel', 'Guided graph-cut foreground segmentation', 'Huelith Mask Workspace', 'CPU-only offline segmentation']) assert.ok(v02.includes(name),name);
-  assert.match(v02,/Effect parameter animation is intentionally \*\*not\*\* part of Phase AI/);
+test('0.2 alpha inventory documents current editor features, not superseded Cutout experiments',()=>{
+  for(const name of ['Particle Garden','Warp Cage','Light Trails','Pattern Architect','Gradient Reactor','Pixel Pencil',
+    'Clip Below alpha masking','One persistent FX stack per animation layer',
+    'Effect removal cannot reappear from an older cel','Inspector Remove Background operation',
+    'Full Huelith Cutout workspace','Gradient Atelier full-workspace interface',
+    'Black & White Burst one-click preset','Multicolor pattern-palette mode',
+    'Canvas-center cross (+) snapping']) assert.ok(v02.includes(name),name);
+  assert.doesNotMatch(v02,/^- Guided graph-cut foreground segmentation$/m);
+  assert.doesNotMatch(v02,/^- Smart, Color, and Manual removal modes$/m);
+  assert.doesNotMatch(v02,/^- Gradient Transform overlay$/m);
+  assert.match(v02,/effect-parameter animation is not part of this release/i);
 });

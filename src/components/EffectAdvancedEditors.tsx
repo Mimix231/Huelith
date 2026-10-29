@@ -368,7 +368,7 @@ function CutoutEditor({ effect, preview, commit, sourceLayer }: EditorProps) {
   const [showMatte, setShowMatte] = useState(false);
   const [draftBox, setDraftBox] = useState<EffectParameters['subjectBox']>();
   const boxStart = useRef<{x: number; y: number} | null>(null);
-  const liveBox = useRef<EffectParameters['subjectBox']>();
+  const liveBox = useRef<EffectParameters['subjectBox']>(undefined);
   const [size, setSize] = useState(effect.parameters?.maskBrushSize ?? 24);
   const latest = useRef(effect.parameters?.maskStrokes ?? []);
   const [marks, setMarks] = useState(effect.parameters?.maskStrokes ?? []);

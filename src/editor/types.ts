@@ -1,3 +1,4 @@
+import type { CutoutShape } from './cutout-edit';
 /** Huelith document model, compatible with legacy Spectrum-format version 1 files. */
 export type BlendMode = 'source-over' | 'multiply' | 'screen' | 'overlay' | 'darken' | 'lighten';
 
@@ -26,6 +27,7 @@ export interface LayerBase {
 }
 
 import type { FilterKind } from './effect-catalog';
+import type { GradientColorMode } from './gradient-patterns';
 import { validCreative, type CreativeObject } from './creative';
 
 export type EffectKind = FilterKind;
@@ -200,7 +202,8 @@ export interface Effect {
 export interface RasterLayer extends LayerBase {
   type: 'raster';
   /** Editable, full-resolution alpha mask. Source pixels remain untouched. */
-  cutoutMask?: { data: string; width: number; height: number; enabled: boolean };
+  cutoutMask?: { data: string; width: number; height: number; enabled: boolean;
+    editable?: {shapes:CutoutShape[];feather:number;expand:number;smoothing:boolean;baseData?:string}; };
   image: string;
   imageWidth?: number;
   imageHeight?: number;
@@ -286,6 +289,10 @@ export interface VectorShape {
   gradientOffset?: number;
   gradientMirror?: boolean;
   gradientPattern?: GradientPattern;
+  /** How an editable gradient selects colors: blended or discrete procedural bands. */
+  gradientColorMode?: GradientColorMode;
+  /** Number of discrete palette bands (independent from radial ray pairs). */
+  gradientBandCount?: number;
   gradientRayCount?: number;
   gradientRayWidth?: number;
   gradientRaySoftness?: number;
@@ -335,6 +342,10 @@ export interface AnimationFrame {
   durationMs: number;
   layers: Layer[];
   activeLayerId: string | null;
+  /** Editable frame annotation displayed on the timeline. */
+  label?: string;
+  /** Per-layer held drawings reference another frame ID (not duplicated raster data). */
+  holdFrom?: Record<string, string>;
 }
 
 export interface OnionSkinSettings {
@@ -351,6 +362,8 @@ export interface AnimationTrack {
   trackEffects?: Record<string, Effect[]>;
   /** Canonical procedural content of each Gradient layer across animation cels. */
   trackGradients?: Record<string, VectorShape>;
+  /** Optional region and playback behavior, defaulting to full-length loop. */
+  playback?: { mode: 'loop' | 'pingpong' | 'once'; start: number; end: number };
   fps: number;
   currentFrame: number;
   frames: AnimationFrame[];
@@ -377,7 +390,7 @@ export interface Document {
   updatedAt: string;
 }
 
-export type Tool = 'roundedRect' | 'triangle' | 'polygon' | 'star' | 'arrow' | 'heart' | 'ring' | 'diamond' | 'speechBubble' | 'crescent' | 'cross' | 'gradient' | 'pencil' | 'freehand' | 'move' | 'node' | 'marquee' | 'hand' | 'brush' | 'eraser' | 'eyedropper' | 'rectangle' | 'ellipse' | 'line' | 'pen' | 'text';
+export type Tool = 'roundedRect' | 'triangle' | 'polygon' | 'star' | 'arrow' | 'heart' | 'ring' | 'diamond' | 'speechBubble' | 'crescent' | 'cross' | 'gradient' | 'pencil' | 'freehand' | 'move' | 'node' | 'marquee' | 'magicWand' | 'lassoSelect' | 'polySelect' | 'magneticLasso' | 'bucket' | 'smudge' | 'blurBrush' | 'sharpenBrush' | 'dodge' | 'burn' | 'patternBrush' | 'symmetryBrush' | 'hand' | 'brush' | 'ink' | 'eraser' | 'eyedropper' | 'rectangle' | 'ellipse' | 'line' | 'pen' | 'text';
 export type Workspace = 'glass' | 'material' | 'classic' | 'midnight' | 'studio'
   | 'strawberry' | 'melon' | 'peach' | 'lemon' | 'mango' | 'sakura' | 'blossom' | 'shadow';
 export type AppearanceMode = 'light' | 'dark';
@@ -469,6 +482,8 @@ function shape(value: unknown): value is VectorShape {
   if (value.innerRatio !== undefined && (!finite(value.innerRatio) || value.innerRatio < 0.05 || value.innerRatio > 0.95)) return false;
   if (value.cornerRadius !== undefined && (!finite(value.cornerRadius) || value.cornerRadius < 0)) return false;
   if (value.gradientPattern !== undefined && !['smooth', 'sunburst', 'speedlines'].includes(String(value.gradientPattern))) return false;
+  if (value.gradientColorMode !== undefined && !['smooth','hardStops','bands','alternating','stepped','pattern'].includes(String(value.gradientColorMode))) return false;
+  if (value.gradientBandCount !== undefined && (!finite(value.gradientBandCount) || value.gradientBandCount < 2 || value.gradientBandCount > 256)) return false;
   if (value.gradientTransform !== undefined && !gradientTransformNames.has(String(value.gradientTransform))) return false;
   if (value.gradientTransformStack !== undefined && (!Array.isArray(value.gradientTransformStack) || value.gradientTransformStack.length > 24 || !value.gradientTransformStack.every(step => record(step) && typeof step.id === 'string' && step.id.length < 128 && gradientTransformNames.has(String(step.kind)) && typeof step.enabled === 'boolean' && ['amount','frequency','count','phase','seed','centerX','centerY'].every(field => finite(step[field]) && Math.abs(step[field] as number) <= 10000)))) return false;
   if (['gradientRayCount','gradientRayWidth','gradientRaySoftness','gradientRayTaper','gradientRayGlow','gradientRaySeed'].some(key => value[key] !== undefined && (typeof value[key] !== 'number' || !Number.isFinite(value[key] as number) || Math.abs(value[key] as number) > 10000))) return false;
@@ -573,7 +588,18 @@ function validCutoutMask(value: unknown): boolean {
     /^data:image\/png;base64,[a-z0-9+/]+=*$/i.test(value.data) && value.data.length <= 160_000_000 &&
     finite(value.width) && Number.isInteger(value.width) && value.width > 0 && value.width <= 32768 &&
     finite(value.height) && Number.isInteger(value.height) && value.height > 0 && value.height <= 32768 &&
-    value.width * value.height <= 64_000_000 && typeof value.enabled === 'boolean';
+    value.width * value.height <= 64_000_000 && typeof value.enabled === 'boolean' &&
+    (value.editable === undefined || (record(value.editable) &&
+      Array.isArray(value.editable.shapes) && value.editable.shapes.length <= 6000 &&
+      finite(value.editable.feather) && Math.abs(value.editable.feather as number) <= 40 &&
+      finite(value.editable.expand) && Math.abs(value.editable.expand as number) <= 40 &&
+      typeof value.editable.smoothing === 'boolean' &&
+      (value.editable.baseData===undefined||(typeof value.editable.baseData==='string' && /^data:image\/png;base64,[a-z0-9+/]+=*$/i.test(value.editable.baseData) && value.editable.baseData.length <=160_000_000)) &&
+      value.editable.shapes.every(item => record(item) && typeof item.id === 'string' && item.id.length < 120 &&
+        ['keep','remove','eraser','line','lasso','polygon','rectangle','ellipse'].includes(String(item.tool)) &&
+        ['keep','remove'].includes(String(item.operation)) && finite(item.size) && item.size>0 && item.size <= 4096 &&
+        Array.isArray(item.points) && item.points.length>0 && item.points.length <= 20000 &&
+        item.points.every(point=>record(point)&&finite(point.x)&&finite(point.y)&&Math.abs(point.x)<=65536&&Math.abs(point.y)<=65536))));
 }
 
 function isLayer(value: unknown, depth: number): value is Layer {
@@ -661,16 +687,40 @@ function validAnimation(value: unknown, activeLayers: Layer[], activeLayerId: un
         || !record(gradient) || gradient.kind !== 'gradient' || !shape(gradient)) return false;
     }
   }
+  if (value.playback !== undefined && (!record(value.playback)
+    || !['loop', 'pingpong', 'once'].includes(String(value.playback.mode))
+    || !Number.isInteger(value.playback.start) || !Number.isInteger(value.playback.end)
+    || Number(value.playback.start) < 0 || Number(value.playback.end) >= value.frames.length
+    || Number(value.playback.end) < Number(value.playback.start))) return false;
   const ids = new Set<string>();
   for (const frame of value.frames) {
     if (!record(frame) || typeof frame.id !== 'string' || ids.has(frame.id)) return false;
     ids.add(frame.id);
     if (!Number.isInteger(frame.durationMs) || Number(frame.durationMs) < 16 || Number(frame.durationMs) > 60_000) return false;
+    if (frame.label !== undefined && (typeof frame.label !== 'string' || frame.label.length > 120)) return false;
+    if (frame.holdFrom !== undefined && (!record(frame.holdFrom) || Object.keys(frame.holdFrom).length > 4096 ||
+      Object.entries(frame.holdFrom).some(([id,source]) => !id || id.length > 180 ||
+        ['__proto__','prototype','constructor'].includes(id) || typeof source !== 'string' || source.length > 180))) return false;
     if (!Array.isArray(frame.layers) || frame.layers.length > 4096 || !frame.layers.every(layer => isLayer(layer, 0))) return false;
     const framesLayers = flattenLayers(frame.layers as Layer[]);
     const layerIds = framesLayers.map(layer => layer.id);
     if (new Set(layerIds).size !== layerIds.length) return false;
     if (frame.activeLayerId !== null && (typeof frame.activeLayerId !== 'string' || !layerIds.includes(frame.activeLayerId))) return false;
+  }
+  // Held cels must resolve to real, cycle-free frame IDs for both preview and save.
+  const byId = new Map((value.frames as AnimationFrame[]).map(frame => [frame.id, frame]));
+  const resolveHeld = (frame: AnimationFrame, layerId: string, visited = new Set<string>()): Layer | undefined => {
+    if (visited.has(frame.id)) return undefined;
+    visited.add(frame.id);
+    const sourceId = frame.holdFrom?.[layerId];
+    if (sourceId !== undefined) {
+      const source = byId.get(sourceId);
+      return source && resolveHeld(source,layerId,visited);
+    }
+    return flattenLayers(frame.layers).find(layer => layer.id === layerId);
+  };
+  for(const frame of value.frames as AnimationFrame[])for(const id of Object.keys(frame.holdFrom ?? {})){
+    if (!flattenLayers(frame.layers).some(layer=>layer.id===id) || !resolveHeld(frame,id))return false;
   }
   const current = value.frames[Number(value.currentFrame)] as AnimationFrame;
   // Current document layers are the editable mirror of the selected frame.
@@ -682,6 +732,22 @@ function validAnimation(value: unknown, activeLayers: Layer[], activeLayerId: un
     if (layer.type === 'gradient') return {...layer,effects, gradient: gradients && Object.hasOwn(gradients,layer.id) ? gradients[layer.id] : layer.gradient};
     return {...layer,effects};
   });
-  return JSON.stringify(canonicalize(current.layers)) === JSON.stringify(canonicalize(activeLayers))
+  const expand = (layers:Layer[]):Layer[] => layers.map(layer => {
+    if(layer.type === 'group')return {...layer,children:expand(layer.children)};
+    if (!current.holdFrom?.[layer.id]) return layer;
+    const source = resolveHeld(current,layer.id);
+    if (!source || layer.type !== source.type) return layer;
+    if (layer.type === 'raster' && source.type === 'raster')return {...layer,image:source.image,imageWidth:source.imageWidth,imageHeight:source.imageHeight};
+    if (layer.type === 'vector' && source.type === 'vector')return {...layer,shapes:source.shapes};
+    return layer;
+  });
+  const expanded = current.holdFrom && Object.keys(current.holdFrom).length ? expand(current.layers) : current.layers;
+  // Source pixel buffers can move between object insertion orders when a
+  // held cel is expanded; comparison must be structural, not key-order based.
+  const normalized = (layers: Layer[]): string => JSON.stringify(canonicalize(layers),(_key,value)=>
+    value && typeof value === 'object' && !Array.isArray(value)
+      ? Object.fromEntries(Object.entries(value).sort(([left],[right])=>left.localeCompare(right)))
+      : value);
+  return normalized(expanded) === normalized(activeLayers)
     && current.activeLayerId === activeLayerId;
 }

@@ -110,3 +110,51 @@
 .cutout-visibility{display:flex;gap:8px;flex-wrap:wrap;font-size:11px;margin:8px 0}
 .cutout-visibility label{display:flex;gap:4px;align-items:center}
 @media(max-width:750px){.huelith-mask-workspace .cutout-editor{display:flex;flex-direction:column}.huelith-mask-workspace .cutout-editor .cutout-paintboard{width:100%;min-height:200px}}
+/* Distinct library families prevent rendering hundreds of previews at once. */
+.studio-library-categories{display:flex;gap:5px;overflow-x:auto;scrollbar-width:thin;max-width:100%;padding:7px 9px;border-bottom:1px solid var(--border)}
+.studio-library-categories button{white-space:nowrap;display:flex;align-items:center;gap:5px;border:1px solid var(--border);background:var(--panel-bg);color:var(--text);font:inherit;font-size:10px;padding:7px 9px;border-radius:10px;cursor:pointer}
+.studio-library-categories button.active{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.studio-library-categories button:hover{border-color:var(--accent)}
+.studio-library-categories small{font-size:9px;opacity:.7;font-variant-numeric:tabular-nums}
+.fx-filter-tile{position:relative;min-width:0}
+.fx-filter-tile>.fx-filter-card{width:100%;height:100%;padding-right:15px}
+.fx-favorite-toggle{position:absolute;right:3px;top:3px;z-index:1;background:var(--panel-bg);color:var(--muted);border:1px solid var(--border);border-radius:8px;font-size:16px;line-height:18px;min-width:23px;cursor:pointer}
+.fx-favorite-toggle:hover,.fx-favorite-toggle.active{color:var(--accent);background:var(--accent-soft);border-color:var(--accent)}
+
+/* Huelith Creativity application hub — fast static apps, exact processors only
+   after selecting tools. Uses existing theme tokens in every theme. */
+.huelith-studio-v3 .studio-hub{display:grid;gap:12px;padding:13px 12px 18px}
+.huelith-studio-v3 .studio-hub-intro{display:grid;gap:4px;padding:6px 4px 2px}
+.huelith-studio-v3 .studio-hub-intro strong{font-size:14px;letter-spacing:.15px;color:var(--text)}
+.huelith-studio-v3 .studio-hub-intro span{font-size:11px;color:var(--muted);line-height:1.4}
+.huelith-studio-v3 .studio-hub-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.huelith-studio-v3 .studio-hub-app{--app-color:var(--accent);width:100%;min-width:0;min-height:86px;display:grid;grid-template-columns:42px minmax(0,1fr);gap:9px;position:relative;align-items:center;text-align:left;cursor:pointer;border:1px solid var(--border);background:linear-gradient(130deg,color-mix(in srgb,var(--app-color) 12%,var(--panel-bg)),var(--panel-bg) 72%);color:var(--text);border-radius:14px;padding:11px 10px;box-shadow:inset 0 1px #ffffff12;transition:border-color .15s,background .15s,transform .15s}
+.huelith-studio-v3 .studio-hub-app:hover{border-color:var(--app-color);background:linear-gradient(130deg,color-mix(in srgb,var(--app-color) 20%,var(--panel-bg)),var(--panel-bg) 82%);transform:translateY(-1px)}
+.huelith-studio-v3 .studio-hub-app:focus-visible{outline:2px solid var(--app-color);outline-offset:2px}
+.huelith-studio-v3 .studio-hub-glyph{display:grid;place-items:center;width:39px;height:39px;border-radius:12px;background:color-mix(in srgb,var(--app-color) 21%,transparent);border:1px solid color-mix(in srgb,var(--app-color) 44%,transparent);color:var(--app-color);font-size:25px;line-height:1}
+.huelith-studio-v3 .studio-hub-copy{display:grid;gap:4px;min-width:0;align-self:center;padding-right:12px}
+.huelith-studio-v3 .studio-hub-copy strong{font-size:11px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.huelith-studio-v3 .studio-hub-copy small{font-size:9px;color:var(--muted);line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.huelith-studio-v3 .studio-hub-count{position:absolute;right:8px;top:7px;border-radius:6px;background:var(--accent-soft);color:var(--text);font-size:9px;padding:2px 4px;font-variant-numeric:tabular-nums}
+.huelith-studio-v3 .studio-hub-app.tone-rose{--app-color:#ef809d}.huelith-studio-v3 .studio-hub-app.tone-amber{--app-color:#e5af51}
+.huelith-studio-v3 .studio-hub-app.tone-sky{--app-color:#71baf0}.huelith-studio-v3 .studio-hub-app.tone-lavender{--app-color:#b49cfa}
+.huelith-studio-v3 .studio-hub-app.tone-peach{--app-color:#eaa77f}.huelith-studio-v3 .studio-hub-app.tone-cyan{--app-color:#56cbd6}
+.huelith-studio-v3 .studio-hub-app.tone-pink{--app-color:#f187d2}.huelith-studio-v3 .studio-hub-app.tone-mint{--app-color:#65d1b6}
+.huelith-studio-v3 .studio-hub-app.tone-violet{--app-color:#957add}.huelith-studio-v3 .studio-hub-app.tone-blue{--app-color:#88a3fa}
+.huelith-studio-v3 .studio-hub-app.tone-rainbow{--app-color:var(--accent)}
+.huelith-studio-v3 .studio-app-breadcrumb{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--panel-bg);border-bottom:1px solid var(--border);min-width:0}
+.huelith-studio-v3 .studio-app-breadcrumb button{flex:none;border:1px solid var(--border);background:var(--accent-soft);color:var(--text);border-radius:8px;padding:6px 9px;font:inherit;cursor:pointer}
+.huelith-studio-v3 .studio-app-breadcrumb button:hover{border-color:var(--accent)}
+.huelith-studio-v3 .studio-app-breadcrumb span{font-size:11px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.huelith-studio-v3 .studio-app-breadcrumb small{margin-left:auto;color:var(--muted);white-space:nowrap}
+/* Offscreen effect groups skip layout work. No per-pixel filters in the catalog. */
+.huelith-studio-v3 .fx-filter-groups>section{content-visibility:auto;contain-intrinsic-size:auto 280px}
+.huelith-studio-v3 .fx-filter-live-preview:not([src]),.huelith-studio-v3 .fx-preset-live-preview:not([src]){display:none}
+@media(max-width:560px){.huelith-studio-v3 .studio-hub-grid{grid-template-columns:1fr}.huelith-studio-v3 .studio-hub-app{min-height:71px}}
+@media(prefers-reduced-motion:reduce){.huelith-studio-v3 .studio-hub-app{transition:none}.huelith-studio-v3 .studio-hub-app:hover{transform:none}}
+
+/* Renderer health is shown in the editor itself, never hidden in DevTools. */
+.huelith-studio-v3 .studio-renderer-warning{margin:7px 10px;padding:9px 11px;
+  border-radius:9px;border:1px solid color-mix(in srgb,var(--accent) 42%,transparent);
+  background:var(--accent-soft);color:var(--text);line-height:1.5;
+  overflow-wrap:anywhere}

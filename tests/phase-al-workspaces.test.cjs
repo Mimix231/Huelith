@@ -113,9 +113,9 @@ test('Phase AL: canvas snaps movement and gradient handles; playback uses exact 
  const canvas=read('src/components/Canvas.tsx'),store=read('src/editor/store.ts'),fx=read('src/editor/fx.ts'),timeline=read('src/components/AnimationTimeline.tsx');
  assert.match(canvas,/snapPoint\(raw\)/);
  assert.match(canvas,/gradient-guide/);
- assert.match(store,/resolveTrackLayers\(target.layers, canonical, track.trackGradients/);
+ assert.match(store,/resolveTrackLayers\(exposedLayers\(tab.doc,index\), canonical, track.trackGradients/);
  assert.match(fx,/cachedExact\(source, signature, effects\)/);
  assert.match(fx,/setAnimationPlayback/);
- assert.match(timeline,/timelineFrameAt/);
+ assert.match(timeline,/timelineRegionAt/);
  assert.match(timeline,/requestAnimationFrame/);
 });

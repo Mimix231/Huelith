@@ -1,4 +1,5 @@
 import type { EffectKind, EffectParameters, GradientStop, CurvePoint, ShadowEntry } from './types';
+import { EXPANSION_120 } from './expansion-120';
 
 export type ScalarControl = {
   key: string;
@@ -139,6 +140,54 @@ export const DEFAULT_SHADOWS: ShadowEntry[] = [
   { id: 'shadow-main', style: 'drop', enabled: true, offsetX: 12, offsetY: 12, radius: 18, spread: 0, opacity: 0.75, color: '#171424' },
   { id: 'shadow-color', style: 'drop', enabled: false, offsetX: -8, offsetY: 6, radius: 26, spread: 0, opacity: 0.45, color: '#6b4dff' },
 ];
+
+// Offer only controls with a meaningful interpretation in the operation's
+// processor. A generic slider that happens to be rendered is not a feature.
+for(const operation of EXPANSION_120){
+  const family=operation.section, v=operation.variant;
+  const controls:ScalarControl[]=[];
+  const add=(key:string)=>{
+    if(key==='frequency')controls.push(parameter('frequency',
+      family===0?'Tonal response':family===2?'Mark spacing':family===5?'Surface scale':
+      family===7?'Optical spread':'Pattern scale',10,150,50,'%'));
+    if(key==='angle')controls.push(parameter('angle',family===0?'Warm / cool shift':
+      family===1?'Light direction':family===2?'Brush orientation':family===3?'Warp direction':'Pattern rotation',-180,180,0,'°'));
+    if(key==='seed')controls.push(parameter('seed','Pattern variation',0,9999,0));
+    if(key==='center')controls.push(...xy);
+  };
+  // Some effects are tonal-only. They must not display placebo spatial controls.
+  const spatial:Record<number,number[]>= {
+    1:[0,1,2,4,6,7,8,10,13],
+    2:[0,1,2,4,5,6,7,8,9,10,11,12,13,14,15,16,17],
+    3:[0,1,2,3,4,5,6,7,8,9,10,11,13],
+    4:[0,1,2,3,6,7,12,14,15],
+    5:[0,1,2,4,5,6,7,8,9,10,11,12,13],
+    6:[0,2,3,4,5,6,7,8,10,11,12,13],
+    7:[0,1,2,3,4,5,9,10,11,12,13],
+  };
+  if(family===0 || spatial[family]?.includes(v))add('frequency');
+  const angled:Record<number,number[]>={
+    1:[0,1,4,7,8,10,13],2:[0,1,2,4,5,6,7,8,9,10,11,12,13,14,15,16,17],
+    3:[0,1,2,3,4,5,6,7,8,9,10,11,13],4:[0,1,2,3,6,12,14,15],
+    5:[0,1,2,4,5,6,7,8,9,10,11,12,13],6:[0,2,3,4,5,6,7,8,10,11,12,13],
+    7:[9,10,11,12,13],
+  };
+  if(family===0 || angled[family]?.includes(v))add('angle');
+  // Color richness is genuinely evaluated by every expansion processor.
+  controls.push(parameter('colorMix', family===2?'Pigment richness':family===5?'Material saturation':'Color richness',0,100,50,'%'));
+  const centers:Record<number,number[]>={
+    1:[0,1,2,4,6,7,8,13], 3:[0,1,2,3,7,9],
+    4:[3,7,12], 7:[2,3,4,9,11,12,13],
+  };
+  if(centers[family]?.includes(v))add('center');
+  const seeded:Record<number,number[]>={
+    1:[10], 2:[0,1,7,10,13,14,15,16],3:[5],4:[14],
+    5:[0,1,4,6,7,11],6:[8,12],
+  };
+  if(seeded[family]?.includes(v))add('seed');
+  if(family===3&&v===12)controls.push(pct('threshold','Sort brightness threshold',45));
+  EFFECT_PARAMETER_SCHEMA[operation.kind]=controls;
+}
 
 export function defaultParameters(kind: EffectKind): EffectParameters {
   const controls = EFFECT_PARAMETER_SCHEMA[kind] ?? [];

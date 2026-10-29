@@ -1,9 +1,13 @@
+import { INK_PRESETS } from './ink-engine';
+import {pixelSelection,clearPixelSelection} from './selection-mask';
 import { newCreative, type CreativeKind, type CreativeObject } from './creative';
 import { create } from 'zustand';
 import { clampEffectAmount, forgetLayerEffectPreview, newEffect, queueLayerEffectPreview } from './fx';
 import { boundedNumber } from './effect-schema';
 import { setInteractiveEffectPreview } from './preview-quality';
-import { syncActiveCel, enableAnimation, insertFrame, deleteFrame, reorderFrame, changeFps, changeOnion, changeFrameDuration, ensureTrackEffects, ensureTrackGradients, resolveTrackLayers, setTrackGradient, setTrackEffects } from './animation';
+import { syncActiveCel, enableAnimation, insertFrame, deleteFrame, reorderFrame, changeFps, changeOnion, changeFrameDuration, ensureTrackEffects, ensureTrackGradients, resolveTrackLayers, setTrackGradient, setTrackEffects, exposedLayers, releaseModifiedHolds,
+  holdLayer, releaseHold, clearLayerCel, setFrameLabel, setPlaybackRegion, setFrameDurations, duplicateFrameRange,
+  holdFrameRange, deleteFrameRange } from './animation';
 import { DEFAULT_TEXT_FORMAT, normalizeTextFormat, reflowTextShape, type TextDraft, type TextFormat } from './typography';
 import {
   createDocument, layerById, makeRaster, makeVector, makeGradient, uid,
@@ -114,6 +118,26 @@ export interface EditorStore {
   opacity: number;
   hardness: number;
   smoothing: number;
+  brushFlow: number;
+  brushSpacing: number;
+  inkTaper: number;
+  pressureSize: boolean;
+  pressureOpacity: boolean;
+  brushPreset: string;
+  rasterToolStrength: number;
+  rasterToolTolerance: number;
+  rasterToolContiguous: boolean;
+  rasterPattern: 'star' | 'dots' | 'hatches';
+  setRasterToolStrength: (value:number)=>void;
+  setRasterToolTolerance: (value:number)=>void;
+  setRasterToolContiguous: (value:boolean)=>void;
+  setRasterPattern: (value:'star'|'dots'|'hatches')=>void;
+  setBrushFlow: (value: number) => void;
+  setBrushSpacing: (value: number) => void;
+  setInkTaper: (value: number) => void;
+  setPressureSize: (value: boolean) => void;
+  setPressureOpacity: (value: boolean) => void;
+  applyBrushPreset: (id: string) => void;
   symmetryX: boolean;
   setSymmetryX: (enabled: boolean) => void;
   zoom: number;
@@ -180,6 +204,14 @@ export interface EditorStore {
   setAnimationFps: (fps: number) => void;
   setOnion: (value: Partial<OnionSkinSettings>) => void;
   setFrameDuration: (index: number, ms: number) => void;
+  setPlaybackRegion: (changes: Partial<NonNullable<import('./types').AnimationTrack['playback']>>) => void;
+  setAnimationFrameLabel: (index: number, label: string) => void;
+  setAnimationHold: (index: number, layerId: string, enabled: boolean) => void;
+  clearAnimationCel: (index: number, layerId: string) => void;
+  setAnimationFrameDurations: (indices: number[], ms: number) => void;
+  duplicateAnimationFrames: (indices: number[]) => void;
+  setAnimationHolds: (indices:number[], layerId:string, enabled:boolean) => void;
+  deleteAnimationFrames: (indices:number[]) => void;
   openDoc: (doc: Document, path?: string) => void;
   closeDoc: (id: string) => void;
   activate: (id: string) => void;
@@ -194,7 +226,7 @@ export interface EditorStore {
   groupSelectedLayer: () => void;
   ungroupSelectedLayer: () => void;
   setClipToBelow: (id: string, enabled: boolean) => void;
-  applyCutoutMask: (layerId: string, data: string, width: number, height: number) => void;
+  applyCutoutMask: (layerId: string, data: string, width: number, height: number,editable?: Extract<Extract<Layer,{type:'raster'}>['cutoutMask'],{editable?:unknown}>['editable']) => void;
   toggleCutoutMask: (layerId: string) => void;
   removeCutoutMask: (layerId: string) => void;
   duplicateLayer: () => void;
@@ -239,9 +271,9 @@ function tabFor(doc: Document, path?: string): EditorTab {
     // Resolve both layer-wide payloads immediately on open; a legacy frame
     // mirror cannot override the Gradient Atelier recipe on first playback.
     const gradients = ensureTrackGradients(doc);
-    doc.layers = resolveTrackLayers(doc.layers, stacks, gradients);
+    doc.layers = resolveTrackLayers(exposedLayers(doc,doc.animation.currentFrame), stacks, gradients);
     const frame = doc.animation.frames[doc.animation.currentFrame];
-    frame.layers = doc.layers;
+    if (!frame.holdFrom || !Object.keys(frame.holdFrom).length) frame.layers = doc.layers;
     frame.activeLayerId = doc.activeLayerId;
   }
   return { doc, past: [], future: [], dirty: false, path, revision: 0, savedRevision: 0, savedDoc: doc };
@@ -423,6 +455,38 @@ export const useEditor = create<EditorStore>((set, get) => ({
   opacity: 1,
   hardness: 0.85,
   smoothing: 0.72,
+  brushFlow: 1,
+  brushSpacing: .13,
+  inkTaper: .12,
+  pressureSize: true,
+  pressureOpacity: false,
+  brushPreset: 'round-brush',
+  rasterToolStrength:.55,
+  rasterToolTolerance:18,
+  rasterToolContiguous:true,
+  rasterPattern:'star',
+  setRasterToolStrength:value=>set({rasterToolStrength:Math.max(.01,Math.min(1,value))}),
+  setRasterToolTolerance:value=>set({rasterToolTolerance:Math.max(0,Math.min(100,value))}),
+  setRasterToolContiguous:value=>set({rasterToolContiguous:value}),
+  setRasterPattern:value=>set({rasterPattern:value}),
+  setBrushFlow: brushFlow => set({brushFlow: Math.max(.02,Math.min(1,brushFlow))}),
+  setBrushSpacing: brushSpacing => set({brushSpacing:Math.max(.03,Math.min(1,brushSpacing))}),
+  setInkTaper: inkTaper => set({inkTaper:Math.max(0,Math.min(.48,inkTaper))}),
+  setPressureSize: pressureSize => set({pressureSize}),
+  setPressureOpacity: pressureOpacity => set({pressureOpacity}),
+  applyBrushPreset: id => {
+    const preset = INK_PRESETS.find(item=>item.id===id);
+    if(!preset)return;
+    set({tool:preset.engine==='ink'?'ink':'brush',brushPreset:id,
+      strokeWidth:preset.settings.size ?? get().strokeWidth,
+      opacity:preset.settings.opacity ?? get().opacity,
+      brushFlow:preset.settings.flow ?? get().brushFlow,
+      brushSpacing:preset.settings.spacing ?? get().brushSpacing,
+      inkTaper:preset.settings.taper ?? get().inkTaper,
+      pressureSize:preset.settings.pressureSize ?? get().pressureSize,
+      pressureOpacity:preset.settings.pressureOpacity ?? get().pressureOpacity,
+      hardness:preset.hardness,smoothing:preset.smoothing});
+  },
   symmetryX: false,
   setSymmetryX: symmetryX => set({ symmetryX }),
   zoom: 0.8,
@@ -431,7 +495,7 @@ export const useEditor = create<EditorStore>((set, get) => ({
   appearanceMode: layout.appearanceMode,
   grid: false,
   rulers: false,
-  snap: false,
+  snap: true,
   setRulers: rulers => set({ rulers }),
   setSnap: snap => set({ snap }),
   selectedShapeId: null,
@@ -447,7 +511,12 @@ export const useEditor = create<EditorStore>((set, get) => ({
 
   setHardness: hardness => set({ hardness: Math.max(0.02, Math.min(1, hardness)) }),
   setSmoothing: smoothing => set({ smoothing: Math.max(0, Math.min(0.95, smoothing)) }),
-  setSelection: selection => set({ selection }),
+  setSelection: selection => {
+    const id=get().activeId,precise=pixelSelection(id);
+    if(!selection || (precise && (selection.x!==precise.bounds.x||selection.y!==precise.bounds.y||
+      selection.width!==precise.bounds.width||selection.height!==precise.bounds.height)))clearPixelSelection(id);
+    set({selection});
+  },
   selectNode: selectedNodeIndex => set({ selectedNodeIndex }),
   setFxBypassLayer: fxBypassLayerId => set({ fxBypassLayerId }),
   setFocusMode: focusMode => set({ focusMode }),
@@ -591,7 +660,7 @@ export const useEditor = create<EditorStore>((set, get) => ({
   setFill: fill => set({ fill }),
   setGradientMode: gradientMode => set({ gradientMode }),
   setGradientSettings: changes => set(state => ({ gradientSettings: { ...state.gradientSettings, ...changes } })),
-  setStrokeWidth: strokeWidth => set({ strokeWidth: Math.max(1, Math.min(120, strokeWidth)) }),
+  setStrokeWidth: strokeWidth => set({ strokeWidth: Math.max(1, Math.min(2000, strokeWidth)) }),
   setOpacity: opacity => set({ opacity: Math.max(0, Math.min(1, opacity)) }),
   setZoom: zoom => set({ zoom: Math.max(0.05, Math.min(32, zoom)) }),
   setPan: pan => set({ pan }),
@@ -693,6 +762,7 @@ export const useEditor = create<EditorStore>((set, get) => ({
       if (tab.doc.id !== state.activeId) return tab;
       const doc = clone(tab.doc);
       edit(doc);
+      releaseModifiedHolds(tab.doc,doc);
       syncActiveCel(doc);
       // Do not fill undo history with no-op clicks or edits to locked layers.
       if (JSON.stringify(doc) === JSON.stringify(tab.doc)) return tab;
@@ -756,7 +826,7 @@ export const useEditor = create<EditorStore>((set, get) => ({
         // on each tick used to cause enormous layout and effect-cache churn.
         const target = track.frames[index];
         const canonical = track.trackEffects ?? ensureTrackEffects(tab.doc);
-        const layers = resolveTrackLayers(target.layers, canonical, track.trackGradients ?? ensureTrackGradients(tab.doc));
+        const layers = resolveTrackLayers(exposedLayers(tab.doc,index), canonical, track.trackGradients ?? ensureTrackGradients(tab.doc));
         const doc: Document = { ...tab.doc, layers, activeLayerId: target.activeLayerId,
           animation: {...track,currentFrame:index} };
         return {...tab,doc};
@@ -780,6 +850,16 @@ export const useEditor = create<EditorStore>((set, get) => ({
   setAnimationFps: fps => get().mutate(doc => { changeFps(doc, fps); }),
   setOnion: value => get().mutate(doc => { changeOnion(doc, value); }),
   setFrameDuration: (index, ms) => get().mutate(doc => { changeFrameDuration(doc, index, ms); }),
+  setPlaybackRegion: changes => get().mutate(doc => setPlaybackRegion(doc,changes)),
+  setAnimationFrameLabel: (index,label) => get().mutate(doc => setFrameLabel(doc,index,label)),
+  setAnimationHold: (index,layerId,enabled) => get().mutate(doc => {
+    if(enabled)holdLayer(doc,index,layerId);else releaseHold(doc,index,layerId);
+  }),
+  clearAnimationCel: (index,layerId) => get().mutate(doc => clearLayerCel(doc,index,layerId)),
+  setAnimationFrameDurations: (indices,ms) => get().mutate(doc => setFrameDurations(doc,indices,ms)),
+  duplicateAnimationFrames: indices => get().mutate(doc => duplicateFrameRange(doc,indices)),
+  setAnimationHolds: (indices,layerId,enabled) => get().mutate(doc => holdFrameRange(doc,indices,layerId,enabled)),
+  deleteAnimationFrames: indices => get().mutate(doc => deleteFrameRange(doc,indices)),
 
   addLayer: type => get().mutate(doc => {
     const layer = type === 'raster' ? makeRaster() : makeVector();
@@ -854,10 +934,10 @@ export const useEditor = create<EditorStore>((set, get) => ({
     doc.layers[index].clipToBelow = enabled;
   }),
 
-  applyCutoutMask: (layerId, data, width, height) => get().mutate(doc => {
+  applyCutoutMask: (layerId, data, width, height,editable) => get().mutate(doc => {
     const layer = layerById(doc, layerId);
     if (layer?.type !== 'raster' || layer.locked || !/^data:image\/png;base64,/i.test(data)) return;
-    layer.cutoutMask = { data, width, height, enabled: true };
+    layer.cutoutMask = { data, width, height, enabled: true, ...(editable?{editable:structuredClone(editable)}:{}) };
     // Cutout is not an effect. Remove obsolete cutout steps on this layer
     // when the user explicitly applies a new Inspector mask.
     layer.effects = (layer.effects ?? []).filter(effect => effect.kind !== 'cutout');

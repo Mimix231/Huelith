@@ -14,6 +14,7 @@ function loadCache(apply) {
   new Function('require', 'module', 'exports', code)(name => {
     if (name === './effect-ops') return { applyEffect: apply };
     if (name === './immutable-effect-sources') return { markImmutableEffectSource() {} };
+    if (name === './expansion-120') return { EXPANSION_LOOKUP: new Map() }; 
     throw new Error('Unknown test import: ' + name);
   }, result, result.exports);
   return result.exports.EffectStackCache;

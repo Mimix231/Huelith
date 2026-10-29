@@ -15,8 +15,8 @@ function load(name, dependencies = {}) {
   }, module, module.exports);
   return module.exports;
 }
-const catalog = load('src/editor/effect-catalog.ts');
-const schema = load('src/editor/effect-schema.ts');
+const catalog = load('src/editor/effect-catalog.ts',{'./expansion-120':{EXPANSION_120:[]}});
+const schema = load('src/editor/effect-schema.ts',{'./expansion-120':{EXPANSION_120:[]}});
 let id = 0;
 const fx = load('src/editor/fx.ts', {
   './canvas-surface': {}, './effect-catalog': catalog,

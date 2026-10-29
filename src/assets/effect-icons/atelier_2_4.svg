@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="Huelith effect atelier_2_4">
+<defs><linearGradient id="s" x1="0" y1="0" x2="1" y2="1"><stop stop-color="hsl(116 70% 67%)"/><stop offset="1" stop-color="hsl(226 82% 60%)"/></linearGradient></defs>
+<rect x="1" y="1" width="46" height="46" rx="12" fill="#191b30" stroke="hsl(116 45% 38%)"/>
+<g stroke="url(#s)" fill="none" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" transform="rotate(52 24 24)"><path d="M10 34Q14 15 21 24T38 13M8 24Q22 34 40 14"/><path d="M24 24L36.4 30.5"/><path d="M24 24L26.7 37.7"/><path d="M24 24L14.9 34.7"/><path d="M24 24L10.0 23.6"/><path d="M24 24L15.6 12.8"/><path d="M24 24L27.5 10.5"/><path d="M24 24L36.8 18.3"/></g><circle cx="37" cy="31" r="1" fill="hsl(206 90% 68%)" stroke="none"/><circle cx="21" cy="15" r="2" fill="hsl(206 90% 68%)" stroke="none"/><circle cx="34" cy="24" r="1" fill="hsl(206 90% 68%)" stroke="none"/><circle cx="18" cy="33" r="2" fill="hsl(206 90% 68%)" stroke="none"/><circle cx="31" cy="17" r="1" fill="hsl(206 90% 68%)" stroke="none"/><circle cx="15" cy="26" r="2" fill="hsl(206 90% 68%)" stroke="none"/>
+<path d="M7 40h12" stroke="hsl(116 80% 78%)" stroke-width="2" opacity=".65"/>
+</svg>

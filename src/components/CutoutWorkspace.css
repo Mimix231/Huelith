@@ -42,3 +42,10 @@
 .huelith-cutout-view-modes button[aria-pressed=true]{background:#73bea83b;border-color:#82e4bc}
 .huelith-cutout-dialog>footer{background:#151629aa;border-color:#ffffff2b;padding:12px 22px}.huelith-cutout-dialog>footer button.primary{background:linear-gradient(115deg,#78d4bf,#aa9df3);color:#151629;box-shadow:0 4px 18px #77c9ca44;font-weight:750}
 @media(max-width:850px){.huelith-cutout-layout{grid-template-columns:60px minmax(0,1fr) 215px}.huelith-cutout-options{padding:9px}.cutout-header-help{display:none}}
+.cutout-shape-inspector{margin:8px 0;padding:12px;border:1px solid var(--accent-line,#a2c3f488);border-radius:11px;background:linear-gradient(135deg,var(--accent-soft,#91a0f422),transparent);color:var(--text,#e7eaf8)}
+.cutout-shape-inspector strong{font-size:11px;color:var(--accent,#98e4db)}
+.cutout-shape-inspector p{font-size:10px;line-height:1.5;color:var(--muted,#aeb5cd)}
+.cutout-edit-parameters{display:grid;gap:10px;margin:10px 0}
+.cutout-edit-parameters label{display:grid;gap:5px;font-size:10px}
+.cutout-edit-parameters select{background:var(--surface-input,#25263e);color:var(--text,#e7eaf8);border:1px solid var(--border,#ffffff38);border-radius:7px;padding:7px}
+.cutout-edit-parameters input[type=range]{accent-color:var(--accent,#98e4db)}

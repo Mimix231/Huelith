@@ -1,5 +1,6 @@
 import type { GradientStop, VectorShape } from './types';
 import { transformGradient } from './gradient-transforms';
+import { paletteSample, radialRayCoordinate, rayCoverage } from './gradient-patterns';
 
 export const GRADIENT_MODES = ['linear', 'radial', 'angular', 'reflected', 'diamond', 'spiral', 'freeform', 'mesh'] as const;
 const clamp = (n: number) => Math.min(1, Math.max(0, n));
@@ -19,7 +20,7 @@ function compileGradient(shape: VectorShape): (x: number, y: number) => RGBA {
   const rotation = (shape.gradientRotation ?? 0) * Math.PI / 180;
   const sine = Math.sin(rotation), cosine = Math.cos(rotation);
   const repeat = Math.max(1, shape.gradientRepeats ?? 1);
-  const twist = shape.gradientTwist ?? 2;
+  const twist = shape.gradientTwist ?? (shape.gradientColorMode ? 0 : 2);
   const scale = Math.max(.1, shape.gradientScale ?? 1);
   const skewX = (shape.gradientSkewX ?? 0) / 100;
   const skewY = (shape.gradientSkewY ?? 0) / 100;
@@ -27,6 +28,8 @@ function compileGradient(shape: VectorShape): (x: number, y: number) => RGBA {
   const frequency = Math.max(.1, shape.gradientFrequency ?? 3);
   const offset = shape.gradientOffset ?? 0;
   const pattern = shape.gradientPattern ?? 'smooth';
+  const colorMode = shape.gradientColorMode ?? 'smooth';
+  const bandCount = shape.gradientBandCount ?? 8;
   const stack = shape.gradientTransformStack?.filter(node => node.enabled && node.kind !== 'none') ?? [];
   const transform = stack.length ? 'none' : shape.gradientTransform ?? 'none';
   const settings = {
@@ -46,7 +49,7 @@ function compileGradient(shape: VectorShape): (x: number, y: number) => RGBA {
   const guideLengthSq = Math.max(.0000005, guideDeltaX**2 + guideDeltaY**2);
   const rayCount = Math.max(2, Math.round(shape.gradientRayCount ?? 20));
   const rayWidth = clamp(shape.gradientRayWidth ?? .55);
-  const raySoftness = clamp(shape.gradientRaySoftness ?? .04);
+  const raySoftness = clamp(shape.gradientRaySoftness ?? (shape.gradientColorMode ? 0 : .04));
   const rayTaper = clamp(shape.gradientRayTaper ?? 0);
   const rayGlow = clamp(shape.gradientRayGlow ?? 0);
   const seed = Math.round(shape.gradientRaySeed ?? 12);
@@ -73,7 +76,46 @@ function compileGradient(shape: VectorShape): (x: number, y: number) => RGBA {
     }
     const x = warped.x, y = warped.y;
     const px=x-cx, py=y-cy;
-    if (pattern !== 'smooth' && transform === 'none') {
+    // AM2: procedural *field* recipes have priority over a preset radial pattern.
+    // Previously the pattern branch returned before this evaluation: adding
+    // Diamond Grid, Starburst, Pinwheel, Solar Rings, etc. changed the saved
+    // stack but NEVER altered pixels when a Burst pattern was active.
+    if (warped.field !== undefined) {
+      const t=clamp(warped.field+offset);
+      const mapped=paletteSample(stops,shape.gradientReverse?1-t:t,colorMode,bandCount);
+      if (!baselineSample || fieldWeight >= .99999) return mapped;
+      const original=baselineSample(originalX,originalY);
+      return [mix(original[0],mapped[0],fieldWeight),mix(original[1],mapped[1],fieldWeight),
+        mix(original[2],mapped[2],fieldWeight),mix(original[3],mapped[3],fieldWeight)];
+    }
+    if (pattern !== 'smooth') {
+      // New discrete patterns are true geometric color fields, not a smooth ramp
+      // with renamed colors. Warp the coordinates first so Twirl and Wave can
+      // reshape the rays without flattening the Gradient layer.
+      if (shape.gradientColorMode) {
+        const rays = radialRayCoordinate(x,y,{centerX:cx,centerY:cy,width:shape.width,height:shape.height,
+          rayPairs:rayCount,rotation:shape.gradientRotation ?? 0,twist,scale});
+        const span = Math.max(.02,Math.min(.98,rayWidth * (1-rayTaper*Math.min(1,rays.radius)*.65)));
+        const coverage = rayCoverage(rays.fraction,span,raySoftness);
+        if (colorMode === 'pattern') {
+          // Each ray can carry its own solid user-edited palette entry.
+          const sector = rays.index*2 + (rays.fraction < span ? 0 : 1);
+          const index = (sector%stops.length + stops.length)%stops.length;
+          const selectedIndex=shape.gradientReverse ? stops.length-1-index : index;
+          const stop=stops[selectedIndex];
+          return [stop.color[0],stop.color[1],stop.color[2],stop.alpha];
+        }
+        const first=stops[shape.gradientReverse?stops.length-1:0];
+        const last=stops[shape.gradientReverse?0:stops.length-1];
+        if (colorMode === 'alternating' || colorMode === 'hardStops') {
+          return [mix(last.color[0],first.color[0],coverage),mix(last.color[1],first.color[1],coverage),
+            mix(last.color[2],first.color[2],coverage),mix(last.alpha,first.alpha,coverage)];
+        }
+        // Smooth/banded/stepped modes follow the full angular ray waveform.
+        // This is distinct from the two-color hard wedge used by Alternating.
+        const angleRamp = rays.fraction < span ? rays.fraction/span : (1-rays.fraction)/Math.max(.000001,1-span);
+        return paletteSample(stops,shape.gradientReverse?1-angleRamp:angleRamp,colorMode,bandCount);
+      }
       const rx = (px*cosine+py*sine)/scale;
       const ry = (py*cosine-px*sine)/scale;
       const radius = Math.hypot(rx,ry) * 1.41421356237;
@@ -110,22 +152,6 @@ function compileGradient(shape: VectorShape): (x: number, y: number) => RGBA {
     const xr=(px*cosine+py*sine)/scale, yr=(py*cosine-px*sine)/scale;
     const tx=cx + xr + skewX*yr + wave*Math.sin((yr+.5)*Math.PI*2*frequency);
     const ty=cy + yr + skewY*xr + wave*Math.cos((xr+.5)*Math.PI*2*frequency);
-    // Procedural field transforms colorize any gradient family, including Freeform/Mesh.
-    // Coordinate transforms retain the underlying mode's original color geometry.
-    if (warped.field !== undefined) {
-      const t = clamp(warped.field + offset);
-      let a=stops[0], b=stops[stops.length-1];
-      if(t<=a.position) b=a;
-      else if(t>=b.position) a=b;
-      else for(let i=1;i<stops.length;i++) if(t<=stops[i].position){a=stops[i-1];b=stops[i];break;}
-      const f=a===b?0:clamp((t-a.position)/Math.max(1e-8,b.position-a.position));
-      const transformed: RGBA = [mix(a.color[0],b.color[0],f),mix(a.color[1],b.color[1],f),mix(a.color[2],b.color[2],f),mix(a.alpha,b.alpha,f)];
-      if (!baselineSample) return transformed;
-      const original=baselineSample(originalX,originalY);
-      const amount=clamp(fieldWeight);
-      return [mix(original[0],transformed[0],amount),mix(original[1],transformed[1],amount),
-        mix(original[2],transformed[2],amount),mix(original[3],transformed[3],amount)];
-    }
     if (mode === 'freeform') {
       let total=0,r=0,g=0,b=0;
       for (const point of points) {
@@ -163,12 +189,7 @@ function compileGradient(shape: VectorShape): (x: number, y: number) => RGBA {
     if (shape.gradientReverse) t=1-t;
     if (mode === 'spiral' || mode === 'angular') t=((t*repeat)%1+1)%1;
     t=clamp(t);
-    let a=stops[0],b=stops[stops.length-1];
-    if(t<=a.position) b=a;
-    else if(t>=b.position) a=b;
-    else for(let i=1;i<stops.length;i++) if(t<=stops[i].position){a=stops[i-1];b=stops[i];break;}
-    const f=a===b?0:clamp((t-a.position)/Math.max(1e-8,b.position-a.position));
-    return [mix(a.color[0],b.color[0],f),mix(a.color[1],b.color[1],f),mix(a.color[2],b.color[2],f),mix(a.alpha,b.alpha,f)];
+    return paletteSample(stops,t,colorMode,bandCount);
   };
 }
 
@@ -185,7 +206,7 @@ export function gradientShapeCanvas(shape: VectorShape): HTMLCanvasElement | nul
     shape.gradientTwist, shape.gradientRotation, shape.gradientRepeats, shape.gradientReverse,
     shape.gradientCenterX, shape.gradientCenterY, shape.gradientScale, shape.gradientSkewX,
     shape.gradientSkewY, shape.gradientWave, shape.gradientFrequency, shape.gradientOffset, shape.gradientMirror,
-    shape.gradientPattern, shape.gradientRayCount, shape.gradientRayWidth, shape.gradientRaySoftness,
+    shape.gradientPattern, shape.gradientColorMode, shape.gradientBandCount, shape.gradientRayCount, shape.gradientRayWidth, shape.gradientRaySoftness,
     shape.gradientRayTaper, shape.gradientRayGlow, shape.gradientRaySeed,
     shape.gradientStartX, shape.gradientStartY, shape.gradientEndX, shape.gradientEndY,
     shape.gradientTransform, shape.gradientTransformAmount, shape.gradientTransformFrequency,

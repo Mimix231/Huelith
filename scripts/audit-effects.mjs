@@ -7,6 +7,17 @@ const catalog = read('src/editor/effect-catalog.ts');
 const fx = read('src/editor/fx.ts');
 const entries = [...catalog.matchAll(/\{\s*group:\s*'([^']+)',\s*kind:\s*'([^']+)',\s*label:\s*'([^']+)'/g)]
   .map(([, group, kind, label]) => ({ group, kind, label }));
+// The extra 120 are declarative descriptors rather than duplicated catalog
+// literals. Inventory their actual named definitions instead of silently
+// reporting the legacy 101-entry subset as the whole app.
+const expansion = read('src/editor/expansion-120.ts');
+const families = [...expansion.matchAll(/\['([^']+)', \[([^\]]+)\]\]/g)];
+for(const [section, match] of families.entries()){
+  const [,group,names]=match;
+  const labels=[...names.matchAll(/'([^']+)'/g)].map(([,label])=>label);
+  for(const [variant,label] of labels.entries())entries.push({group,kind:`atelier_${section}_${variant}`,label});
+}
+if(families.length!==8 || entries.length!==221)throw Error(`Expansion inventory incomplete: ${families.length} groups and ${entries.length} total effects`);
 const namesSource = fx.match(/export const SIGNATURE_FX_NAMES = \[([\s\S]*?)\] as const;/)?.[1] ?? '';
 const signatures = [...namesSource.matchAll(/'([^']+)'/g)].map(match => match[1]);
 const counts = Object.fromEntries(new Set(entries.map(item => item.group)).values().map(group =>
@@ -42,16 +53,18 @@ const boundaries = [
   ['Stage F: Stylize and original layer effects', 'Stylize'],
   ['Stage G: Original creative lighting effects', 'Creative effects'],
   ['Stage H: Standalone signature FX', 'Signature FX'],
+  ...families.map(([,group])=>[`New Creativity: ${group}`,group]),
 ];
 const lines = [
-  '# Huelith 0.2 — Implementation 4 Engine Inventory', '',
+  '# Huelith 0.2 — Complete Effect Engine Inventory', '',
   'Generated from the actual effect registry and signature-name list. **A source inventory is not a release certificate.**',
   '', '## Architecture and compatibility', '',
   '- Signature FX use `sig_0` through `sig_21`; the first fifteen dispatch to `applySignatureFX`, while the seven newer effects use independent `aurora-expansion` processors. They are distinct from Creativity filter recipes.',
   '- Previous `.huelith` projects containing legacy grouped filter recipes remain loadable through their original effect kinds and Studio metadata.',
   '- Layer effects (glow, outline, shadow, backdrop) and new Radiance/Miasma have separate parameter schemes.',
   '- Stages D–H do not complete performance benchmarking, GPU compositing, real UI build verification, or advanced professional color management.',
-  '- Some sophisticated styles are deterministic approximations, not physically modeled fluid or light simulations.', '',
+  '- Some sophisticated styles are deterministic approximations, not physically modeled fluid or light simulations.',
+  '- The eight new Creativity families add 120 independent named pixel processors, which still need 1080p and 4K artistic quality and performance testing.', '',
 ];
 for (const [title, group] of boundaries) {
   lines.push(`## ${title}`, '', '| Kind | Display name | Notes |', '|---|---|---|');

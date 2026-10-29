@@ -1,3 +1,4 @@
+import { EXPANSION_120 } from './expansion-120';
 /** Each filter has a supported algorithm, its own neutral value, and a meaningful UI scale. */
 export const FILTER_CATALOG = [
   { group: 'Color & light', kind: 'brightness', label: 'Brightness', initial: 115, min: 0, max: 300, unit: '%', step: 1 },
@@ -101,6 +102,7 @@ export const FILTER_CATALOG = [
   { group: 'Signature FX', kind: 'sig_20', label: 'Crystal Resonance', initial: 65, min: 0, max: 100, unit: '%', step: 1 },
   { group: 'Signature FX', kind: 'sig_21', label: 'Liquid Light', initial: 65, min: 0, max: 100, unit: '%', step: 1 },
   { group: 'Signature FX', kind: 'sig_14', label: 'Spectrum Burst', initial: 65, min: 0, max: 100, unit: '%', step: 1 },
+  ...EXPANSION_120,
 ] as const;
 
 export type FilterKind = (typeof FILTER_CATALOG)[number]['kind'];

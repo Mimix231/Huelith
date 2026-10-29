@@ -19,7 +19,7 @@ export function inferStudioCategory(effect: Effect): StudioCategory {
 
 export function createStudioFilter(kind: EffectKind): Effect {
   const effect = newEffect(kind);
-  effect.studioCategory = layerEffectSet.has(kind) ? 'effects' : 'creativity';
+  effect.studioCategory = (kind === 'cutout' || layerEffectSet.has(kind)) ? 'effects' : 'creativity';
   return effect;
 }
 
@@ -71,7 +71,7 @@ export function appliedStudioItems(effects: readonly Effect[]): AppliedStudioIte
 }
 
 export const CREATIVITY_FILTERS = FILTER_CATALOG.filter(item => item.kind !== 'cutout' && !layerEffectSet.has(item.kind) && item.group !== 'Signature FX');
-export const LAYER_EFFECTS = FILTER_CATALOG.filter(item => layerEffectSet.has(item.kind));
+export const LAYER_EFFECTS = FILTER_CATALOG.filter(item => item.kind === 'cutout' || layerEffectSet.has(item.kind));
 
 /** Move one applied icon (including all steps in a legacy FX chain) as one unit. */
 export function moveStudioItem(effects: readonly Effect[], itemId: string, direction: -1 | 1): Effect[] {

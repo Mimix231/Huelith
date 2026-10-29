@@ -3,6 +3,7 @@
 import type { RasterLayer, SelectionRect } from './types';
 import { decodeImage } from './render';
 import { cropRect, validDimensions } from './document-actions';
+import {pixelSelection,constrainPixels} from './selection-mask';
 
 export type SelectionAction='fill'|'stroke'|'clear';
 export interface RasterSelectionResult {image:string;width:number;height:number;}
@@ -15,7 +16,7 @@ function pixelPoint(layer:RasterLayer,p:{x:number;y:number},width:number,height:
   return {x:(rx+dw/2)/Math.max(.0001,sx),y:(ry+dh/2)/Math.max(.0001,sy)};
 }
 export async function prepareSelectionEdit(layer:RasterLayer,selection:SelectionRect,action:SelectionAction,
-  color:string,strokeWidth:number,documentWidth:number,documentHeight:number):Promise<RasterSelectionResult>{
+  color:string,strokeWidth:number,documentWidth:number,documentHeight:number,documentId?:string):Promise<RasterSelectionResult>{
   if(layer.locked)throw Error('Unlock the raster layer before editing its contents.');
   if(!/^#[\da-f]{6}$/i.test(color))throw Error('Select a valid foreground color.');
   const bounded=cropRect(selection,documentWidth,documentHeight);
@@ -28,6 +29,7 @@ export async function prepareSelectionEdit(layer:RasterLayer,selection:Selection
   const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
   const ctx=canvas.getContext('2d');if(!ctx)throw Error('Canvas 2D is unavailable.');
   if(decoded)ctx.drawImage(decoded,0,0);
+  const before=ctx.getImageData(0,0,width,height);
   const points=[{x:bounded.x,y:bounded.y},{x:bounded.x+bounded.width,y:bounded.y},
     {x:bounded.x+bounded.width,y:bounded.y+bounded.height},{x:bounded.x,y:bounded.y+bounded.height}]
     .map(p=>pixelPoint(layer,p,width,height));
@@ -38,5 +40,8 @@ export async function prepareSelectionEdit(layer:RasterLayer,selection:Selection
   else if(action==='fill'){ctx.globalCompositeOperation='source-over';ctx.fillStyle=color;ctx.fill();}
   else {ctx.lineJoin='miter';ctx.lineWidth=Math.max(.25,Math.min(1000,strokeWidth))/Math.max(.0001,(Math.abs(layer.scaleX??1)+Math.abs(layer.scaleY??1))/2);ctx.strokeStyle=color;ctx.stroke();}
   ctx.restore();
+  const precise=documentId?pixelSelection(documentId):undefined;
+  if(precise){const edited=ctx.getImageData(0,0,width,height);
+    constrainPixels(before,edited,precise,Math.round(layer.x),Math.round(layer.y));ctx.putImageData(edited,0,0);}
   return {image:canvas.toDataURL('image/png'),width,height};
 }

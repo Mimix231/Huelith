@@ -206,6 +206,15 @@ const icons: Record<string, string> = {
   'Spectrum Burst': icon84,
 };
 
+// Eager URL manifest avoids per-icon dynamic module requests. Each operation
+// keeps its own checked-in pictogram while unused image bytes load on demand.
+const expandedIcons = import.meta.glob('../assets/effect-icons/atelier_*.svg',
+  { eager:true, query:'?url', import:'default' }) as Record<string,string>;
+for(const [pathname,url] of Object.entries(expandedIcons)){
+  const key=pathname.split('/').pop()?.replace(/\.svg$/,'');
+  if(key)icons[key]=url;
+}
+
 const signatureNames = ['Hyper Outline', 'Neon Pulse', 'Shadow Forge', 'Dream Bloom', 'Glitch Matrix',
   'Comic Pop', 'Frostbite', 'Ember Glow', 'Prism Split', 'Golden Hour', 'Aurora Flow',
   'Electric Edge', 'Holographic', 'Retro Vision', 'Spectrum Burst',

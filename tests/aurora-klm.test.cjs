@@ -22,6 +22,7 @@ test('Phase L: the same source ID may NEVER reuse an effect result from differen
   const { EffectStackCache } = compile('src/editor/effect-stack-cache.ts', {
     './effect-ops': { applyEffect(source, effect) { calculations++; return { width: source.width, height: source.height, value: source.value + effect.amount }; } },
     './immutable-effect-sources': { markImmutableEffectSource() {} },
+    './expansion-120': { EXPANSION_LOOKUP:new Map() },
   });
   const cache = new EffectStackCache();
   const effects = [{ enabled: true, kind: 'glow', amount: 30 }, { enabled: true, kind: 'miasma', amount: 50 }];
@@ -42,6 +43,7 @@ test('Phase L: edits to an effect reuse the unchanged PREFIX and retain all foll
   const { EffectStackCache } = compile('src/editor/effect-stack-cache.ts', {
     './effect-ops': { applyEffect(src, effect) { calls.push(effect.kind); return { ...src, stack: [...(src.stack ?? []), `${effect.kind}:${effect.amount}`] }; } },
     './immutable-effect-sources': { markImmutableEffectSource() {} },
+    './expansion-120': { EXPANSION_LOOKUP:new Map() },
   });
   const graph = new EffectStackCache();
   const source = { width: 20, height: 16, stack: [] };

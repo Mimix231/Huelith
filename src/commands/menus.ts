@@ -3,7 +3,7 @@ import { CREATIVE_DEFINITIONS, type CreativeKind } from '../editor/creative';
 export type MenuAction =
   | 'new-document' | 'new-animation' | 'open' | 'import' | 'paste' | 'copy'
   | 'save' | 'save-as' | 'export-png' | 'export-svg' | 'export-apng' | 'export-sheet' | 'export-frames'
-  | 'resize-image' | 'resize-canvas' | 'crop-selection' | 'trim-transparent'
+  | 'create-meme' | 'export-meme-png' | 'export-meme-jpeg' | 'export-meme-webp' | 'resize-image' | 'resize-canvas' | 'crop-selection' | 'trim-transparent'
   | 'rotate-cw' | 'rotate-ccw' | 'rotate-180' | 'flip-horizontal' | 'flip-vertical' | 'precision-transform'
   | 'rasterize-layer' | 'align-horizontal' | 'align-vertical' | 'fit-layer'
   | 'fill-selection' | 'stroke-selection' | 'clear-selection'
@@ -44,6 +44,10 @@ export const MENUS: Record<string, MenuSection[]> = {
   Edit: [
     { heading: 'History', entries: [{ id: 'undo', label: 'Undo', shortcut: 'Ctrl+Z' }, { id: 'redo', label: 'Redo', shortcut: 'Ctrl+Y' }] },
     { heading: 'Clipboard', entries: [{ id: 'copy', label: 'Copy object', shortcut: 'Ctrl+C' }, { id: 'paste', label: 'Paste', shortcut: 'Ctrl+V' }] },
+    { heading:'Creative actions', entries:[{id:'create-meme',label:'Create Meme…'},
+      {id:'export-meme-png',label:'Export Meme as PNG…'},
+      {id:'export-meme-jpeg',label:'Export Meme as JPEG…'},
+      {id:'export-meme-webp',label:'Export Meme as WebP…'}]},
     { heading: 'Image dimensions', entries: [
       {id:'resize-image', label:'Resize Image…',shortcut:'Ctrl+Alt+I'},
       {id:'resize-canvas',label:'Resize Canvas…',shortcut:'Ctrl+Alt+C'},
@@ -51,7 +55,7 @@ export const MENUS: Record<string, MenuSection[]> = {
     { heading:'Orientation',entries:[{id:'rotate-cw',label:'Rotate 90° clockwise'},
       {id:'rotate-ccw',label:'Rotate 90° counterclockwise'}, {id:'rotate-180',label:'Rotate 180°'},
       {id:'flip-horizontal',label:'Flip Horizontal'}, {id:'flip-vertical',label:'Flip Vertical'}]},
-    {heading:'Transform',entries:[{id:'precision-transform',label:'Precision Transform…',shortcut:'Ctrl+T'}]},
+    {heading:'Transform',entries:[{id:'precision-transform',label:'Precision Transform…',shortcut:'Ctrl+Alt+T'}]},
   ],
   Select: [{ heading: 'Selection', entries: [
     { id: 'select-all', label: 'Select entire canvas', shortcut: 'Ctrl+A' }, { id: 'deselect', label: 'Deselect', shortcut: 'Ctrl+D' },

@@ -8,7 +8,7 @@ const root = path.resolve(__dirname, '..');
 function moduleFrom(file) {
   const source = fs.readFileSync(path.join(root, file), 'utf8');
   const transpiled = ts.transpileModule(source, {compilerOptions:{target:ts.ScriptTarget.ES2022, module:ts.ModuleKind.CommonJS}}).outputText;
-  const scope={exports:{}, document:undefined, Map, Math, JSON, require:(name)=>{if(name === './gradient-transforms') return moduleFrom('src/editor/gradient-transforms.ts'); throw new Error('Unexpected import '+name);}};
+  const scope={exports:{}, document:undefined, Map, Math, JSON, require:(name)=>{if(name === './gradient-transforms') return moduleFrom('src/editor/gradient-transforms.ts'); if(name === './gradient-patterns') return moduleFrom('src/editor/gradient-patterns.ts'); throw new Error('Unexpected import '+name);}};
   vm.runInNewContext(transpiled,scope,{filename:file});
   return scope.exports;
 }

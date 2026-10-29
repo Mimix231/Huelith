@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from 'react';
 import type { RasterLayer } from '../editor/types';
+import {resolveCutoutHistory,cutoutBounds,cutoutHandles,cutoutShapeHit,resizeCutout,translateCutout,insertCutoutNode,drawCutoutEditHandles,
+ type CutoutShape,type CutoutHistoryEntry} from '../editor/cutout-edit';
 import './CutoutWorkspace.css';
 
-type MaskTool = 'keep' | 'remove' | 'eraser' | 'line' | 'lasso' | 'polygon' | 'rectangle' | 'ellipse' | 'hand';
+type MaskTool = 'edit' | 'keep' | 'remove' | 'eraser' | 'line' | 'lasso' | 'polygon' | 'rectangle' | 'ellipse' | 'hand';
 type MaskView = 'original' | 'mask' | 'preview';
 type P = { x: number; y: number };
 type Command = { tool: MaskTool | 'clear'; operation: 'keep' | 'remove'; size: number; points: P[] };
 const TOOLS: ReadonlyArray<[MaskTool, string, string]> = [
-  ['keep','✎','Keep brush'], ['remove','⊖','Remove brush'], ['eraser','⌫','Erase selection'],
+  ['edit','◇','Edit mask shapes'], ['keep','✎','Keep brush'], ['remove','⊖','Remove brush'], ['eraser','⌫','Erase selection'],
   ['line','╱','Line'], ['lasso','〰','Freehand lasso'], ['polygon','⬠','Polygon lasso'],
   ['rectangle','▭','Rectangle'], ['ellipse','◯','Ellipse'], ['hand','✋','Pan'],
 ];
@@ -67,7 +69,8 @@ export function paintCutoutCommand(ctx: CanvasRenderingContext2D, command: Comma
   else if(tool==='rectangle') ctx.fillRect(Math.min(first.x,last.x),Math.min(first.y,last.y),Math.abs(last.x-first.x),Math.abs(last.y-first.y));
   else {
     ctx.beginPath();ctx.moveTo(first.x,first.y);
-    for(const point of points.slice(1))ctx.lineTo(point.x,point.y);
+    if(tool==='line' && points.length===4){ctx.bezierCurveTo(points[1].x,points[1].y,points[2].x,points[2].y,points[3].x,points[3].y);}
+    else for(const point of points.slice(1))ctx.lineTo(point.x,point.y);
     if(tool==='lasso'||tool==='polygon'){ctx.closePath();ctx.fill();}
     else if(points.length===1){ctx.arc(first.x,first.y,Math.max(.5,size/2),0,Math.PI*2);ctx.fill();}
     else ctx.stroke();
@@ -76,7 +79,7 @@ export function paintCutoutCommand(ctx: CanvasRenderingContext2D, command: Comma
 }
 
 export default function CutoutWorkspace({ layer, onClose, onProcess }: {
-  layer: RasterLayer; onClose: () => void; onProcess: (data: string, width: number, height: number) => void;
+  layer: RasterLayer; onClose: () => void; onProcess: (data: string, width: number, height: number,editable?:{shapes:CutoutShape[];feather:number;expand:number;smoothing:boolean;baseData?:string}) => void;
 }) {
   const mask=useRef<HTMLCanvasElement|null>(null);
   const initial=useRef<HTMLCanvasElement|null>(null);
@@ -88,8 +91,14 @@ export default function CutoutWorkspace({ layer, onClose, onProcess }: {
   const points=useRef<P[]>([]);
   const polygon=useRef<P[]>([]);
   const activeCommand=useRef<Command|null>(null);
-  const history=useRef<Command[]>([]);
-  const future=useRef<Command[]>([]);
+  const history=useRef<CutoutHistoryEntry[]>([]);
+  const future=useRef<CutoutHistoryEntry[]>([]);
+  const [selectedId,setSelectedId]=useState<string|null>(null);
+  const [selectedNode,setSelectedNode]=useState<number|null>(null);
+  const [editCursor,setEditCursor]=useState('grab');
+  const previewEdit=useRef<CutoutShape|null>(null);
+  const modifying=useRef<{id:string;original:CutoutShape;mode:'move'|'handle';handle:number;start:P}|null>(null);
+  const originalMaskSnapshot=useRef(false);
   const dragPan=useRef<P|null>(null);
   const stagePan=useRef<{pointerId:number,dx:number,dy:number}|null>(null);
   const spacePressed=useRef(false);
@@ -122,6 +131,21 @@ export default function CutoutWorkspace({ layer, onClose, onProcess }: {
       const base=document.createElement('canvas');base.width=w;base.height=h;
       const working=document.createElement('canvas');working.width=w;working.height=h;
       initial.current=base;mask.current=working;
+      originalMaskSnapshot.current=Boolean(layer.cutoutMask?.data&&!layer.cutoutMask.editable || layer.cutoutMask?.editable?.baseData);
+      if(layer.cutoutMask?.editable){
+        const editable=layer.cutoutMask.editable;
+        history.current=editable.shapes.map(shape=>({kind:'add',shape:structuredClone(shape)}));
+        setFeather(editable.feather);setExpand(editable.expand);setSmoothing(editable.smoothing);
+        const ctx=working.getContext('2d');if(ctx)for(const shape of editable.shapes)paintCutoutCommand(ctx,shape);
+        setHistorySize(history.current.length);setHasSelection(editable.shapes.some(shape=>shape.operation==='keep'));
+        // Reopened editable masks should show their last shape and grips right
+        // away; the user should not have to hunt for the Edit tool first.
+        if (editable.shapes.length) {
+          setSelectedId(editable.shapes[editable.shapes.length-1].id);
+          setTool('edit');
+          setSelectedNode(null);
+        }
+      }
       const setup=()=>{
         if(cancelled)return;
         const display=preview.current;
@@ -129,7 +153,16 @@ export default function CutoutWorkspace({ layer, onClose, onProcess }: {
         setDimensions({width:w,height:h});setReady(true);repaint();
         window.setTimeout(()=>dialog.current?.focus({preventScroll:true}),0);
       };
-      if(layer.cutoutMask?.data){const stored=new Image();stored.onload=()=>{
+      if(layer.cutoutMask?.editable){
+        const editable=layer.cutoutMask.editable;
+        if(editable.baseData){const saved=new Image();saved.onload=()=>{if(cancelled)return;
+          base.getContext('2d')?.drawImage(saved,0,0,w,h);
+          const ctx=working.getContext('2d');if(ctx){ctx.clearRect(0,0,w,h);ctx.drawImage(base,0,0);
+            for(const shape of editable.shapes)paintCutoutCommand(ctx,shape);}
+          setup();};saved.onerror=()=>setup();saved.src=editable.baseData;}
+        else setup();
+      }
+      else if(layer.cutoutMask?.data){const stored=new Image();stored.onload=()=>{
         if(cancelled)return;
         base.getContext('2d')?.drawImage(stored,0,0,w,h);
         working.getContext('2d')?.drawImage(stored,0,0,w,h);
@@ -143,31 +176,42 @@ export default function CutoutWorkspace({ layer, onClose, onProcess }: {
   },[layer.id,layer.image,layer.cutoutMask?.data,repaint]);
 
   const countHistory=()=>{setHistorySize(history.current.length);setFutureSize(future.current.length);};
+  const shapes=()=>resolveCutoutHistory(history.current);
   const replay=()=>{
     if(!mask.current)return;
     const ctx=mask.current.getContext('2d');if(!ctx)return;
     ctx.clearRect(0,0,mask.current.width,mask.current.height);
-    if(initial.current)ctx.drawImage(initial.current,0,0);
-    for(const action of history.current)paintCutoutCommand(ctx,action);
-    setHasSelection(Boolean(layer.cutoutMask?.data)||history.current.some(item=>item.operation==='keep' && item.tool!=='clear' && item.tool!=='remove' && item.tool!=='eraser'));
-    // Reset clears the initial mask as well.
-    const mostRecentClear=history.current.findLastIndex(item=>item.tool==='clear');
-    if(mostRecentClear>=0)setHasSelection(history.current.slice(mostRecentClear+1).some(item=>item.operation==='keep' && !['eraser','remove'].includes(item.tool)));
+    // Original committed mask is preserved until the first Clear operation.
+    if(!history.current.some(entry=>entry.kind==='clear')&&initial.current)ctx.drawImage(initial.current,0,0);
+    for(const shape of shapes())paintCutoutCommand(ctx,shape);
+    const mostRecentClear=history.current.map((entry:CutoutHistoryEntry)=>entry.kind).lastIndexOf('clear');
+    const anyKeeping=shapes().some(item=>item.operation==='keep'&&!['eraser','remove'].includes(item.tool));
+    setHasSelection((mostRecentClear<0&&originalMaskSnapshot.current)||anyKeeping);
     countHistory();repaint();
   };
-  const commit=(command:Command,alreadyDrawn=false)=>{
-    if(!mask.current)return;
-    if(!alreadyDrawn) {const ctx=mask.current.getContext('2d');if(ctx)paintCutoutCommand(ctx,command);}
-    history.current.push(command);future.current=[];
-    if(command.tool==='clear')setHasSelection(false);
-    else if(command.operation==='keep' && !['eraser','remove'].includes(command.tool))setHasSelection(true);
-    countHistory();repaint();
+  const addHistory=(entry:CutoutHistoryEntry)=>{history.current.push(entry);future.current=[];replay();};
+  const commit=(command:Command,_alreadyDrawn=false)=>{
+    if(command.tool==='clear'){addHistory({kind:'clear'});setSelectedId(null);return;}
+    if(command.tool==='edit'||command.tool==='hand')return;
+    const id=`mask-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}`;
+    const points=structuredClone(command.points);
+    if(command.tool==='line'&&points.length===2){const a=points[0],b=points[1];
+      points.splice(1,0,{x:a.x+(b.x-a.x)/3,y:a.y+(b.y-a.y)/3},{x:a.x+(b.x-a.x)*2/3,y:a.y+(b.y-a.y)*2/3});}
+    addHistory({kind:'add',shape:{id,tool:command.tool,operation:command.operation,size:command.size,points}});
+    setSelectedId(id);
+    setSelectedNode(null);
+    // A fresh line/shape is immediately selectable with visible control dots.
+    // Freehand Keep/Remove brushes remain in drawing mode for consecutive strokes.
+    if (['line','rectangle','ellipse','polygon','lasso'].includes(command.tool)) setTool('edit');
   };
-  const undoStep=()=>{const item=history.current.pop();if(!item)return;future.current.push(item);replay();};
-  const redoStep=()=>{const item=future.current.pop();if(!item)return;history.current.push(item);replay();};
-  const reset=()=>commit({tool:'clear',operation:'remove',size:0,points:[]});
+  const undoStep=()=>{const item=history.current.pop();if(!item)return;future.current.push(item);previewEdit.current=null;replay();};
+  const redoStep=()=>{const item=future.current.pop();if(!item)return;history.current.push(item);previewEdit.current=null;replay();};
+  const reset=()=>addHistory({kind:'clear'});
   const finishPolygon=()=>{if(polygon.current.length>=3)commit({tool:'polygon',operation,size,points:[...polygon.current]});polygon.current=[];repaint();};
-  const local=(event:ReactPointerEvent<HTMLCanvasElement>):P=>{
+  const selectedShape=()=>shapes().find(item=>item.id===selectedId);
+  const commitSelectedUpdate=(next:CutoutShape)=>{addHistory({kind:'update',id:next.id,shape:structuredClone(next)});};
+  const deleteSelected=()=>{if(selectedId){addHistory({kind:'delete',id:selectedId});setSelectedId(null);}};
+  const local=(event:{currentTarget:HTMLCanvasElement;clientX:number;clientY:number}):P=>{
     const rect=event.currentTarget.getBoundingClientRect();
     return{x:constrain((event.clientX-rect.left)/Math.max(1,rect.width)*dimensions.width,0,dimensions.width),
       y:constrain((event.clientY-rect.top)/Math.max(1,rect.height)*dimensions.height,0,dimensions.height)};
@@ -196,6 +240,14 @@ export default function CutoutWorkspace({ layer, onClose, onProcess }: {
       dragPan.current={x:event.clientX-pan.x,y:event.clientY-pan.y};return;
     }
     const pos=local(event);
+    if(tool==='edit'){
+      const chosen=selectedShape();const threshold=10/(zoom* Math.min(1,1300/Math.max(dimensions.width,dimensions.height)));
+      const handles=chosen?cutoutHandles(chosen):[];
+      const index=handles.findIndex(handle=>Math.hypot(handle.x-pos.x,handle.y-pos.y)<threshold);
+      const hit=index>=0?chosen:[...shapes()].reverse().find(item=>cutoutShapeHit(item,pos,threshold));
+      if(hit){setSelectedId(hit.id);setSelectedNode(index>=0?index:null);modifying.current={id:hit.id,original:structuredClone(hit),mode:index>=0?'handle':'move',handle:index,start:pos};}
+      else{setSelectedId(null);pointer.current=null;}repaint();return;
+    }
     if(tool==='polygon'){polygon.current.push(pos);pointer.current=null;repaint();return;}
     points.current=[pos];
     activeCommand.current={tool,operation,size,points:[pos]};
@@ -206,9 +258,22 @@ export default function CutoutWorkspace({ layer, onClose, onProcess }: {
     }
   };
   const move=(event:ReactPointerEvent<HTMLCanvasElement>)=>{
-    if(ready)setCursor(local(event));
+    if(ready){
+      const pos=local(event);setCursor(pos);
+      if(tool==='edit'&&!modifying.current){
+        const chosen=selectedShape(),radius=12/(zoom*Math.min(1,1300/Math.max(dimensions.width,dimensions.height)));
+        const overHandle=chosen?.id&&cutoutHandles(chosen).some(p=>Math.hypot(p.x-pos.x,p.y-pos.y)<radius);
+        const overShape=shapes().some(item=>cutoutShapeHit(item,pos,radius));
+        const next=overHandle?'move':overShape?'grab':'crosshair';setEditCursor(last=>last===next?last:next);
+      }
+    }
     if(pointer.current!==event.pointerId)return;
     if(dragPan.current){setPan({x:event.clientX-dragPan.current.x,y:event.clientY-dragPan.current.y});return;}
+    if(modifying.current){
+      const m=modifying.current,pos=local(event);
+      previewEdit.current=m.mode==='move'?translateCutout(m.original,pos.x-m.start.x,pos.y-m.start.y):resizeCutout(m.original,m.handle,pos);
+      repaint();return;
+    }
     const command=activeCommand.current;if(!command)return;
     const pos=local(event), previous=points.current.at(-1)??pos;
     if(['keep','remove','eraser'].includes(command.tool)){
@@ -224,6 +289,8 @@ export default function CutoutWorkspace({ layer, onClose, onProcess }: {
     if(event.currentTarget.hasPointerCapture(event.pointerId))event.currentTarget.releasePointerCapture(event.pointerId);
     pointer.current=null;
     if(dragPan.current){dragPan.current=null;return;}
+    if(modifying.current){const modified=previewEdit.current;modifying.current=null;previewEdit.current=null;
+      if(modified)commitSelectedUpdate(modified);return;}
     const command=activeCommand.current;
     if(command){commit({...command,points:[...command.points]},['keep','remove','eraser'].includes(command.tool));activeCommand.current=null;}
     points.current=[];repaint();
@@ -231,12 +298,26 @@ export default function CutoutWorkspace({ layer, onClose, onProcess }: {
   const process=()=>{
     if(!mask.current||!hasSelection)return;
     const output=refineCutoutMask(mask.current,feather,expand,smoothing);
-    onProcess(output.toDataURL('image/png'),output.width,output.height);
+    onProcess(output.toDataURL('image/png'),output.width,output.height,{shapes:shapes().map(item=>structuredClone(item)),feather,expand,smoothing,
+      ...(!history.current.some(entry=>entry.kind==='clear') ?
+        (layer.cutoutMask?.editable?.baseData?{baseData:layer.cutoutMask.editable.baseData}:
+          !layer.cutoutMask?.editable&&layer.cutoutMask?.data?{baseData:layer.cutoutMask.data}:{}) : {})});
   };
   useEffect(()=>{
     const press=(event:KeyboardEvent)=>{
       if(!dialog.current)return;
       if(event.code==='Space' && !(event.target instanceof HTMLInputElement)){spacePressed.current=true;event.preventDefault();}
+      if(tool==='edit' && !event.ctrlKey && !event.metaKey){
+        if(event.key==='Delete'||event.key==='Backspace'){event.preventDefault();
+          const active=selectedShape();
+          if(active&&selectedNode!==null&&active.points.length>(active.tool==='line'?2:3)&&!['rectangle','ellipse'].includes(active.tool)){
+            commitSelectedUpdate({...active,points:active.points.filter((_,i)=>i!==selectedNode)});setSelectedNode(null);
+          }else deleteSelected();return;}
+        if(event.key.startsWith('Arrow')){const selected=selectedShape();if(selected){event.preventDefault();
+          const nudge=event.shiftKey?10:1,dx=event.key==='ArrowLeft'?-nudge:event.key==='ArrowRight'?nudge:0,
+            dy=event.key==='ArrowUp'?-nudge:event.key==='ArrowDown'?nudge:0;
+          commitSelectedUpdate(translateCutout(selected,dx,dy));return;}}
+      }
       if(!(event.ctrlKey||event.metaKey))return;
       const key=event.key.toLowerCase();
       if(key==='z'){event.preventDefault();event.stopPropagation();event.shiftKey?redoStep():undoStep();}
@@ -281,9 +362,42 @@ export default function CutoutWorkspace({ layer, onClose, onProcess }: {
       if(tool==='lasso')ctx.closePath();ctx.stroke();
     }
     ctx.restore();
+    if(tool==='edit'){
+      const selected=previewEdit.current??selectedShape();
+      if(selected){
+        const bounds=cutoutBounds(selected);
+        ctx.save();
+        if(previewEdit.current){
+          ctx.save();ctx.scale(dx,dy);ctx.fillStyle=selected.operation==='keep'?'rgba(55,245,181,.28)':'rgba(255,90,118,.28)';
+          ctx.strokeStyle=selected.operation==='keep'?'#5ff6c9':'#ff759d';ctx.lineWidth=Math.max(1,selected.size*.2);
+          const first=selected.points[0];
+          if(selected.tool==='rectangle')ctx.fillRect(bounds.x,bounds.y,bounds.width,bounds.height);
+          else if(selected.tool==='ellipse'){ctx.beginPath();ctx.ellipse((bounds.x+bounds.x+bounds.width)/2,(bounds.y+bounds.y+bounds.height)/2,Math.max(.5,bounds.width/2),Math.max(.5,bounds.height/2),0,0,Math.PI*2);ctx.fill();}
+          else{ctx.beginPath();ctx.moveTo(first.x,first.y);
+            if(selected.tool==='line'&&selected.points.length===4){const points=selected.points;
+              ctx.bezierCurveTo(points[1].x,points[1].y,points[2].x,points[2].y,points[3].x,points[3].y);}
+            else for(const point of selected.points.slice(1))ctx.lineTo(point.x,point.y);
+            if(['polygon','lasso'].includes(selected.tool)){ctx.closePath();ctx.fill();}else ctx.stroke();}
+          ctx.restore();
+        }
+        // The native Bezier endpoints and control grips remain a constant
+        // screen size at any zoom and follow the live drag before committing.
+        drawCutoutEditHandles(ctx,selected,dx,dy,zoom,selectedNode);
+        ctx.restore();
+      }
+    }
     void revision;
   },[ready,revision,view,dimensions,feather,expand,smoothing,operation,tool]);
   const displayRatio=Math.min(1,1300/Math.max(dimensions.width,dimensions.height));
+  const editValue=previewEdit.current??selectedShape();
+  const previewChange=(changes:Partial<CutoutShape>)=>{
+    const base=previewEdit.current??selectedShape();if(!base)return;
+    previewEdit.current={...base,...changes};repaint();
+  };
+  const previewCommit=()=>{
+    if(!previewEdit.current)return;const next=previewEdit.current;previewEdit.current=null;
+    commitSelectedUpdate(next);
+  };
   return <div className="huelith-cutout-backdrop" role="presentation">
     <section ref={dialog} tabIndex={-1} className="huelith-cutout-dialog" role="dialog" aria-modal="true" aria-label="Huelith Cutout workspace"
       onKeyDown={event=>{if(event.key==='Escape'){event.stopPropagation();if(polygon.current.length){polygon.current=[];repaint();}else onClose();}
@@ -308,9 +422,21 @@ export default function CutoutWorkspace({ layer, onClose, onProcess }: {
           <canvas ref={preview} className="huelith-cutout-canvas" style={{
             width:`${dimensions.width*displayRatio*zoom}px`,height:`${dimensions.height*displayRatio*zoom}px`,
             transform:`translate(calc(-50% + ${pan.x}px),calc(-50% + ${pan.y}px))`,
-            cursor:tool==='hand'?'grab':'crosshair'}} onPointerDown={down} onPointerMove={move} onPointerUp={finish} onPointerCancel={finish}
-            onDoubleClick={event=>{if(tool==='polygon'){event.preventDefault();finishPolygon();}}} onContextMenu={event=>event.preventDefault()} />
-          {cursor&&ready&&tool!=='hand'&&<div className="cutout-brush-indicator" style={{
+            cursor:tool==='hand'?'grab':tool==='edit'?editCursor:'crosshair'}} onPointerDown={down} onPointerMove={move} onPointerUp={finish} onPointerCancel={finish}
+            onDoubleClick={event=>{
+              if(tool==='polygon'){event.preventDefault();finishPolygon();}
+              else if(tool==='edit'){
+                const current=selectedShape();if(!current||!['line','polygon','lasso'].includes(current.tool)||current.tool==='line'&&current.points.length>=4)return;
+                const point=local(event);const bounds=cutoutBounds(current);
+                if(point.x<bounds.x-25||point.x>bounds.x+bounds.width+25)return;
+                let best=Infinity,index=1;
+                for(let i=1;i<current.points.length;i++){
+                  const a=current.points[i-1],b=current.points[i],vx=b.x-a.x,vy=b.y-a.y,t=constrain(((point.x-a.x)*vx+(point.y-a.y)*vy)/(vx*vx+vy*vy||1),0,1);
+                  const dist=Math.hypot(point.x-a.x-t*vx,point.y-a.y-t*vy);if(dist<best){best=dist;index=i;}}
+                if(best<20/zoom)commitSelectedUpdate(insertCutoutNode(current,index,point));
+              }
+            }} onContextMenu={event=>event.preventDefault()} />
+          {cursor&&ready&&['keep','remove','eraser'].includes(tool)&&<div className="cutout-brush-indicator" style={{
             width:Math.max(3,size*displayRatio*zoom),height:Math.max(3,size*displayRatio*zoom),
             left:`calc(50% + ${pan.x+ (cursor.x-dimensions.width/2)*displayRatio*zoom}px)`,
             top:`calc(50% + ${pan.y+(cursor.y-dimensions.height/2)*displayRatio*zoom}px)`,
@@ -322,6 +448,23 @@ export default function CutoutWorkspace({ layer, onClose, onProcess }: {
           <input className="cutout-size-number" aria-label="Brush size exact value" type="number" min="1" max="4096" value={size} onChange={event=>setSize(constrain(+event.target.value||1,1,4096))}/>
           <label>Zoom <output>{Math.round(zoom*100)}%</output><input aria-label="Cutout zoom" type="range" min=".1" max="16" step=".1" value={zoom} onChange={event=>setZoom(+event.target.value)}/></label>
           <div className="cutout-zoom-shortcuts"><button onClick={()=>zoomAbout(1/1.25)}>−</button><button onClick={()=>{setZoom(1);setPan({x:0,y:0});}}>Fit / 100%</button><button onClick={()=>zoomAbout(1.25)}>+</button></div>
+          {tool==='edit'&&<div className="cutout-shape-inspector"><strong>◇ Editable mask geometry</strong>
+            <p>{selectedId?'Drag the path or the circular handles; Bézier lines have two end anchors and two diamond control points. Double-click polygon/lasso segments to add nodes.':'Select a committed mask line, polygon, lasso, brush, rectangle or ellipse.'}</p>
+            {editValue && <div className="cutout-edit-parameters">
+              <label>Selected shape size <output>{Math.round(editValue.size)}px</output><input type="range" min={1} max={512} value={Math.min(512,editValue.size)}
+                onChange={event=>previewChange({size:Number(event.target.value)})} onPointerUp={previewCommit} onKeyUp={previewCommit}/></label>
+              <input className="cutout-size-number" type="number" aria-label="Exact selected shape size" min={1} max={4096} value={editValue.size}
+                onChange={event=>previewChange({size:constrain(Number(event.target.value)||1,1,4096)})} onBlur={previewCommit} onKeyDown={event=>{if(event.key==='Enter')previewCommit();}}/>
+              <label>Shape action <select value={editValue.operation}
+                onChange={event=>commitSelectedUpdate({...editValue,operation:event.target.value as 'keep'|'remove'})}>
+                <option value="keep">Keep</option><option value="remove">Remove</option></select></label>
+            </div>}
+            <div className="huelith-cutout-actions"><button disabled={!selectedId} onClick={()=>{const item=selectedShape();if(item)commitSelectedUpdate(translateCutout(item,0,-1));}}>↑ Nudge</button>
+              <button disabled={!selectedId||selectedNode===null} onClick={()=>{
+                const item=selectedShape();if(item&&selectedNode!==null&&item.points.length>(item.tool==='line'?2:3)&&!['rectangle','ellipse'].includes(item.tool)){
+                  commitSelectedUpdate({...item,points:item.points.filter((_,i)=>i!==selectedNode)});setSelectedNode(null);}
+              }}>Remove point</button>
+              <button disabled={!selectedId} onClick={deleteSelected}>Delete shape</button></div></div>}
           <div className="cutout-section-title">◉ Inspection</div><div className="huelith-cutout-view-modes">{(['original','mask','preview'] as const).map(item=><button key={item} aria-pressed={view===item} onClick={()=>setView(item)}>{item[0].toUpperCase()+item.slice(1)}</button>)}</div>
           <div className="cutout-section-title">⌁ Edge refinement</div>
           <label>Feather <output>{feather}px</output><input aria-label="Mask feather" type="range" min="0" max="20" value={feather} onChange={event=>setFeather(+event.target.value)}/></label>

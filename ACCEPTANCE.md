@@ -2,6 +2,18 @@
 
 This checklist covers **Huelith 0.2.0**, the first post-rename alpha. All unchecked items require hands-on verification; the included automated tests do **not** certify the Windows installer or all editing workflows.
 
+## Order 1 (AM) — Gradient Patterns & Radial Burst
+
+- [ ] Create a Gradient layer; open **Transform in Atelier → Patterns → Black & White Burst**; Apply.
+- [ ] Compare the exported 740×740 pattern with `docs/HUELITH_AM1_RADIAL_REFERENCE.png`. Solid wedge interiors must be exactly black or white.
+- [ ] Change number of ray pairs, ray width, center, rotation, twist, taper and edge softness; preview and export must agree.
+- [ ] Change first/last color. Add a third color using **Pattern palette** and verify every selected color appears in the rays without blending.
+- [ ] Verify Smooth, Hard stops, Bands, Alternating and Stepped modes on linear gradients.
+- [ ] Undo/redo preset changes, cancel without applying, save/reopen custom looks and `.huelith` projects.
+- [ ] Test editing patterns inside an Animation Studio project and confirm settings persist across frames.
+- [ ] Check legacy gradient projects with no `gradientColorMode` remain unchanged.
+- [ ] On Windows with dependencies installed, verify the Atelier UI is usable in every Huelith theme, then run npm/Rust production checks.
+
 ## Version, branding and backward compatibility
 
 - [ ] Confirm `package.json`, `package-lock.json`, `src-tauri/Cargo.toml`, `src-tauri/Cargo.lock`, and `src-tauri/tauri.conf.json` identify version **0.2.0** and the Huelith application where appropriate.
@@ -13,17 +25,15 @@ This checklist covers **Huelith 0.2.0**, the first post-rename alpha. All unchec
 - [ ] Because the native bundle identifier changed, test installation alongside 0.1, installer upgrade/uninstall behavior, and file association handling before distributing a public setup.
 - [ ] Compare the supplied `README.md` against the project owner's replacement copy. Its referenced artwork/screenshots must be added separately to the repository if not present in the archive.
 
-## Phase AJ — Guided Subject Segmentation (Implementation 6)
+## Current Huelith Cutout — Inspector operation
 
-- [ ] Start Remove Background on a uniform white backdrop with a contrasting subject: new Smart mode removes the outside and retains the subject.
-- [ ] Draw a subject rectangle around an illustrated character containing white costume elements, keep strokes on white details, and remove strokes on the background; the protected areas must remain when exported.
-- [ ] Use Color mode on a logo and Manual mode on a noisy backdrop; changing a method must not accidentally overwrite the other mode's saved corrections.
-- [ ] Open full Mask Workspace in every theme, inspect the grayscale alpha view, toggle guides, resize the dialog, and exit with Escape without closing Huelith Studio.
-- [ ] Sample a background color from a rotated/scaled pasted image and confirm the sampled coordinate corresponds to the actual source pixels.
-- [ ] Undo/redo subject guide marks, adjust edge protection and segmentation detail, save/reopen the effect, and ensure the original layer remains unchanged.
-- [ ] Compare saved image, animation and preview results; actual transparency, not a white paint overlay, must be exported.
-- [ ] Verify CPU-only operation offline (no automatic downloads). Note: semantic AI and GPU graph-cut are not implemented, and ambiguous subjects may require manual masking.
-- [ ] Run `npm run test:phase-aj`, `npm run check`, and `npm run desktop:build` on a machine with installed frontend/Rust dependencies.
+- [ ] Select a raster image → **Inspector → Remove Background**; open the manual Huelith Cutout workspace without entering Effects/FX.
+- [ ] Draw precise Keep/Remove marks with freehand, polygon, rectangle, ellipse and line tools; use Eraser to remove marks.
+- [ ] Zoom using Ctrl+Plus, Ctrl+Minus, Ctrl+Wheel and Ctrl+0; pan with Space/Middle Mouse; verify drawing coordinates remain accurate after zoom and pan.
+- [ ] Undo and redo selection strokes; change brush size (up to 4096 px), feather, expand/contract and contour smoothing.
+- [ ] Inspect Original, Mask and Preview; **Process mask**; confirm source RGB is untouched, transparency exports correctly, and the mask can be reopened/deleted.
+- [ ] Reopen an old project with legacy Remove Background effect settings: it must remain readable, but no new obsolete effect should be selectable.
+- [ ] Verify the entire operation works offline with no AI models or downloads.
 
 ## Phase AI — Persistent animation layer effects (Implementation 6)
 
@@ -51,12 +61,9 @@ This checklist covers **Huelith 0.2.0**, the first post-rename alpha. All unchec
 - [ ] In dark mode, verify the Originals editor's values and labels remain clearly readable, not merely the main catalog.
 - [ ] Place and reposition each applicable Original using the mouse pad and keyboard. Verify undo/redo, saving and effect preview.
 
-## Phase V — background removal
+## Retired Phase V effect workflow
 
-- [ ] Test transparent art, characters on uniform backgrounds, multicolor images, subject touching an edge, low-contrast foreground/background, and photographs.
-- [ ] In the checkerboard mask editor, add Keep Subject and Remove Background strokes, change brush size, undo, reset marks, save/reopen and export PNG.
-- [ ] Verify the original subject can be restored and the raster source is not destroyed when the Remove Background effect is disabled or removed.
-- [ ] Confirm previews match the final processed image and that large images do not freeze the interface.
+The original Phase V automatic Remove Background effect is **not a current UI workflow**. Older saved project effects remain readable solely for compatibility; all new cutouts use Inspector → Huelith Cutout. Do not run former color-key slider acceptance scenarios as current feature tests.
 
 ## Implementation 2 — Phases W, X and Y
 
@@ -443,3 +450,107 @@ Limitations: multi-point cage deformation and a fully automatic subject segmenta
 - [x] Numeric transforms, alignment, Huelith-themed context menu, and magnetic object-center snapping are included in the source.
 - [ ] Full dependency-aware TypeScript and Windows/Tauri installer builds require installed dependencies/toolchains.
 - [ ] Interactively validate each light/dark theme and mixed raster/vector/group/text animation projects on the desktop app.
+
+## Order 2 — Smart Transform and Gradient Atelier Corrections
+- [x] Native Gradient / vector / raster scale and pivot-transform source tests
+- [x] Canvas and neighboring-layer magnetic center/boundary snapping tests
+- [x] Actual Canvas2D pixel differences for all nine reported Gradient transformations
+- [x] Native-preview equality against same-resolution exports for those transformations
+- [x] Color Bands output differences and contextual mode activation
+- [x] Source syntax and Node tests
+- [ ] Full React/TypeScript dependency-aware build, Windows/Tauri installer and manual theme checks
+
+## Order 2 — Transform follow-up acceptance
+- [x] Ctrl+T activates the Move tool and selects the entire active layer without opening a popup.
+- [x] Ctrl+Alt+T retains access to numeric precision controls.
+- [x] Magnetic snapping enabled by default, can be toggled, and Alt temporarily bypasses it.
+- [x] Proportional corner scaling snaps the final computed image boundary to the canvas.
+- [x] Side-handle scaling snaps the intended edge without changing the orthogonal size.
+- [x] Alignment guides are visible on the canvas at the snapped positions.
+- [x] Pointer-down events outside the document are ignored for non-navigation editing tools.
+- [x] Move requires a valid visible layer hit, even within the canvas.
+- [x] Marquee selection endpoints cannot extend beyond the document.
+- [x] No changes to the Spectrum v0.1-alpha changelog.
+- [ ] Full npm/TypeScript and Tauri builds should be verified on a configured development PC.
+
+## Continuous Ink & Brush Atelier Acceptance
+- [x] Ink Pen renders filled continuous contours, not circular brush stamps.
+- [x] Rapid input is interpolated without gaps; the endpoints remain attached to the pointer.
+- [x] Brush widths up to 2000 px, taper, stabilization, spacing, flow and pen pressure settings implemented.
+- [x] Huelith-themed Brush Atelier with six presets and saved custom settings.
+- [x] Selection/mask clipping and symmetry integrated with native raster strokes.
+- [x] Existing raster brush, eraser and crisp Pixel Pencil remain present.
+- [x] Native Chromium Canvas2D stroke continuity, taper and flow tests pass.
+- [ ] Complete Windows/Tauri interactive UI verification with mouse and pressure-capable pen tablet.
+- [ ] Full dependency-aware `npm ci && npm run check && npm run build` after dependencies are available.
+
+## Drawing, Selection & Cutout Editing
+- [x] 12 dedicated selection/painting/retouch tools added to contextual Huelith pickers.
+- [x] Magic Wand and Paint Bucket use a real tolerance-aware contiguous-region algorithm.
+- [x] Freehand, magnetic and polygon selection tools create irregular pixel masks.
+- [x] Brush commits, Fill, Stroke, and Clear can respect irregular selection masks.
+- [x] Smudge, Blur, Sharpen, Dodge, Burn and patterned painting execute separate pixel operations.
+- [x] Cutout shapes support reselect, moving, geometry handles and undo/redo commands.
+- [x] Legacy and editable Cutout mask data supported by `.huelith` project validation.
+- [x] Browser pixel tests validate mask composition, flood fill and geometric edits.
+- [ ] Validate mouse and tablet tool gestures across all themes in the desktop application.
+- [ ] Full dependency-aware TypeScript/Vite and Windows Tauri production builds.
+- [ ] Stress-test very large/memory-intensive raster fills and retouch brushes on CPU-only devices.
+
+## Cutout geometry and TypeScript corrections
+- [x] Geometry helpers type-check independently against ES2022 and DOM libraries.
+- [x] Four Bézier grips are rendered in Chromium at 25%, 100% and 400% zoom.
+- [x] Drawing a Cutout line selects it and enables Edit Mask Shapes without another click.
+- [x] Reopening saved editable geometry activates the last shape and displays its control points.
+- [x] The seven original TypeScript compile errors have direct source fixes.
+- [ ] Full application TypeScript/Vite build on an installed dependency tree.
+- [ ] Confirm interactive pointer dragging in packaged Windows/Tauri application.
+
+
+## Layer-Based Animation Timeline Acceptance
+- [x] Raster/vector layer rows expose per-frame drawing states and interactive cel selection.
+- [x] Held cels resolve by frame ID, including after reordering or deleting a source frame.
+- [x] Editing held artwork releases the cel from the source without altering other frames.
+- [x] Shared layer effects and Gradient-layer recipes retain track-wide ownership.
+- [x] Multi-selection supports range selection, duplicate/delete, batch holds and duration edits.
+- [x] In/out range, looping, ping-pong and one-shot modes honor variable frame timing.
+- [x] Annotated frames and hold references serialize and validate in `.huelith` projects.
+- [x] Idle image decoding avoids loading future frame assets inside a playback RAF tick.
+- [x] Source TypeScript engine checks and unit tests cover the new animation commands.
+- [ ] Full dependency-aware React/Tauri production builds and interactive Windows FPS measurements are required for release certification.
+
+## Meme Creator & modern workspace acceptance
+- [x] Editable meme captions and shapes are generated without modifying existing image layers.
+- [x] Nine layout templates produce distinct geometry and real vector text.
+- [x] Optional second comparison image is stored as an independent raster layer.
+- [x] Meme changes commit as one document transaction; animation layers are inserted into existing frame cels.
+- [x] Native Canvas2D browser pixel tests verify classic, reaction, demotivational and caption layouts.
+- [x] Off-document scale grips remain clickable while blank-workspace drawing/selection remains blocked.
+- [x] Theme-specific palettes and emblem icons use existing workspace theme variables, with an expanded Sakura treatment.
+- [x] Source syntax and isolated TypeScript engine check pass.
+- [ ] Full dependency-aware TypeScript and Windows/Tauri build must be verified with installed npm dependencies.
+
+## Expanded Creativity and Color Preservation
+- [x] 120 catalog IDs are unique and backed by dedicated processing paths.
+- [x] Distinct raster outputs verified with native Canvas2D samples on representative artwork.
+- [x] Dedicated SVG icons exist for every added operation.
+- [x] Group navigation, library search, favorites and recently used entries are provided.
+- [x] Blur kernels preserve uniform-image RGB and alpha without source-over attenuation.
+- [x] Glass/Frosted distortion uses edge-extended sampling rather than transparent corners.
+- [x] Only the top titlebar and Edit menu launch Meme Creator.
+- [ ] Perform full npm / TypeScript / Vite / Windows-Tauri desktop build after installing dependencies.
+- [ ] Profile 1080p and 4K processing performance on both CPU-only and GPU-accelerated hardware.
+- [ ] Artist-review the 120 visual processors across varied photo and illustration subjects before declaring them production-grade.
+
+## Creativity App Hub / Responsive Order 7 Browsing
+- [x] Creativity opens the themed application hub, with navigation into a focused catalog and a back button.
+- [x] All 120 new processors remain available through the appropriate app, alongside the original creativity tools.
+- [x] Effects and Signature FX retain both direct-tab access and app-hub access.
+- [x] New 120-item cards do not invoke heavy Canvas2D preview kernels on mount.
+- [x] Existing thumbnail processors require deliberate hover/focus and use the bounded queue.
+- [x] Initial exact effect preview is deferred and stale openings are canceled.
+- [x] CPU-only fallback yields between scanlines and superseded requests are discarded.
+- [x] Chromium verifies bit-for-bit parity between synchronous and cooperatively processed Order 7 results.
+- [x] Chromium verifies latest-only completion and event-loop responsiveness in CPU fallback.
+- [ ] Manual Windows/Tauri visual test with the largest 4K multi-FX documents on GPU and CPU-only configurations.
+- [ ] Full dependency-aware TypeScript/Vite production build on a machine with `npm ci` available.

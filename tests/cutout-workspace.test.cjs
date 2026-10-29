@@ -28,7 +28,7 @@ test('non-destructive mask renders through the same compositing path for preview
   assert.match(render,/globalCompositeOperation = 'destination-in'/);
   assert.match(render,/maskImage \? maskedRaster\(image, maskImage\)/);
   const store = read('src/editor/store.ts');
-  assert.match(store,/applyCutoutMask: \(layerId, data, width, height\)/);
+  assert.match(store,/applyCutoutMask: \(layerId, data, width, height,editable\)/);
   assert.match(store,/toggleCutoutMask: layerId/);
   assert.match(store,/removeCutoutMask: layerId/);
   assert.match(store,/track\[layerId\] = .*filter\(effect => effect.kind !== 'cutout'\)/);

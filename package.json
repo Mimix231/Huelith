@@ -43,7 +43,16 @@
     "test:cutout": "node --test tests/cutout-workspace.test.cjs",
     "test:phase-ak": "node --test tests/phase-ak-gradient.test.cjs && python tests/phase-ak-browser.py",
     "test:phase-al": "node --test tests/phase-al-workspaces.test.cjs && python tests/phase-al-browser.py",
-    "test:core-actions": "node --test tests/core-document-actions.test.cjs && python tests/core-document-actions-browser.py && python tests/core-selection-browser.py"
+    "test:core-actions": "node --test tests/core-document-actions.test.cjs && python tests/core-document-actions-browser.py && python tests/core-selection-browser.py",
+    "test:order2": "node --test tests/order1-gradient-patterns.test.cjs tests/order2-smart-transform.test.cjs && python tests/order2-smart-transform-browser.py",
+    "test:brush": "node --test tests/brush-atelier.test.cjs && python tests/brush-atelier-browser.py",
+    "test:drawing-tools": "node --test tests/drawing-and-cutout-tools.test.cjs && python tests/drawing-and-cutout-tools-browser.py && python tests/cutout-edit-browser.py",
+    "test:cutout-controls": "node --test tests/cutout-control-points.test.cjs && python tests/cutout-control-points-browser.py",
+    "test:animation-studio": "node --test tests/animation-studio-2.test.cjs && node tests/animation-track-browser.cjs",
+    "test:meme": "node --test tests/meme-creator.test.cjs && python tests/meme-creator-browser.py",
+    "test:expansion": "node --test tests/effects-order7.test.cjs",
+    "test:expansion:browser": "python tests/expansion-120-browser.py && python tests/blur-color-preservation-browser.py",
+    "test:studio-hub": "node --test tests/studio-hub-freeze-regression.test.cjs tests/worker-polish.test.cjs && python tests/worker-exact-scanline-browser.py"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

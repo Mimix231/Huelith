@@ -102,7 +102,7 @@ export function processEffects(source: HTMLCanvasElement, effects: readonly Effe
   return current;
 }
 
-type EffectImage = HTMLCanvasElement | ImageBitmap;
+export type EffectImage = HTMLCanvasElement | ImageBitmap;
 interface EffectResult {
   width: number; height: number; scale: number; image: EffectImage;
   source?: HTMLCanvasElement; signature?: string;
@@ -229,7 +229,7 @@ export type AsyncEffectsProcessor = (
   source: HTMLCanvasElement,
   effects: readonly Effect[],
   layerId: string,
-  done: (image: ImageBitmap) => void,
+  done: (image: EffectImage) => void,
 ) => boolean;
 interface LivePreviewHost {
   source: HTMLCanvasElement;
@@ -268,7 +268,7 @@ export function queueLayerEffectPreview(layerId: string, effects: readonly Effec
   const generation = activeGeneration(layerId);
   const revision = ++nextPreviewRevision;
   const submitted = asyncProcessor(host.source, effects, layerId, image => {
-    if (generation !== activeGeneration(layerId)) { image.close(); return; }
+    if (generation !== activeGeneration(layerId)) { if('close' in image)image.close(); return; }
     const result: EffectResult = {
       width: host.width, height: host.height, scale: 1,
       image, source: host.source, signature,
@@ -278,7 +278,7 @@ export function queueLayerEffectPreview(layerId: string, effects: readonly Effec
     const current = lastSubmitted.get(layerId);
     const pendingNewer = current?.signature !== signature;
     if (current?.source !== host.source || revision < (lastPublishedRevision.get(layerId) ?? 0) ||
-        (pendingNewer && !isInteractiveEffectPreview(layerId))) { image.close(); return; }
+        (pendingNewer && !isInteractiveEffectPreview(layerId))) { if('close' in image)image.close(); return; }
     lastPublishedRevision.set(layerId, revision);
     putLastPreview(layerId, result);
     host.onReady();

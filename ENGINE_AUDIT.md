@@ -1,4 +1,4 @@
-# Huelith 0.2 — Implementation 4 Engine Inventory
+# Huelith 0.2 — Complete Effect Engine Inventory
 
 Generated from the actual effect registry and signature-name list. **A source inventory is not a release certificate.**
 
@@ -9,6 +9,7 @@ Generated from the actual effect registry and signature-name list. **A source in
 - Layer effects (glow, outline, shadow, backdrop) and new Radiance/Miasma have separate parameter schemes.
 - Stages D–H do not complete performance benchmarking, GPU compositing, real UI build verification, or advanced professional color management.
 - Some sophisticated styles are deterministic approximations, not physically modeled fluid or light simulations.
+- The eight new Creativity families add 120 independent named pixel processors, which still need 1080p and 4K artistic quality and performance testing.
 
 ## Stage D: Color & Light
 
@@ -135,6 +136,166 @@ Generated from the actual effect registry and signature-name list. **A source in
 | sig_20 | Crystal Resonance | Independent parameterized procedural signature FX; visual QA and desktop validation remain required. |
 | sig_21 | Liquid Light | Independent parameterized procedural signature FX; visual QA and desktop validation remain required. |
 | sig_14 | Spectrum Burst | Independent parameterized procedural signature FX; visual QA and desktop validation remain required. |
+
+## New Creativity: Color Science
+
+| Kind | Display name | Notes |
+|---|---|---|
+| atelier_0_0 | Chromatic Adaptation | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_0_1 | Shadow Chromaticity | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_0_2 | Highlight Chromaticity | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_0_3 | Three-Way Grade | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_0_4 | Cross Process | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_0_5 | Bleach Bypass | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_0_6 | Teal & Amber | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_0_7 | Channel Compression | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_0_8 | Luma-Chroma Separation | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_0_9 | Filmic Shoulder | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_0_10 | Filmic Toe | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_0_11 | Logarithmic Grade | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_0_12 | Selective Chromaticity | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_0_13 | Gamut Soft Clip | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_0_14 | Palette Quantizer | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_0_15 | Split Tone Spectrum | Canvas2D processor; requires final artistic quality review before v1.0. |
+
+## New Creativity: Lighting & Atmosphere
+
+| Kind | Display name | Notes |
+|---|---|---|
+| atelier_1_0 | Directional Light Shafts | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_1_1 | Specular Glints | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_1_2 | Light Scattering | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_1_3 | Silhouette Rimlight | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_1_4 | Sunburst Rays | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_1_5 | Atmospheric Fog | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_1_6 | Cinematic Haze | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_1_7 | Underwater Caustics | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_1_8 | Lightning Flash | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_1_9 | Ambient Wrap Lighting | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_1_10 | Sparkling Highlights | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_1_11 | Sunrise Illumination | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_1_12 | Moonlight Casting | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_1_13 | Shadowed Mist | Canvas2D processor; requires final artistic quality review before v1.0. |
+
+## New Creativity: Artistic Painting
+
+| Kind | Display name | Notes |
+|---|---|---|
+| atelier_2_0 | Charcoal Drawing | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_2_1 | Sidewalk Chalk | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_2_2 | Soft Pastel | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_2_3 | Opaque Gouache | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_2_4 | Woodcut Engraving | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_2_5 | Copper Etching | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_2_6 | Charcoal Hatching | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_2_7 | Ink Stippling | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_2_8 | Colored Pencils | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_2_9 | Oil Impasto | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_2_10 | Watercolor Bleeding | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_2_11 | Lithographic Press | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_2_12 | Felt-Tip Drawing | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_2_13 | Wax Crayon | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_2_14 | Airbrush Spray | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_2_15 | Stained Glass | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_2_16 | Graphite Shading | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_2_17 | Dry Brush Painting | Canvas2D processor; requires final artistic quality review before v1.0. |
+
+## New Creativity: Distortion & Geometry
+
+| Kind | Display name | Notes |
+|---|---|---|
+| atelier_3_0 | Polar Warp | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_3_1 | Pinch Lens | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_3_2 | Barrel Distortion | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_3_3 | Pincushion Distortion | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_3_4 | Oblique Shear | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_3_5 | Noise Displacement | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_3_6 | Sine Fold | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_3_7 | Quadrant Kaleidoscope | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_3_8 | Warped Waves | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_3_9 | Spiral Vortex | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_3_10 | Crystal Shatter | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_3_11 | Mirror Slices | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_3_12 | Pixel Sorting | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_3_13 | Curved Glass | Canvas2D processor; requires final artistic quality review before v1.0. |
+
+## New Creativity: Anime & Comics
+
+| Kind | Display name | Notes |
+|---|---|---|
+| atelier_4_0 | Manga Screentones | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_4_1 | Diagonal Screentone | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_4_2 | Crosshatch Ink | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_4_3 | Impact Speedlines | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_4_4 | Black Ink Shadows | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_4_5 | Cel Highlight Bands | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_4_6 | Color Registration | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_4_7 | Energy Eyes | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_4_8 | Manga Shadow Bands | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_4_9 | Sharp Contour Ink | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_4_10 | Two-Tone Comic Ink | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_4_11 | Panel Perspective | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_4_12 | Anime Energy Lines | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_4_13 | Flat Anime Colors | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_4_14 | Scratch Ink | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_4_15 | Retro Comic Misprint | Canvas2D processor; requires final artistic quality review before v1.0. |
+
+## New Creativity: Materials & Surfaces
+
+| Kind | Display name | Notes |
+|---|---|---|
+| atelier_5_0 | Brushed Aluminum | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_5_1 | Gold Foil | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_5_2 | Reflective Chrome | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_5_3 | Ceramic Glaze | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_5_4 | Frosted Acrylic | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_5_5 | Woven Linen | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_5_6 | Aged Parchment | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_5_7 | Sandstone Grain | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_5_8 | Leather Texture | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_5_9 | Carbon Fiber | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_5_10 | Iridescent Film | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_5_11 | Concrete Pores | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_5_12 | Gemstone Facets | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_5_13 | Polished Wood | Canvas2D processor; requires final artistic quality review before v1.0. |
+
+## New Creativity: Digital & Experimental
+
+| Kind | Display name | Notes |
+|---|---|---|
+| atelier_6_0 | Databent Stripes | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_6_1 | Bitplane Crush | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_6_2 | Chromatic Ghost | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_6_3 | Damaged Data Blocks | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_6_4 | Tracking Roll | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_6_5 | Codec Mosaic | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_6_6 | Pixel Rearrangement | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_6_7 | Broken LCD | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_6_8 | Signal Static | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_6_9 | Green Phosphor | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_6_10 | RGB Subpixel Mask | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_6_11 | Color Data Tears | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_6_12 | Corrupted Sectors | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_6_13 | Dot Matrix Display | Canvas2D processor; requires final artistic quality review before v1.0. |
+
+## New Creativity: Cinematic & Optical
+
+| Kind | Display name | Notes |
+|---|---|---|
+| atelier_7_0 | Film Halation | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_7_1 | Anamorphic Streak | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_7_2 | Lens Ghost | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_7_3 | Edge Focus Vignette | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_7_4 | Prismatic Lens | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_7_5 | Star Filter | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_7_6 | Cinematic Contrast Curve | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_7_7 | Film Negative | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_7_8 | Silver Retention | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_7_9 | Lens Curvature | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_7_10 | Rolling Shutter | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_7_11 | Split Diopter | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_7_12 | Optical Color Fringe | Canvas2D processor; requires final artistic quality review before v1.0. |
+| atelier_7_13 | Golden Lens Flare | Canvas2D processor; requires final artistic quality review before v1.0. |
 
 ## Risk and acceptance status
 

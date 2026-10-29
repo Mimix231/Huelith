@@ -1,11 +1,13 @@
 import { segmentSubject } from './subject-segmentation';
 import { createSurface } from './canvas-surface';
+import { EXPANSION_LOOKUP, renderExpansion120 } from './expansion-120';
+import { gaussianBlurStable, spatialBlurStable } from './blur-luminance';
 import { AURORA_NEW_KINDS, renderAuroraExpansion } from './aurora-expansion';
 import { renderSubjectOutline } from './subject-outline';
 import { isImmutableEffectSource } from './immutable-effect-sources';
 import { drawStyle, DRAWING_STYLES } from './stylize-reconstruction';
 import { reconstructColor, RECONSTRUCTED_COLOR_KINDS } from './color-reconstruction';
-import { boxKernel, depthLensBlur, shockZoom } from './detail-reconstruction';
+import { boxKernel, shockZoom } from './detail-reconstruction';
 import { applyCreativeEffect, applySignatureFX } from './creative-reconstruction';
 import { applyGradientMap, applyPrecisionColor, applyPainterly, applyMosaic } from './advanced-ops';
 import type { Effect, EffectKind } from './types';
@@ -74,7 +76,7 @@ function filtered(source: HTMLCanvasElement, filter: string): HTMLCanvasElement 
 }
 
 function softened(source: HTMLCanvasElement, radius: number): HTMLCanvasElement {
-  return radius < 0.3 ? copyImage(source) : filtered(source, `blur(${clamp(radius, 0, 80)}px)`);
+  return radius < 0.3 ? copyImage(source) : gaussianBlurStable(source,clamp(radius,0,80));
 }
 
 function shade(r: number, g: number, b: number): number {
@@ -926,12 +928,14 @@ function distort(source: HTMLCanvasElement, effect: Effect): HTMLCanvasElement {
         }
         default: break;
       }
-      const sampleX = Math.round(sx), sampleY = Math.round(sy);
+      // Edge-extend samples rather than manufacturing transparent pixels when
+      // refraction points slightly outside a fully opaque image. This prevents
+      // glass and frosted-glass artifacts from brightening over white layers.
+      const sampleX = Math.max(0,Math.min(width-1,Math.round(sx)));
+      const sampleY = Math.max(0,Math.min(height-1,Math.round(sy)));
       const destination = (y * width + x) * 4;
-      if (sampleX >= 0 && sampleX < width && sampleY >= 0 && sampleY < height) {
-        const start = (sampleY * width + sampleX) * 4;
-        for (let channel = 0; channel < 4; channel++) out.data[destination + channel] = data[start + channel];
-      }
+      const start = (sampleY * width + sampleX) * 4;
+      for (let channel = 0; channel < 4; channel++) out.data[destination + channel] = data[start + channel];
     }
   }
   return fromPixels(out);
@@ -1173,16 +1177,19 @@ export function applyEffect(source: HTMLCanvasElement, effect: Effect): HTMLCanv
   if (kind.startsWith('sig_')) return applySignatureFX(source, effect);
   if (kind === 'radiance' || kind === 'miasma') return applyCreativeEffect(source, effect);
   if (RECONSTRUCTED_COLOR_KINDS.has(kind)) return reconstructColor(source, effect);
+  if (EXPANSION_LOOKUP.has(kind)) return renderExpansion120(source,effect);
   if (kind === 'boxblur') return boxKernel(source, effect);
   if (kind === 'zoomblur') return shockZoom(source, effect);
-  if (kind === 'lensblur') return depthLensBlur(source, effect);
+  if (kind === 'lensblur') return spatialBlurStable(source,effect,'lens');
+  if (kind === 'motionblur'||kind === 'radialblur') return spatialBlurStable(source,effect,kind==='motionblur'?'motion':'radial');
   switch (kind) {
     case 'brightness': case 'contrast': case 'saturate': case 'hue':
     case 'grayscale': case 'sepia': case 'invert': {
       const name = kind === 'saturate' ? 'saturate' : kind === 'hue' ? 'hue-rotate' : kind;
       return filtered(source, `${name}(${effect.amount}${kind === 'hue' ? 'deg' : '%'})`);
     }
-    case 'blur': case 'motionblur': case 'radialblur': case 'surfaceblur': case 'sharpen': case 'unsharp': case 'highpass':
+    // Motion and radial blur are handled by spatialBlurStable before this switch.
+    case 'blur': case 'surfaceblur': case 'sharpen': case 'unsharp': case 'highpass':
     case 'clarity': case 'texture': case 'denoise': case 'emboss': case 'edges': case 'pixelate':
     case 'ink': case 'comicink': case 'neonedge': case 'cartoon': case 'frosted':
       return detailEffect(source, effect);

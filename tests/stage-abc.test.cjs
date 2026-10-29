@@ -52,11 +52,11 @@ function freshLayer() {
   return { doc, layer: doc.layers[0], state: useEditor.getState() };
 }
 
-test('catalog separates 72 Creativity filters, 6 new Effects, and 22 signature FX', () => {
-  assert.equal(catalog.CREATIVITY_FILTERS.length, 72);
-  assert.equal(catalog.LAYER_EFFECTS.length, 6);
+test('catalog separates 192 Creativity filters, 7 layer Effects, and 22 signature FX', () => {
+  assert.equal(catalog.CREATIVITY_FILTERS.length, 192);
+  assert.equal(catalog.LAYER_EFFECTS.length, 7);
   assert.equal(Object.keys(load('fx').FX_PRESETS).length, 22);
-  assert.equal(catalog.LAYER_EFFECTS.some(item => item.kind === 'cutout'), false, 'Cutout belongs in Inspector');
+  assert.equal(catalog.LAYER_EFFECTS.some(item => item.kind === 'cutout'), true, 'Cutout must be discoverable in Studio as well as Inspector');
 });
 
 test('preset effects share one stable rounded-icon identity and remain valid save data', () => {

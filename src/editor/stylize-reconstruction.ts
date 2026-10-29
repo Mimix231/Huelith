@@ -26,7 +26,11 @@ export function drawStyle(source: HTMLCanvasElement, effect: Effect): HTMLCanvas
   const image = ctx.createImageData(width, height);
   const result = image.data;
   const gray = new Float32Array(width * height);
-  const strength = effect.amount / 100;
+  const strength = Math.max(0, Math.min(1, effect.amount / 100));
+  if (strength === 0) {
+    ctx.putImageData(original, 0, 0);
+    return output;
+  }
   for (let i = 0; i < gray.length; i++) gray[i] = luma(d[i * 4], d[i * 4 + 1], d[i * 4 + 2]);
   function luminanceAt(x: number, y: number): number {
     return gray[Math.max(0, Math.min(height - 1, y)) * width + Math.max(0, Math.min(width - 1, x))];
@@ -72,7 +76,8 @@ export function drawStyle(source: HTMLCanvasElement, effect: Effect): HTMLCanvas
         const edgeThreshold = 50 + (100 - (effect.parameters?.edgeStrength ?? 65)) * 0.7;
         channels = edge > edgeThreshold ? [22, 23, 28] : channels.map(value => Math.round(value / unit) * unit);
       }
-      for (let c = 0; c < 3; c++) result[at + c] = clamp(channels[c]);
+      // All styles use the same amount rule: 0% is the untouched source.
+      for (let c = 0; c < 3; c++) result[at + c] = clamp(d[at+c] + (channels[c]-d[at+c])*strength);
       result[at + 3] = d[at + 3];
     }
   }

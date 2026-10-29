@@ -107,7 +107,7 @@ export function setTrackEffects(doc: Document, layerId: string, effects: Readonl
   const animation = doc.animation;
   if (!animation) return;
   const map = ensureTrackEffects(doc);
-  map[layerId] = copy(effects);
+  map[layerId] = copy([...effects]);
   // The active cel mirror must be kept valid for saving. Other cels are NOT
   // overwritten: their effect fields are legacy baggage, not authoritative.
   doc.layers = resolveTrackLayers(doc.layers, map);
@@ -127,6 +127,152 @@ export function setTrackGradient(doc: Document, layerId: string, gradient: impor
   frame.activeLayerId = doc.activeLayerId;
 }
 
+/** Resolve held drawings without copying source artwork. Recursive references are
+ * stable across timeline reordering because they use frame IDs, never indices. */
+export function exposedLayers(doc: Document, index: number): Layer[] {
+  const animation = doc.animation;
+  const frame = animation?.frames[index];
+  if (!frame || !animation) return doc.layers;
+  const byId = new Map(animation.frames.map(item => [item.id,item]));
+  const read = (frameId: string, layerId: string, visited: Set<string>): Layer | null => {
+    if (visited.has(frameId)) return null;
+    visited.add(frameId);
+    const origin = byId.get(frameId);
+    if (!origin) return null;
+    const parentId=origin.holdFrom?.[layerId];
+    if (parentId) return read(parentId,layerId,visited);
+    return flattenTrackLayers(origin.layers).find(layer=>layer.id===layerId) ?? null;
+  };
+  const apply = (layers: readonly Layer[]): Layer[] => layers.map(layer => {
+    if (layer.type==='group')return {...layer,children:apply(layer.children)};
+    const sourceId=frame.holdFrom?.[layer.id];
+    const source=sourceId ? read(sourceId,layer.id,new Set([frame.id])) : null;
+    if(!source || source.type!==layer.type)return layer;
+    if(layer.type==='raster'&&source.type==='raster')return {...layer,image:source.image,imageWidth:source.imageWidth,imageHeight:source.imageHeight};
+    if(layer.type==='vector'&&source.type==='vector')return {...layer,shapes:source.shapes};
+    return layer;
+  });
+  return apply(frame.layers);
+}
+
+function stripHeldArtwork(layers: Layer[], held: Record<string,string> | undefined): Layer[] {
+  if(!held)return copy(layers);
+  return layers.map(layer=>{
+    if(layer.type==='group')return {...layer,children:stripHeldArtwork(layer.children,held)};
+    if(!held[layer.id])return copy(layer);
+    if(layer.type==='raster')return {...copy(layer),image:'',imageWidth:undefined,imageHeight:undefined};
+    if(layer.type==='vector')return {...copy(layer),shapes:[]};
+    return copy(layer);
+  });
+}
+
+/** Editing a held drawing makes an independent cel. Metadata-only changes such
+ * as FX or opacity do not break the hold. */
+export function releaseModifiedHolds(before: Document, after: Document): void {
+  const frame=after.animation?.frames[after.animation.currentFrame];
+  if(!frame?.holdFrom)return;
+  for(const id of Object.keys(frame.holdFrom)) {
+    const old=flattenTrackLayers(before.layers).find(layer=>layer.id===id);
+    const next=flattenTrackLayers(after.layers).find(layer=>layer.id===id);
+    if(!old || !next || old.type!==next.type){delete frame.holdFrom[id];continue;}
+    const changed = old.type==='raster' && next.type==='raster' ? old.image!==next.image || old.imageWidth!==next.imageWidth || old.imageHeight!==next.imageHeight
+      : old.type==='vector' && next.type==='vector' ? JSON.stringify(old.shapes)!==JSON.stringify(next.shapes) : false;
+    if(changed)delete frame.holdFrom[id];
+  }
+}
+
+/** Hold artwork from an earlier frame, not its effects or editable layer metadata. */
+export function holdLayer(doc: Document, frameIndex: number, layerId: string): boolean {
+  const animation=doc.animation;
+  if(!animation || frameIndex<1 || frameIndex>=animation.frames.length)return false;
+  syncActiveCel(doc);
+  const target=animation.frames[frameIndex];
+  const exists=flattenTrackLayers(target.layers).find(layer=>layer.id===layerId);
+  if(!exists || !['raster','vector'].includes(exists.type))return false;
+  const sourceIndex=frameIndex-1;
+  const source=flattenTrackLayers(exposedLayers(doc,sourceIndex)).find(layer=>layer.id===layerId);
+  if(!source || source.type!==exists.type)return false;
+  target.holdFrom={...target.holdFrom,[layerId]:animation.frames[sourceIndex].id};
+  target.layers=stripHeldArtwork(target.layers,target.holdFrom);
+  if(frameIndex===animation.currentFrame)doc.layers=resolveTrackLayers(exposedLayers(doc,frameIndex),ensureTrackEffects(doc),ensureTrackGradients(doc));
+  return true;
+}
+
+export function releaseHold(doc: Document, frameIndex: number, layerId: string): boolean {
+  const animation=doc.animation,frame=animation?.frames[frameIndex];
+  if(!animation || !frame?.holdFrom?.[layerId])return false;
+  syncActiveCel(doc);
+  const resolved=exposedLayers(doc,frameIndex);
+  delete frame.holdFrom[layerId];
+  const content=flattenTrackLayers(resolved).find(layer=>layer.id===layerId);
+  const replace=(layers:Layer[]):Layer[]=>layers.map(layer=>layer.type==='group'?{...layer,children:replace(layer.children)}:layer.id===layerId&&content?copy(content):layer);
+  frame.layers=replace(frame.layers);
+  if(frameIndex===animation.currentFrame)doc.layers=resolveTrackLayers(frame.layers,ensureTrackEffects(doc),ensureTrackGradients(doc));
+  return true;
+}
+
+/** Clear only this layer's artwork at the chosen frame; its FX stay track-wide. */
+export function clearLayerCel(doc: Document, frameIndex:number, layerId:string):boolean {
+  const frame=doc.animation?.frames[frameIndex];if(!frame)return false;
+  syncActiveCel(doc);
+  if(frame.holdFrom)delete frame.holdFrom[layerId];
+  const empty=(layers:Layer[]):Layer[]=>layers.map(layer=>{
+    if(layer.type==='group')return {...layer,children:empty(layer.children)};
+    if(layer.id!==layerId)return layer;
+    if(layer.type==='raster')return {...layer,image:'',imageWidth:undefined,imageHeight:undefined};
+    if(layer.type==='vector')return {...layer,shapes:[]};
+    return layer;
+  });
+  frame.layers=empty(frame.layers);
+  if(frameIndex===doc.animation!.currentFrame)doc.layers=resolveTrackLayers(frame.layers,ensureTrackEffects(doc),ensureTrackGradients(doc));
+  return true;
+}
+
+/** Apply exposure changes to several frames as one undoable document action. */
+export function holdFrameRange(doc:Document, indices:readonly number[], layerId:string, enabled:boolean):void {
+  const chosen=[...new Set(indices)].sort((a,b)=>a-b);
+  for(const index of chosen){if(enabled)holdLayer(doc,index,layerId);else releaseHold(doc,index,layerId);}
+}
+/** Delete multiple frames without invalidating dependent held cels. At least
+ * one frame is always retained. */
+export function deleteFrameRange(doc:Document, indices:readonly number[]):void {
+  const animation=doc.animation;if(!animation)return;
+  const chosen=[...new Set(indices)].filter(index=>index>=0&&index<animation.frames.length)
+    .sort((a,b)=>b-a).slice(0,animation.frames.length-1);
+  for(const index of chosen){
+    if(!selectFrame(doc,index))continue;
+    deleteFrame(doc);
+  }
+}
+
+export function setFrameLabel(doc: Document, frameIndex:number, label:string):void {
+  const frame=doc.animation?.frames[frameIndex];if(frame)frame.label=label.slice(0,120);
+}
+export function setPlaybackRegion(doc:Document, changes:Partial<NonNullable<import('./types').AnimationTrack['playback']>>):void {
+  const animation=doc.animation;if(!animation)return;
+  const current=animation.playback??{mode:'loop' as const,start:0,end:animation.frames.length-1};
+  const mode=changes.mode??current.mode;
+  const start=Math.max(0,Math.min(animation.frames.length-1,Math.round(changes.start??current.start)));
+  const end=Math.max(start,Math.min(animation.frames.length-1,Math.round(changes.end??current.end)));
+  animation.playback={mode,start,end};
+}
+export function setFrameDurations(doc:Document, indices:readonly number[], milliseconds:number):void {
+  for(const index of new Set(indices))changeFrameDuration(doc,index,milliseconds);
+}
+export function duplicateFrameRange(doc:Document,indices:readonly number[]):boolean {
+  const animation=doc.animation;if(!animation)return false;
+  const selected=[...new Set(indices)].filter(i=>i>=0&&i<animation.frames.length).sort((a,b)=>a-b);
+  if(!selected.length||selected.length+animation.frames.length>MAX_FRAMES)return false;
+  syncActiveCel(doc);
+  const additions=selected.map(index=>{
+    const original=animation.frames[index];
+    return {...copy(original),id:uid(),layers:copy(exposedLayers(doc,index)),holdFrom:undefined};
+  });
+  animation.frames.splice(selected.at(-1)!+1,0,...additions);
+  animation.playback=undefined;
+  return true;
+}
+
 /** The editor works against doc.layers; synchronize that working cel after document edits. */
 export function syncActiveCel(doc: Document): void {
   if (!doc.animation) return;
@@ -140,7 +286,7 @@ export function syncActiveCel(doc: Document): void {
     if (layer.type === 'gradient' && !Object.hasOwn(gradients, layer.id)) gradients[layer.id] = copy(layer.gradient);
   }
   doc.layers = resolveTrackLayers(doc.layers, track, gradients);
-  frame.layers = copy(doc.layers);
+  frame.layers = stripHeldArtwork(doc.layers,frame.holdFrom);
   frame.activeLayerId = doc.activeLayerId;
 }
 
@@ -169,7 +315,7 @@ export function selectFrame(doc: Document, index: number): boolean {
   if (!animation || !Number.isInteger(index) || index < 0 || index >= animation.frames.length) return false;
   syncActiveCel(doc);
   animation.currentFrame = index;
-  doc.layers = resolveTrackLayers(copy(animation.frames[index].layers), ensureTrackEffects(doc), ensureTrackGradients(doc));
+  doc.layers = resolveTrackLayers(exposedLayers(doc,index), ensureTrackEffects(doc), ensureTrackGradients(doc));
   animation.frames[index].layers = doc.layers;
   doc.activeLayerId = animation.frames[index].activeLayerId;
   return true;
@@ -187,6 +333,7 @@ export function insertFrame(doc: Document, duplicate = false): boolean {
   const activeLayerId = layers.some(item => item.id === doc.activeLayerId) ? doc.activeLayerId : fallback.id;
   const frame = frameFromLayers(layers, activeLayerId, current.durationMs);
   animation.frames.splice(animation.currentFrame + 1, 0, frame);
+  if(animation.playback)animation.playback={...animation.playback,start:0,end:animation.frames.length-1};
   selectFrame(doc, animation.currentFrame + 1);
   return true;
 }
@@ -195,10 +342,15 @@ export function deleteFrame(doc: Document): boolean {
   const animation = doc.animation;
   if (!animation || animation.frames.length < 2) return false;
   const current = animation.currentFrame;
+  // Materialize dependent holds before deleting the source frame.
+  const dependencies=animation.frames.flatMap((entry,index)=>Object.entries(entry.holdFrom??{})
+    .filter(([,source])=>source===animation.frames[current].id).map(([layerId])=>({index,layerId})));
+  for(const item of dependencies)releaseHold(doc,item.index,item.layerId);
   animation.frames.splice(current, 1);
+  if(animation.playback)animation.playback={...animation.playback,start:0,end:animation.frames.length-1};
   animation.currentFrame = Math.min(current, animation.frames.length - 1);
   const frame = animation.frames[animation.currentFrame];
-  doc.layers = resolveTrackLayers(copy(frame.layers), ensureTrackEffects(doc), ensureTrackGradients(doc));
+  doc.layers = resolveTrackLayers(exposedLayers(doc,animation.currentFrame), ensureTrackEffects(doc), ensureTrackGradients(doc));
   frame.layers = doc.layers;
   doc.activeLayerId = frame.activeLayerId;
   return true;
@@ -213,6 +365,7 @@ export function reorderFrame(doc: Document, from: number, to: number): boolean {
   const [moved] = animation.frames.splice(from, 1);
   animation.frames.splice(to, 0, moved);
   animation.currentFrame = animation.frames.findIndex(frame => frame.id === selectedId);
+  if(animation.playback) animation.playback={...animation.playback,start:0,end:animation.frames.length-1};
   return true;
 }
 
@@ -263,7 +416,7 @@ export function frameDocument(doc: Document, index: number): Document {
     [doc.layers,...doc.animation!.frames.map(entry=>entry.layers)]
       .flatMap(layers=>flattenTrackLayers(layers)).filter(layer=>layer.type==='gradient')
       .map(layer=>[layer.id, (layer as Extract<Layer,{type:'gradient'}>).gradient]));
-  return { ...doc, layers: resolveTrackLayers(frame.layers, map, gradients), activeLayerId: frame.activeLayerId, animation: { ...doc.animation!, currentFrame: index }, creativeFrame: index };
+  return { ...doc, layers: resolveTrackLayers(exposedLayers(doc,index), map, gradients), activeLayerId: frame.activeLayerId, animation: { ...doc.animation!, currentFrame: index }, creativeFrame: index };
 }
 
 /** Last-frame timing is respected and the playhead wraps to the beginning. */

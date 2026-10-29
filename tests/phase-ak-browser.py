@@ -10,7 +10,7 @@ script="""const ts=require('typescript'),fs=require('fs');
 const filename=process.argv[1];
 process.stdout.write(ts.transpileModule(fs.readFileSync(filename,'utf8'),{fileName:filename,compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText);"""
 compiled={}
-for key in ['gradient-transforms','gradient']:
+for key in ['gradient-transforms','gradient-patterns','gradient']:
     compiled[key]=check_output(['node','-e',script,str(root/'src/editor'/f'{key}.ts')],text=True)
 with sync_playwright() as p:
     browser=p.chromium.launch(headless=True, executable_path=shutil.which('chromium') or '/usr/bin/chromium', args=['--no-sandbox'])

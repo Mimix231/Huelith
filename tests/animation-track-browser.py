@@ -51,6 +51,20 @@ with sync_playwright() as p:
           for(let i=0;i<6;i++)check('frame '+i+' cleared',e.frameDocument(doc,i).layers[0].effects.length===0);
           check('removed effects no longer rendered',different(render(e.frameDocument(doc,3)),on[3])>0);
           check('track map persists in serialized JSON',JSON.parse(JSON.stringify(doc)).animation.trackEffects[ink.id].length===0);
+          // Exposures are resolved by the authoritative frame compositor, not
+          // by duplicating the source drawing or stripping layer effects.
+          const exposure=e.createDocument('Held',80,50,'transparent');
+          const layer=e.makeVector('Hold Ink'), first={id:e.uid(),kind:'rect',x:5,y:10,width:24,height:22,fill:'#ca2b7e',stroke:'none',strokeWidth:0};
+          layer.shapes=[first];exposure.layers=[layer];exposure.activeLayerId=layer.id;
+          e.enableAnimation(exposure,12);e.insertFrame(exposure,false);
+          check('holding vector cel succeeds',e.holdLayer(exposure,1,layer.id));
+          check('held cel saves no duplicate vector paths',exposure.animation.frames[1].layers[0].shapes.length===0);
+          const originalHold=render(e.frameDocument(exposure,1));
+          check('held frame exports identical pixels to master',different(render(e.frameDocument(exposure,0)),originalHold)===0);
+          e.selectFrame(exposure,0);
+          exposure.layers[0].shapes[0].fill='#58e8c2';e.syncActiveCel(exposure);
+          check('held frame follows updated source pixels',different(render(e.frameDocument(exposure,1)),originalHold)>0);
+          check('held project remains serializable',e.isDocument(JSON.parse(JSON.stringify(exposure))));
           return checks;
         }''')
         print(f'Phase AI browser: {len(results)} pixel/track checks passed.')

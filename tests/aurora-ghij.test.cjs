@@ -78,6 +78,7 @@ test('Phase G/F: cooperative worker finishes no superseded remaining stages, kee
       return { ...source, revision: `${source.revision ?? ''}/${effect.kind}:${effect.amount}` };
     } },
     './immutable-effect-sources': { markImmutableEffectSource: mark },
+    './expansion-120': { EXPANSION_LOOKUP:new Map() },
   });
   const graph = new cache.EffectStackCache();
   const source = { width: 16, height: 16, revision: 'base' };

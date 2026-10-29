@@ -13,10 +13,16 @@ import { activeLayer, activeTab, studioPreviewLayer, useEditor } from '../editor
 import { decodeImage, drawChecker, drawShape, renderLayer, renderClippedLayer, applyAdjustmentLayer } from '../editor/render';
 import { contains, normalizeRect, rotate, shapeBounds, smoothPath, splitPathSegment } from '../editor/geometry';
 import { previewDrag, type DragOperation } from '../editor/operations';
+import {setTrackGradient} from '../editor/animation';
 import { drawViewportRulers, snapPoint } from '../editor/workspace-guides';
 import {snapBounds,snapHandle,type SnapGuide} from '../editor/smart-snapping';
+import {snapScale} from '../editor/smart-scale';
 import { uid, type Layer, type Point, type SelectionRect, type VectorShape } from '../editor/types';
 import { drawBrushDab, stabilizedPoint, strokeSamples } from '../editor/brush';
+import {floodRegion,rasterPolygon,magneticPoint,fillRegion,retouchStamp,type RetouchTool} from '../editor/raster-tools';
+import {pixelSelection,setPixelSelection,clearPixelSelection,selectionPreview,constrainPixels} from '../editor/selection-mask';
+import {prepareImages,exportCanvas} from '../editor/render';
+import { drawInkContour, interpolateInkSamples, type InkPoint, type InkSettings } from '../editor/ink-engine';
 import FocusTextEditor from './FocusTextEditor';
 import { renderCreative, renderMotionEcho, paintCreativeLayer } from '../editor/creative-render';
 import { evaluatedCreative, setCreativeKeyframe } from '../editor/creative';
@@ -35,9 +41,18 @@ type DrawGesture = {
   lastPressure: number;
   lastRaw: Point;
   beforeLast: Point;
+  inkSource?: HTMLCanvasElement;
+  inkPoints?: InkPoint[];
+  inkSettings?: InkSettings;
+  inkRaf?: number;
+  beforeSelection?: ImageData;
 };
 
+type RasterGesture={kind:'raster-edit';layerId:string;docId:string;tool:RetouchTool;
+  working:HTMLCanvasElement;before:ImageData;last:Point;step:number;strength:number;size:number;pattern:'star'|'dots'|'hatches';};
+type SelectPathGesture={kind:'select-path';tool:'lassoSelect'|'magneticLasso';points:Point[];edgeData?:ImageData;last:Point};
 type Gesture =
+  | RasterGesture | SelectPathGesture
   | { kind: 'pan'; start: Point; original: Point }
   | { kind: 'creative-move'; start: Point; last: Point; id: string }
   | { kind: 'creative-ink'; points: Point[]; id: string }
@@ -45,7 +60,8 @@ type Gesture =
   | { kind: 'marquee'; start: Point; last: Point }
   | { kind: 'move'; start: Point; last: Point; layerId: string; shapeId: string | null }
   | { kind: 'transform'; mode: 'rotate' | 'scale'; handle: string; start: Point; last: Point;
-      layerId: string; shapeId: string | null; bounds: SelectionRect; rotation: number }
+      layerId: string; shapeId: string | null; bounds: SelectionRect; rotation: number; pivot: Point; keepAspect: boolean }
+  | {kind:'pivot';start:Point;last:Point;layerId:string;shapeId:string|null}
   | { kind: 'line-point'; layerId: string; shapeId: string; index: number; start: Point; last: Point }
   | { kind: 'pen-node'; nodeIndex: number; start: Point; last: Point }
   | { kind: 'gradient-point'; layerId: string; shapeId: string; index: number; last: Point }
@@ -68,6 +84,13 @@ function layerBounds(layer: Layer, docWidth: number, docHeight: number): Selecti
       width: (layer.imageWidth ?? docWidth) * (layer.scaleX ?? 1),
       height: (layer.imageHeight ?? docHeight) * (layer.scaleY ?? 1),
     };
+  }
+  if (layer.type === 'gradient') return shapeBounds(layer.gradient,layer);
+  if (layer.type==='vector' && layer.shapes.length){
+    const shapes=layer.shapes.map(item=>shapeBounds(item,layer));
+    const x=Math.min(...shapes.map(box=>box.x)), y=Math.min(...shapes.map(box=>box.y));
+    return{x,y,width:Math.max(...shapes.map(box=>box.x+box.width))-x,
+      height:Math.max(...shapes.map(box=>box.y+box.height))-y};
   }
   return { x: layer.x, y: layer.y, width: docWidth, height: docHeight };
 }
@@ -94,6 +117,18 @@ export default function Canvas({ onError }: CanvasProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const gesture = useRef<Gesture | null>(null);
   const alignmentGuides=useRef<SnapGuide[]>([]);
+  // A pivot is an editing handle, not a destructive change to a layer's
+  // source pixels. Remember it per selection while the canvas is mounted.
+  const transformPivot=useRef<{key:string;normalized:Point}|null>(null);
+  const pivotFor=(layerId:string,shapeId:string|null,bounds:SelectionRect):Point=>{
+    const key=`${doc.id}:${layerId}:${shapeId??'layer'}`;
+    const existing=transformPivot.current;
+    if(existing?.key===key)return {x:bounds.x+existing.normalized.x*bounds.width,
+      y:bounds.y+existing.normalized.y*bounds.height};
+    return {x:bounds.x+bounds.width/2,y:bounds.y+bounds.height/2};
+  };
+  const polygonSelection=useRef<Point[]>([]);
+  const selectionLayer=useRef<{docId:string;revision:number;canvas:HTMLCanvasElement}|null>(null);
   const raf = useRef<number>(0);
   const [size, setSize] = useState({ width: 800, height: 600 });
   const [cursor, setCursor] = useState<Point | null>(null);
@@ -251,6 +286,21 @@ export default function Canvas({ onError }: CanvasProps) {
     };
   }, [doc.height, doc.width, pan.x, pan.y, zoom]);
 
+  // Only the document sheet is interactive. Background workspace is for
+  // panning/zooming, never for selecting or starting a drawing operation.
+  const onSheet=(point:Point):boolean=>point.x>=0&&point.x<=doc.width&&point.y>=0&&point.y<=doc.height;
+  const clampToSheet=(point:Point):Point=>({x:Math.max(0,Math.min(doc.width,point.x)),
+    y:Math.max(0,Math.min(doc.height,point.y))});
+  const layerHit=(point:Point,layer:Layer):boolean=>{
+    if(!layer.visible||layer.locked)return false;
+    const rect=layerBounds(layer,doc.width,doc.height);
+    const angle=layer.type==='raster'?layer.rotation??0:
+      layer.type==='gradient'?layer.gradient.rotation??0:0;
+    const center={x:rect.x+rect.width/2,y:rect.y+rect.height/2};
+    const local=angle?rotate(point,center,-angle):point;
+    return contains(rect,local);
+  };
+
   function operationFromGesture(current: Gesture | null): { layerId: string; action: DragOperation } | null {
     if (!current) return null;
     if (current.kind === 'move' || current.kind === 'node' || current.kind === 'line-point') {
@@ -280,7 +330,8 @@ export default function Canvas({ onError }: CanvasProps) {
         action: {
           kind: 'transform', shapeId: current.shapeId, mode: current.mode,
           handle: current.handle, bounds: current.bounds,
-          start: current.start, last: current.last,
+          start: current.start, last: current.last, rotation:current.rotation,
+          keepAspect:current.keepAspect,pivot:current.pivot,
         },
       };
     }
@@ -343,7 +394,7 @@ export default function Canvas({ onError }: CanvasProps) {
       }
     }
 
-    const working = gesture.current?.kind === 'draw' ? gesture.current : null;
+    const working = gesture.current?.kind === 'draw'||gesture.current?.kind==='raster-edit' ? gesture.current : null;
     const operation = operationFromGesture(gesture.current);
     const layers = doc.layers.map(original => {
       const layer = studioPreviewLayer(doc.id, original);
@@ -443,17 +494,39 @@ export default function Canvas({ onError }: CanvasProps) {
     const bounds = selected && active ? shapeBounds(selected, active) : tool === 'move' && active && !selectedShapeId
       ? layerBounds(active, doc.width, doc.height) : null;
     const drag = gesture.current;
+    // Center-cross alignment is visible even after releasing the mouse.
+    if(snap && bounds && tool==='move' && !drag &&
+      Math.abs(bounds.x+bounds.width/2-doc.width/2)<.5 &&
+      Math.abs(bounds.y+bounds.height/2-doc.height/2)<.5) {
+      ctx.save();ctx.strokeStyle='rgba(116,246,232,.8)';ctx.lineWidth=1/zoom;
+      ctx.setLineDash([6/zoom,5/zoom]);ctx.beginPath();
+      ctx.moveTo(doc.width/2,0);ctx.lineTo(doc.width/2,doc.height);
+      ctx.moveTo(0,doc.height/2);ctx.lineTo(doc.width,doc.height/2);ctx.stroke();ctx.restore();
+    }
     if (snap && alignmentGuides.current.length && drag) {
-      ctx.save();ctx.strokeStyle='#71f2e0';ctx.lineWidth=1.25/zoom;ctx.setLineDash([5/zoom,3/zoom]);
+      ctx.save();ctx.strokeStyle='#62fff3';ctx.lineWidth=1.75/zoom;
+      ctx.setLineDash([6/zoom,3/zoom]);
       for(const guide of alignmentGuides.current){
         ctx.beginPath();if(guide.axis==='x'){ctx.moveTo(guide.at,0);ctx.lineTo(guide.at,doc.height);}
         else{ctx.moveTo(0,guide.at);ctx.lineTo(doc.width,guide.at);}ctx.stroke();
-        ctx.save();ctx.setLineDash([]);ctx.fillStyle='#8cece9';ctx.font=`${11/zoom}px Inter, sans-serif`;
-        if(guide.axis==='x')ctx.fillText(`${Math.round(guide.at)}`,guide.at+4/zoom,16/zoom);
-        else ctx.fillText(`${Math.round(guide.at)}`,7/zoom,guide.at-4/zoom);ctx.restore();
-      }ctx.restore();
+        ctx.save();ctx.setLineDash([]);ctx.fillStyle='#83fff5';ctx.font=`${11/zoom}px Inter, sans-serif`;
+        const x=guide.axis==='x'?Math.min(doc.width-45/zoom,Math.max(6/zoom,guide.at+5/zoom)):8/zoom;
+        const y=guide.axis==='y'?Math.min(doc.height-5/zoom,Math.max(15/zoom,guide.at-5/zoom)):18/zoom;
+        ctx.fillText(`${Math.round(guide.at)}`,x,y);ctx.restore();
+      }
+      // A + badge makes the 2-axis magnetic intersection unmistakable.
+      const snapX=alignmentGuides.current.find(g=>g.axis==='x');
+      const snapY=alignmentGuides.current.find(g=>g.axis==='y');
+      if(snapX&&snapY){
+        ctx.setLineDash([]);ctx.beginPath();ctx.arc(snapX.at,snapY.at,8/zoom,0,2*Math.PI);
+        ctx.fillStyle='#132d40';ctx.fill();ctx.strokeStyle='#62fff3';ctx.stroke();
+        ctx.lineWidth=2/zoom;ctx.beginPath();ctx.moveTo(snapX.at-4/zoom,snapY.at);
+        ctx.lineTo(snapX.at+4/zoom,snapY.at);ctx.moveTo(snapX.at,snapY.at-4/zoom);
+        ctx.lineTo(snapX.at,snapY.at+4/zoom);ctx.stroke();
+      }
+      ctx.restore();
     }
-    if (snap && drag && ['shape','node','line-point','gradient-guide','gradient-point'].includes(drag.kind)) {
+    if (snap && drag && 'last' in drag && ['shape','node','line-point','gradient-guide','gradient-point'].includes(drag.kind)) {
       const nearest = snapPoint(drag.last);
       ctx.save();
       ctx.strokeStyle = '#5de5d9';ctx.lineWidth = 1 / zoom;
@@ -471,19 +544,19 @@ export default function Canvas({ onError }: CanvasProps) {
       ctx.translate(center.x, center.y);
       ctx.rotate(rotation * Math.PI / 180);
       ctx.translate(-center.x, -center.y);
-      ctx.strokeStyle = '#8adfff';
-      ctx.fillStyle = '#f7fcff';
-      ctx.lineWidth = 1.4 / zoom;
+      ctx.strokeStyle = '#6df6f0';
+      ctx.fillStyle = '#edfffe';
+      ctx.lineWidth = 1.6 / zoom;
       ctx.setLineDash([5 / zoom, 3 / zoom]);
       ctx.strokeRect(outline.x, outline.y, outline.width, outline.height);
       ctx.setLineDash([]);
       if (tool === 'move' || tool === 'text' || selected?.kind === 'text') {
         for (const [key, point] of Object.entries(corners(outline))) {
-          const radius = key === 'rotate' ? 5 : 4;
+          const radius = key === 'rotate' ? 5 : 5.3;
           ctx.beginPath();
-          ctx.arc(point.x, point.y, radius / zoom, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.stroke();
+          if(key==='rotate')ctx.arc(point.x,point.y,radius/zoom,0,Math.PI*2);
+          else ctx.rect(point.x-radius/zoom,point.y-radius/zoom,2*radius/zoom,2*radius/zoom);
+          ctx.fill();ctx.stroke();
         }
         const upper = corners(outline);
         ctx.beginPath();
@@ -492,6 +565,24 @@ export default function Canvas({ onError }: CanvasProps) {
         ctx.stroke();
       }
       ctx.restore();
+      if (tool==='move' || tool==='text' || selected?.kind==='text') {
+        const pivot=pivotFor(active!.id,active?.type==='vector'?selectedShapeId:null,outline);
+        ctx.save();
+        ctx.strokeStyle='#172939';ctx.fillStyle='#84f4f0';ctx.lineWidth=1.5/zoom;
+        ctx.beginPath();ctx.arc(pivot.x,pivot.y,7/zoom,0,2*Math.PI);ctx.fill();ctx.stroke();
+        ctx.strokeStyle='#1f4752';ctx.beginPath();ctx.moveTo(pivot.x-12/zoom,pivot.y);ctx.lineTo(pivot.x+12/zoom,pivot.y);
+        ctx.moveTo(pivot.x,pivot.y-12/zoom);ctx.lineTo(pivot.x,pivot.y+12/zoom);ctx.stroke();
+        // Native pixel dimensions remain legible at any document zoom.
+        const label=`W ${Math.round(outline.width)} px  ·  H ${Math.round(outline.height)} px`;
+        ctx.font=`${11/zoom}px Inter, sans-serif`;
+        const textWidth=ctx.measureText(label).width;
+        const labelX=outline.x+outline.width/2-textWidth/2;
+        const labelY=outline.y-46/zoom;
+        ctx.fillStyle='rgba(17,32,49,.94)';ctx.strokeStyle='#7ae7e1';ctx.lineWidth=1/zoom;
+        ctx.beginPath();ctx.roundRect(labelX-9/zoom,labelY-13/zoom,textWidth+18/zoom,20/zoom,6/zoom);
+        ctx.fill();ctx.stroke();ctx.fillStyle='#e5fffc';ctx.fillText(label,labelX,labelY+1/zoom);
+        ctx.restore();
+      }
     }
 
     if (tool === 'node' && selected?.kind === 'line' && selected.controls && active) {
@@ -552,6 +643,14 @@ export default function Canvas({ onError }: CanvasProps) {
       ctx.restore();
     }
 
+    const precise=pixelSelection(doc.id);
+    if(precise?.bounds.width&&(!selectionLayer.current||selectionLayer.current.docId!==doc.id||selectionLayer.current.revision!==precise.revision))
+      selectionLayer.current={docId:doc.id,revision:precise.revision,canvas:selectionPreview(precise)};
+    if(precise && selectionLayer.current?.docId===doc.id){ctx.save();ctx.drawImage(selectionLayer.current.canvas,0,0);ctx.restore();}
+    const pathGesture=drag?.kind==='select-path'?drag.points:polygonSelection.current;
+    if(pathGesture.length){ctx.save();ctx.lineWidth=1.5/zoom;ctx.strokeStyle='#56dff3';ctx.setLineDash([6/zoom,3/zoom]);
+      ctx.beginPath();ctx.moveTo(pathGesture[0].x,pathGesture[0].y);
+      for(const p of pathGesture.slice(1))ctx.lineTo(p.x,p.y);ctx.stroke();ctx.restore();}
     const rectangle = drag?.kind === 'marquee' ? normalizeRect(drag.start, drag.last) : selection;
     if (rectangle) {
       ctx.save();
@@ -573,7 +672,29 @@ export default function Canvas({ onError }: CanvasProps) {
     };
     paintFrame.current();
     return () => { paintFrame.current = () => {}; };
-  }, [doc, size, zoom, pan, grid, rulers, checkerSize, draft, drawing, selectedShapeId, selectedNodeIndex, selection, tool, fxBypassLayerId, creativePanelOpen, selectedCreativeId, creativePreview, creativeDrawMode, textEdit?.id, textEdit?.layerId, invalidate]);
+  }, [doc, size, zoom, pan, grid, snap, rulers, checkerSize, draft, drawing, selectedShapeId, selectedNodeIndex, selection, tool, fxBypassLayerId, creativePanelOpen, selectedCreativeId, creativePreview, creativeDrawMode, textEdit?.id, textEdit?.layerId, invalidate]);
+
+  function paintInkGesture(current: DrawGesture): void {
+    const original=current.inkSource, points=current.inkPoints, settings=current.inkSettings;
+    if(!original||!points?.length||!settings)return;
+    const state=useEditor.getState(), document=activeTab(state).doc;
+    const layer=document.layers.find(item=>item.id===current.layerId);
+    if(layer?.type!=='raster')return;
+    const ctx=current.ctx;
+    ctx.save();ctx.clearRect(0,0,current.canvas.width,current.canvas.height);
+    ctx.drawImage(original,0,0);
+    if(state.selection){ctx.beginPath();ctx.rect(state.selection.x-layer.x,state.selection.y-layer.y,state.selection.width,state.selection.height);ctx.clip();}
+    if(layer.mask){ctx.beginPath();ctx.rect(layer.mask.x-layer.x,layer.mask.y-layer.y,layer.mask.width,layer.mask.height);ctx.clip();}
+    drawInkContour(ctx,points,settings,{x:-layer.x,y:-layer.y});
+    if(state.symmetryX)drawInkContour(ctx,points.map(p=>({...p,x:document.width-p.x})),settings,{x:-layer.x,y:-layer.y});
+    ctx.restore();invalidate();
+  }
+  function scheduleInkPreview(current: DrawGesture): void {
+    if(current.inkRaf!==undefined)return;
+    current.inkRaf=requestAnimationFrame(()=>{current.inkRaf=undefined;
+      if(gesture.current===current)paintInkGesture(current);
+    });
+  }
 
   function dab(current: DrawGesture, point: Point, pressure: number, finalize = false): void {
     const editor = useEditor.getState();
@@ -581,11 +702,24 @@ export default function Canvas({ onError }: CanvasProps) {
     const layer = document.layers.find(item => item.id === current.layerId);
     if (document.id !== current.documentId || !layer || layer.type !== 'raster') return;
     const last = current.last;
-    const isPencil = editor.tool === 'pencil';
+    const isInk = Boolean(current.inkPoints && current.inkSettings);
+    const isPencil = !isInk && editor.tool === 'pencil';
     const filtered = isPencil ? { x: Math.floor(point.x), y: Math.floor(point.y) } : stabilizedPoint(last, point, editor.smoothing, finalize);
+    if(isInk) {
+      const samples=current.inkPoints!;
+      const next:InkPoint={...filtered,pressure:Math.max(.01,Math.min(1,pressure || 1))};
+      const before=samples.at(-1)!;
+      if(Math.hypot(before.x-next.x,before.y-next.y)>.35)
+        samples.push(...interpolateInkSamples(before,next,Math.max(.75,editor.strokeWidth*editor.brushSpacing)));
+      else if(finalize)samples.push(next);
+      current.beforeLast=last;current.last=filtered;current.lastRaw=point;current.lastPressure=pressure;
+      if(finalize) {if(current.inkRaf!==undefined)cancelAnimationFrame(current.inkRaf);current.inkRaf=undefined;paintInkGesture(current);}
+      else scheduleInkPreview(current);
+      return;
+    }
     const distance = Math.hypot(filtered.x - last.x, filtered.y - last.y);
     const radius = editor.strokeWidth / 2;
-    const steps = isPencil ? 0.85 : Math.max(0.7, radius * 0.3);
+    const steps = isPencil ? 0.85 : Math.max(0.65, editor.strokeWidth * editor.brushSpacing);
     const ctx = current.ctx;
     ctx.save();
     const mask = editor.selection;
@@ -602,25 +736,25 @@ export default function Canvas({ onError }: CanvasProps) {
     const path = distance === 0 ? [filtered] : strokeSamples(current.beforeLast, last, filtered, steps);
     for (const sample of path) {
       const position = { x: sample.x - layer.x, y: sample.y - layer.y };
-      const opacityAtPoint = editor.opacity * Math.max(0.1, pressure || 1);
+      const opacityAtPoint = editor.opacity * ((isPencil || current.erase)?1:editor.brushFlow) * (isPencil?1:editor.pressureOpacity?Math.max(.05,pressure||1):1);
       if (isPencil) {
         ctx.fillStyle = editor.color;
         ctx.globalAlpha = opacityAtPoint;
         const size = Math.max(1, Math.round(editor.strokeWidth));
         ctx.fillRect(Math.floor(position.x - radius + .5), Math.floor(position.y - radius + .5), size, size);
-        if (editor.symmetryX) ctx.fillRect(Math.floor(document.width - 1 - sample.x - layer.x - radius + .5), Math.floor(position.y - radius + .5), size, size);
+        if (editor.symmetryX||editor.tool==='symmetryBrush') ctx.fillRect(Math.floor(document.width - 1 - sample.x - layer.x - radius + .5), Math.floor(position.y - radius + .5), size, size);
         ctx.globalAlpha = 1;
         continue;
       }
       drawBrushDab(ctx, position, {
-        radius: radius * Math.max(0.2, pressure || 1),
+        radius: radius * (editor.pressureSize?Math.max(0.2,pressure||1):1),
         hardness: editor.hardness,
         opacity: opacityAtPoint,
         color: editor.color,
         erase: current.erase,
       });
-      if (editor.symmetryX) drawBrushDab(ctx, {x:document.width - sample.x - layer.x,y:position.y}, {
-        radius: radius * Math.max(.2,pressure||1), hardness:editor.hardness,opacity:opacityAtPoint,
+      if (editor.symmetryX||editor.tool==='symmetryBrush') drawBrushDab(ctx, {x:document.width - sample.x - layer.x,y:position.y}, {
+        radius: radius * (editor.pressureSize?Math.max(.2,pressure||1):1), hardness:editor.hardness,opacity:opacityAtPoint,
         color:editor.color,erase:current.erase,
       });
     }
@@ -633,6 +767,15 @@ export default function Canvas({ onError }: CanvasProps) {
   }
 
   function commitDrawing(current: DrawGesture): void {
+    if(current.inkRaf!==undefined){cancelAnimationFrame(current.inkRaf);current.inkRaf=undefined;}
+    if(current.inkPoints)paintInkGesture(current);
+    const precise=pixelSelection(current.documentId);
+    if(precise&&current.beforeSelection){
+      const pixels=current.ctx.getImageData(0,0,current.canvas.width,current.canvas.height);
+      const layer=activeTab(useEditor.getState()).doc.layers.find(item=>item.id===current.layerId);
+      constrainPixels(current.beforeSelection,pixels,precise,Math.round(layer?.x??0),Math.round(layer?.y??0));
+      current.ctx.putImageData(pixels,0,0);
+    }
     const image = current.canvas.toDataURL('image/png');
     const state = useEditor.getState();
     if (activeTab(state).doc.id === current.documentId) {
@@ -669,8 +812,20 @@ export default function Canvas({ onError }: CanvasProps) {
       const ctx = working.getContext('2d');
       if (!ctx) throw new Error('Canvas 2D is unavailable.');
       if (image) ctx.drawImage(image, 0, 0);
+      const settings=useEditor.getState();
+      const isInk=settings.tool==='ink';
+      let inkSource:HTMLCanvasElement|undefined;
+      if(isInk){inkSource=window.document.createElement('canvas');inkSource.width=working.width;inkSource.height=working.height;
+        inkSource.getContext('2d')?.drawImage(working,0,0);
+      }
       const current: DrawGesture = {
         kind: 'draw', start, last: start, lastRaw: start, beforeLast: start, layerId, documentId, canvas: working, ctx, erase, lastPressure: pressure,
+        inkSource,
+        beforeSelection:pixelSelection(documentId)?ctx.getImageData(0,0,working.width,working.height):undefined,
+        inkPoints:isInk?[{...start,pressure}]:undefined,
+        inkSettings:isInk?{size:settings.strokeWidth,opacity:settings.opacity,flow:settings.brushFlow,
+          spacing:settings.brushSpacing,taper:settings.inkTaper,pressureSize:settings.pressureSize,
+          pressureOpacity:settings.pressureOpacity,color:settings.color}:undefined,
       };
       gesture.current = current;
       dab(current, start, pressure);
@@ -687,20 +842,159 @@ export default function Canvas({ onError }: CanvasProps) {
     });
   }
 
+  const RETOUCH_TOOLS=['smudge','blurBrush','sharpenBrush','dodge','burn','patternBrush'] as const;
+  const SELECTION_PATH_TOOLS=['lassoSelect','magneticLasso'] as const;
+  const putSelection=(alpha:Uint8Array,width:number,height:number):void=>{
+    const result=setPixelSelection(doc.id,width,height,alpha);
+    useEditor.getState().setSelection(result.bounds.width&&result.bounds.height?result.bounds:null);
+    invalidate();
+  };
+  const finalizePolygonSelection=():void=>{
+    const points=polygonSelection.current;polygonSelection.current=[];
+    if(points.length>=3)putSelection(rasterPolygon(doc.width,doc.height,points),doc.width,doc.height);
+    invalidate();
+  };
+  async function selectByColor(point:Point):Promise<void>{
+    const sourceId=doc.id,settings=useEditor.getState();
+    await prepareImages(doc);if(activeTab(useEditor.getState()).doc.id!==sourceId)return;
+    const merged=exportCanvas(doc),ctx=merged.getContext('2d',{willReadFrequently:true});if(!ctx)return;
+    const result=floodRegion(ctx.getImageData(0,0,doc.width,doc.height),point.x,point.y,
+      settings.rasterToolTolerance,settings.rasterToolContiguous);
+    putSelection(result,doc.width,doc.height);
+  }
+  async function fillByColor(point:Point):Promise<void>{
+    const state=useEditor.getState(),layer=activeLayer(state);
+    if(layer?.type!=='raster'||layer.locked)return;
+    const docId=doc.id,layerId=layer.id;
+    const image=await decodeImage(layer.image);
+    if(activeTab(useEditor.getState()).doc.id!==docId)return;
+    const working=document.createElement('canvas');working.width=doc.width;working.height=doc.height;
+    const ctx=working.getContext('2d',{willReadFrequently:true});if(!ctx)return;
+    if(image)ctx.drawImage(image,0,0);
+    const previous=ctx.getImageData(0,0,doc.width,doc.height);
+    const mask=floodRegion(previous,point.x-layer.x,point.y-layer.y,state.rasterToolTolerance,state.rasterToolContiguous);
+    const sel=pixelSelection(docId);const edited=ctx.getImageData(0,0,doc.width,doc.height);
+    if(state.selection){for(let y=0;y<doc.height;y++)for(let x=0;x<doc.width;x++){
+      const wx=x+layer.x,wy=y+layer.y;
+      if(wx<state.selection.x||wy<state.selection.y||wx>=state.selection.x+state.selection.width||wy>=state.selection.y+state.selection.height)mask[y*doc.width+x]=0;
+    }}
+    if(sel){for(let y=0;y<doc.height;y++)for(let x=0;x<doc.width;x++){
+      const sx=Math.round(x+layer.x),sy=Math.round(y+layer.y);
+      mask[y*doc.width+x]=Math.round(mask[y*doc.width+x]*(sx>=0&&sy>=0&&sx<sel.width&&sy<sel.height?sel.alpha[sy*sel.width+sx]/255:0));
+    }}
+    fillRegion(edited,mask,state.color,state.opacity);ctx.putImageData(edited,0,0);
+    state.mutate(document=>{const target=document.layers.find(item=>item.id===layerId);
+      if(target?.type==='raster'&&!target.locked){target.image=working.toDataURL('image/png');target.imageWidth=doc.width;target.imageHeight=doc.height;}});
+  }
+  async function startRetouch(point:Point):Promise<void>{
+    retouchPendingLast.current=null;
+    const state=useEditor.getState(),layer=activeLayer(state),docId=doc.id;
+    if(layer?.type!=='raster'||layer.locked)return;
+    const pending:{kind:'retouch-loading';layerId:string;docId:string;finish?:boolean}={kind:'retouch-loading',layerId:layer.id,docId};retouchPending.current=pending;
+    const image=await decodeImage(layer.image);
+    if(retouchPending.current!==pending||activeTab(useEditor.getState()).doc.id!==docId)return;
+    const working=document.createElement('canvas');working.width=doc.width;working.height=doc.height;
+    const ctx=working.getContext('2d',{willReadFrequently:true});if(!ctx)return;
+    if(image)ctx.drawImage(image,0,0);
+    const before=ctx.getImageData(0,0,doc.width,doc.height);
+    const mode=state.tool==='symmetryBrush'?'patternBrush':state.tool as RetouchTool;
+    const current:RasterGesture={kind:'raster-edit',layerId:layer.id,docId,tool:mode,working,before,
+      last:point,step:0,strength:state.rasterToolStrength*state.opacity,size:state.strokeWidth,pattern:state.rasterPattern};
+    retouchPending.current=null;gesture.current=current;
+    applyRetouch(current,point);if(retouchPendingLast.current){applyRetouch(current,retouchPendingLast.current);retouchPendingLast.current=null;}setDrawing(working);
+    if(pending.finish){gesture.current=null;finishRetouch(current);}
+  }
+  const retouchPendingLast=useRef<Point|null>(null);
+  const retouchPending=useRef<{kind:'retouch-loading';layerId:string;docId:string;finish?:boolean}|null>(null);
+  function applyRetouch(current:RasterGesture,point:Point):void{
+    const layer=doc.layers.find(item=>item.id===current.layerId);if(layer?.type!=='raster')return;
+    const ctx=current.working.getContext('2d');if(!ctx)return;
+    const from=current.last;const distance=Math.hypot(point.x-from.x,point.y-from.y);
+    const step=Math.max(1,current.size*.22),count=Math.max(1,Math.ceil(distance/step));
+    for(let i=1;i<=count;i++){
+      const ratio=i/count,where={x:from.x+(point.x-from.x)*ratio-layer.x,y:from.y+(point.y-from.y)*ratio-layer.y};
+      const previous={x:from.x+(point.x-from.x)*(i-1)/count-layer.x,y:from.y+(point.y-from.y)*(i-1)/count-layer.y};
+      // Distinct stamp geometries; a symmetry stroke mirrors the pattern around the canvas center.
+      if(current.tool==='patternBrush'&&current.pattern==='dots'){
+        ctx.save();ctx.fillStyle=useEditor.getState().color;ctx.globalAlpha=current.strength;ctx.beginPath();ctx.arc(where.x,where.y,current.size*.22,0,Math.PI*2);ctx.fill();ctx.restore();
+      }else if(current.tool==='patternBrush'&&current.pattern==='hatches'){
+        ctx.save();ctx.strokeStyle=useEditor.getState().color;ctx.globalAlpha=current.strength;ctx.lineWidth=Math.max(1,current.size*.09);
+        ctx.beginPath();ctx.moveTo(where.x-current.size*.35,where.y+current.size*.35);ctx.lineTo(where.x+current.size*.35,where.y-current.size*.35);ctx.stroke();ctx.restore();
+      }else retouchStamp(ctx,current.tool,where,previous,current.size/2,current.strength,useEditor.getState().color,current.step);
+      if(useEditor.getState().tool==='symmetryBrush')retouchStamp(ctx,'patternBrush',{x:doc.width-where.x-layer.x,y:where.y},previous,current.size/2,current.strength,useEditor.getState().color,current.step);
+      current.step++;
+    }current.last=point;invalidate();
+  }
+  function finishRetouch(current:RasterGesture):void{
+    const layer=doc.layers.find(item=>item.id===current.layerId);if(layer?.type!=='raster')return;
+    const ctx=current.working.getContext('2d',{willReadFrequently:true});if(!ctx)return;
+    const edited=ctx.getImageData(0,0,doc.width,doc.height),state=useEditor.getState();
+    const selected=pixelSelection(doc.id);
+    if(selected)constrainPixels(current.before,edited,selected,Math.round(layer.x),Math.round(layer.y));
+    else if(state.selection){const r=state.selection;for(let y=0;y<edited.height;y++)for(let x=0;x<edited.width;x++){
+      if(x+layer.x>=r.x&&x+layer.x<r.x+r.width&&y+layer.y>=r.y&&y+layer.y<r.y+r.height)continue;
+      const i=(y*edited.width+x)*4;for(let j=0;j<4;j++)edited.data[i+j]=current.before.data[i+j];
+    }}
+    ctx.putImageData(edited,0,0);
+    const image=current.working.toDataURL('image/png');
+    state.mutate(document=>{const target=document.layers.find(item=>item.id===current.layerId);
+      if(target?.type==='raster'&&!target.locked){target.image=image;target.imageWidth=doc.width;target.imageHeight=doc.height;}});
+    setDrawing(null);
+  }
+
   function pointerDown(event: ReactPointerEvent<HTMLCanvasElement>): void {
     if (event.button !== 0 && event.button !== 1) return;
     const raw = position(event);
     const snapTool = tool === 'pen' || ['rectangle','ellipse','roundedRect','triangle','polygon','star','arrow','heart','ring','diamond','speechBubble','crescent','cross','line','gradient'].includes(tool);
     const point = snap && snapTool && !event.altKey ? snapPoint(raw) : raw;
     setCursor(raw);
+    const isNavigation=event.button===1||tool==='hand'||(event.altKey&&tool!=='move'&&tool!=='text');
+    // Work area and document area are intentionally different. Drawing and
+    // object-picking start on the white artboard, but existing transform grips
+    // remain actionable outside its edges (oversized images, negative offsets,
+    // rotation handles and crop-spilling layers). Never unlock arbitrary
+    // selection by clicking empty pasteboard space.
+    const activeForHandle=activeLayer(useEditor.getState());
+    const shapeForHandle=activeForHandle?.type==='vector'
+      ? activeForHandle.shapes.find(shape=>shape.id===useEditor.getState().selectedShapeId):undefined;
+    const outsideTransform=tool==='move' && activeForHandle && !activeForHandle.locked && activeForHandle.visible
+      && (()=>{
+        const rect=shapeForHandle?shapeBounds(shapeForHandle,activeForHandle)
+          :layerBounds(activeForHandle,doc.width,doc.height);
+        const angle=shapeForHandle?.rotation??(activeForHandle.type==='raster'?activeForHandle.rotation??0:
+          activeForHandle.type==='gradient'?activeForHandle.gradient.rotation??0:0);
+        return Boolean(handleAt(raw,rect,angle,zoom));
+      })();
+    if(!onSheet(raw) && !isNavigation && !outsideTransform){
+      setHoverCursor('default');return;
+    }
     event.currentTarget.setPointerCapture(event.pointerId);
     event.currentTarget.focus({ preventScroll: true });
+    const specialized=useEditor.getState().tool;
+    if(specialized==='magicWand'){void selectByColor(raw).catch(onError);return;}
+    if(specialized==='bucket'){void fillByColor(raw).catch(onError);return;}
+    if(specialized==='polySelect'){
+      polygonSelection.current.push(raw);invalidate();return;
+    }
+    if(SELECTION_PATH_TOOLS.includes(specialized as 'lassoSelect'|'magneticLasso')){
+      const select:SelectPathGesture={kind:'select-path',tool:specialized as 'lassoSelect'|'magneticLasso',points:[raw],last:raw};
+      gesture.current=select;
+      if(specialized==='magneticLasso'){
+        void prepareImages(doc).then(()=>{
+          if(gesture.current!==select)return;
+          const flattened=exportCanvas(doc);select.edgeData=flattened.getContext('2d')?.getImageData(0,0,doc.width,doc.height);
+        }).catch(onError);
+      }return;
+    }
+    if(RETOUCH_TOOLS.includes(specialized as RetouchTool)){
+      void startRetouch(raw).catch(onError);return;
+    }
     const state = useEditor.getState();
     // A second canvas click commits the previous text edit before starting a new operation.
     if (state.textDraft) state.commitTextDraft();
     const layer = activeLayer(useEditor.getState());
 
-    if (event.button === 1 || tool === 'hand' || event.altKey) {
+    if (event.button === 1 || tool === 'hand' || (event.altKey && tool !== 'move' && tool !== 'text')) {
       gesture.current = { kind: 'pan', start: { x: event.clientX, y: event.clientY }, original: { ...pan } };
       return;
     }
@@ -730,12 +1024,16 @@ export default function Canvas({ onError }: CanvasProps) {
         ? selectedLayer.shapes.find(shape => shape.id === state.selectedShapeId && shape.kind === 'text') : undefined;
       if (selectedText && selectedLayer && !selectedLayer.locked) {
         const bounds = shapeBounds(selectedText, selectedLayer);
+        const pivot=pivotFor(selectedLayer.id,selectedText.id,bounds);
+        if(Math.hypot(point.x-pivot.x,point.y-pivot.y) < 8/zoom){
+          gesture.current={kind:'pivot',start:point,last:point,layerId:selectedLayer.id,shapeId:selectedText.id};return;
+        }
         const handle = handleAt(point, bounds, selectedText.rotation ?? 0, zoom);
         if (handle) {
           gesture.current = {
             kind: 'transform', mode: handle === 'rotate' ? 'rotate' : 'scale', handle,
             start: point, last: point, layerId: selectedLayer.id, shapeId: selectedText.id,
-            bounds, rotation: selectedText.rotation ?? 0,
+            bounds, rotation: selectedText.rotation ?? 0, pivot,keepAspect:!event.shiftKey,
           };
           return;
         }
@@ -834,12 +1132,17 @@ export default function Canvas({ onError }: CanvasProps) {
       if (layer && !layer.locked) {
         const shape = layer.type === 'vector' ? layer.shapes.find(item => item.id === selectedShapeId) : undefined;
         const bounds = shape ? shapeBounds(shape, layer) : layerBounds(layer, doc.width, doc.height);
-        const rotation = shape?.rotation ?? (layer.type === 'raster' ? layer.rotation ?? 0 : 0);
+        const rotation = shape?.rotation ?? (layer.type === 'raster' ? layer.rotation ?? 0 :
+          layer.type==='gradient'?layer.gradient.rotation??0:0);
+        const pivot=pivotFor(layer.id,shape?.id??null,bounds);
+        if(Math.hypot(point.x-pivot.x,point.y-pivot.y)<8/zoom){
+          gesture.current={kind:'pivot',start:point,last:point,layerId:layer.id,shapeId:shape?.id??null};return;
+        }
         const handle = handleAt(point, bounds, rotation, zoom);
         if (handle) {
           gesture.current = {
             kind: 'transform', mode: handle === 'rotate' ? 'rotate' : 'scale', handle,
-            start: point, last: point, layerId: layer.id, shapeId: shape?.id ?? null, bounds, rotation,
+            start: point, last: point, layerId: layer.id, shapeId: shape?.id ?? null, bounds, rotation, pivot,keepAspect:!event.shiftKey,
           };
           return;
         }
@@ -851,13 +1154,18 @@ export default function Canvas({ onError }: CanvasProps) {
         state.selectLayer(hit.layer.id);
         state.selectShape(hit.shape.id);
         gesture.current = { kind: 'move', start: point, last: point, layerId: hit.layer.id, shapeId: hit.shape.id };
-      } else if (layer && !layer.locked && layer.visible) {
-        state.selectShape(null);
-        gesture.current = { kind: 'move', start: point, last: point, layerId: layer.id, shapeId: null };
+      } else {
+        // The old unconditional fallback made the active layer draggable
+        // from ANY location, even outside its visible image bounds.
+        const hitLayer=[...doc.layers].reverse().find(item=>layerHit(point,item));
+        if(hitLayer){
+          state.selectLayer(hitLayer.id);state.selectShape(null);
+          gesture.current={kind:'move',start:point,last:point,layerId:hitLayer.id,shapeId:null};
+        }else{state.selectShape(null);}
       }
       return;
     }
-    if (tool === 'brush' || tool === 'eraser' || tool === 'pencil') {
+    if (tool === 'brush' || tool === 'ink' || tool === 'eraser' || tool === 'pencil'||tool==='symmetryBrush') {
       if (layer?.locked || (layer && !layer.visible)) return;
       if (layer?.type === 'raster' && ((layer.scaleX ?? 1) !== 1 || (layer.scaleY ?? 1) !== 1 || layer.rotation)) {
         onError?.(new Error('Rasterize transformed layers or paint on a new layer.'));
@@ -934,6 +1242,7 @@ export default function Canvas({ onError }: CanvasProps) {
 
   function pointerMove(event: ReactPointerEvent<HTMLCanvasElement>): void {
     const raw = position(event);
+    if(retouchPending.current)retouchPendingLast.current=raw;
     const activeGesture = gesture.current;
     const point = snap && !event.altKey && (
       activeGesture?.kind === 'shape' && activeGesture.shape.kind !== 'path' ||
@@ -945,6 +1254,22 @@ export default function Canvas({ onError }: CanvasProps) {
     setCursor(point);
     const current = gesture.current;
     if (!current) {
+      // Hovering beyond the white artboard may still hit an existing scale
+      // grip. All other off-document positions remain noninteractive.
+      if(!onSheet(raw)){
+        if(tool==='move'){
+          const active=activeLayer(useEditor.getState());
+          if(active&&!active.locked&&active.visible){
+            const shape=active.type==='vector'?active.shapes.find(item=>item.id===useEditor.getState().selectedShapeId):undefined;
+            const bounds=shape?shapeBounds(shape,active):layerBounds(active,doc.width,doc.height);
+            const rotation=shape?.rotation??(active.type==='raster'?active.rotation??0:
+              active.type==='gradient'?active.gradient.rotation??0:0);
+            const handle=handleAt(raw,bounds,rotation,zoom);
+            if(handle){setHoverCursor(handleCursor(handle,rotation));return;}
+          }
+        }
+        setHoverCursor(tool==='hand'?'grab':'default');return;
+      }
       const activeState = useEditor.getState();
       const selectedLayer = activeLayer(activeState);
       const selectedShape = selectedLayer?.type === 'vector'
@@ -973,8 +1298,12 @@ export default function Canvas({ onError }: CanvasProps) {
       if ((tool === 'move' || tool === 'text' || selectedShape?.kind === 'text') && selectedLayer && !selectedLayer.locked) {
         const bounds = selectedShape ? shapeBounds(selectedShape, selectedLayer)
           : layerBounds(selectedLayer, doc.width, doc.height);
-        const handle = handleAt(point, bounds, selectedShape?.rotation ?? 0, zoom);
-        if (handle) nextCursor = handleCursor(handle, selectedShape?.rotation ?? 0);
+        const pivot=pivotFor(selectedLayer.id,selectedShape?.id??null,bounds);
+        if(Math.hypot(point.x-pivot.x,point.y-pivot.y)<8/zoom)nextCursor='grab';
+        else{
+          const handle = handleAt(point, bounds, selectedShape?.rotation ?? (selectedLayer.type==='raster'?selectedLayer.rotation??0:selectedLayer.type==='gradient'?selectedLayer.gradient.rotation??0:0), zoom);
+          if (handle) nextCursor = handleCursor(handle, selectedShape?.rotation ?? (selectedLayer.type==='raster'?selectedLayer.rotation??0:selectedLayer.type==='gradient'?selectedLayer.gradient.rotation??0:0));
+        }
       }
       if (nextCursor === 'default' || nextCursor === 'crosshair') {
         if (selectableShape(point, doc.layers, zoom, true) ||
@@ -985,6 +1314,11 @@ export default function Canvas({ onError }: CanvasProps) {
       setHoverCursor(previous => previous === nextCursor ? previous : nextCursor);
       return;
     }
+    if(current.kind==='select-path'){
+      const next=current.tool==='magneticLasso'&&current.edgeData?magneticPoint(current.edgeData,raw):raw;
+      if(Math.hypot(next.x-current.last.x,next.y-current.last.y)>3/zoom){current.points.push(next);current.last=next;invalidate();}return;
+    }
+    if(current.kind==='raster-edit'){applyRetouch(current,raw);return;}
     if (current.kind === 'creative-move') {
       current.last = point;
       const original = doc.creative?.find(item => item.id === current.id);
@@ -1061,12 +1395,25 @@ export default function Canvas({ onError }: CanvasProps) {
           current.last={x:current.start.x+aligned.dx,y:current.start.y+aligned.dy};alignmentGuides.current=aligned.guides;
         }else current.last=point;
       }else{current.last=raw;alignmentGuides.current=[];}invalidate();
+    } else if (current.kind==='pivot'){
+      const aligned=snap&&!event.altKey?snapHandle(raw,doc,zoom):{point:raw,guides:[]};
+      const target=doc.layers.find(item=>item.id===current.layerId);
+      const shape=target?.type==='vector'?target.shapes.find(item=>item.id===current.shapeId):undefined;
+      const box=shape&&target?shapeBounds(shape,target):target?layerBounds(target,doc.width,doc.height):null;
+      if(box)transformPivot.current={key:`${doc.id}:${current.layerId}:${current.shapeId??'layer'}`,
+        normalized:{x:(aligned.point.x-box.x)/Math.max(.01,box.width),
+          y:(aligned.point.y-box.y)/Math.max(.01,box.height)}};
+      alignmentGuides.current=aligned.guides;current.last=aligned.point;invalidate();
     } else if(current.kind==='transform'){
+      current.keepAspect=!event.shiftKey;
       if(snap&&!event.altKey&&current.mode==='scale'){
-        const aligned=snapHandle(raw,doc,zoom);current.last=aligned.point;alignmentGuides.current=aligned.guides;
-      }else{current.last=raw;alignmentGuides.current=[];}invalidate();
+        const aligned=snapScale({...current,kind:'transform',last:raw},doc,current.layerId,zoom);
+        current.last=aligned.point;
+        alignmentGuides.current=aligned.guides;
+      }else{current.last=raw;alignmentGuides.current=[];}
+      invalidate();
     } else if (current.kind === 'node' || current.kind === 'line-point' || current.kind === 'marquee') {
-      current.last = point;
+      current.last=current.kind==='marquee'?clampToSheet(raw):point;
       invalidate();
     } else if (current.kind === 'gradient-guide') {
       current.last=point;
@@ -1132,6 +1479,7 @@ export default function Canvas({ onError }: CanvasProps) {
   }
 
   function pointerUp(): void {
+    if(retouchPending.current){retouchPending.current.finish=true;return;}
     const current = gesture.current;
     alignmentGuides.current=[];
     if (!current) return;
@@ -1141,6 +1489,11 @@ export default function Canvas({ onError }: CanvasProps) {
     }
     gesture.current = null;
     const state = useEditor.getState();
+    if(current.kind==='raster-edit'){finishRetouch(current);return;}
+    if(current.kind==='select-path'){
+      if(current.points.length>=3)putSelection(rasterPolygon(doc.width,doc.height,current.points),doc.width,doc.height);
+      return;
+    }
     if (current.kind === 'creative-move' || current.kind === 'creative-ink-node') {
       state.commitCreativePreview();
       return;
@@ -1151,14 +1504,14 @@ export default function Canvas({ onError }: CanvasProps) {
       return;
     }
     if (current.kind === 'draw') {
-      if (Math.hypot(current.lastRaw.x - current.last.x, current.lastRaw.y - current.last.y) > 0.25) {
+      if (current.inkPoints || Math.hypot(current.lastRaw.x - current.last.x, current.lastRaw.y - current.last.y) > 0.25) {
         dab(current, current.lastRaw, current.lastPressure, true);
       }
       commitDrawing(current);
     }
     if (current.kind === 'marquee') {
       const bounds = normalizeRect(current.start, current.last);
-      state.setSelection(bounds.width > 2 && bounds.height > 2 ? bounds : null);
+      clearPixelSelection(doc.id);state.setSelection(bounds.width > 2 && bounds.height > 2 ? bounds : null);
     }
     if (current.kind === 'gradient-point') {
       const vector=doc.layers.find(item=>item.id===current.layerId);
@@ -1186,6 +1539,7 @@ export default function Canvas({ onError }: CanvasProps) {
       setDraft(null);
       return;
     }
+    if (current.kind==='pivot'){invalidate();return;}
     if (current.kind === 'pen-node') return;
     if (current.kind === 'shape') {
       const shape = current.shape;
@@ -1220,6 +1574,16 @@ export default function Canvas({ onError }: CanvasProps) {
         const index = document.layers.findIndex(layer => layer.id === operation.layerId);
         if (index < 0) return;
         document.layers[index] = previewDrag(document.layers[index], action, document.width, document.height);
+        const edited=document.layers[index];
+        if(edited.type==='gradient' && document.animation){
+          // Gradient layers are procedural *tracks*, not frame-only paint.
+          // Keep the layer origin as well as its editable recipe synchronized.
+          for(const frame of document.animation.frames){
+            const other=frame.layers.find(item=>item.id===edited.id);
+            if(other?.type==='gradient'){other.x=edited.x;other.y=edited.y;}
+          }
+          setTrackGradient(document,edited.id,edited.gradient);
+        }
       });
     }
   }
@@ -1228,6 +1592,7 @@ export default function Canvas({ onError }: CanvasProps) {
     const cancel = (event: KeyboardEvent): void => {
       if (event.key !== 'Escape') return;
       if (gesture.current) {
+        if(gesture.current.kind==='draw'&&gesture.current.inkRaf!==undefined)cancelAnimationFrame(gesture.current.inkRaf);
         gesture.current = null;
         setDrawing(null);
         setDraft(null);
@@ -1316,12 +1681,33 @@ export default function Canvas({ onError }: CanvasProps) {
         tabIndex={0}
         style={{ cursor: gesture.current?.kind === 'pan' ? 'grabbing'
           : gesture.current?.kind === 'move' ? 'grabbing' : hoverCursor }}
+        onKeyDown={event=>{
+          if(tool==='polySelect'&&polygonSelection.current.length){
+            if(event.key==='Enter'){event.preventDefault();event.stopPropagation();finalizePolygonSelection();}
+            else if(event.key==='Escape'){event.preventDefault();event.stopPropagation();polygonSelection.current=[];invalidate();}
+            else if(event.key==='Backspace'){event.preventDefault();polygonSelection.current.pop();invalidate();}
+          }
+        }}
         onPointerDown={pointerDown}
         onPointerMove={pointerMove}
         onPointerLeave={() => setHoverCursor(tool === 'move' ? 'default' : tool === 'text' ? 'text' : 'crosshair')}
         onPointerUp={pointerUp}
-        onPointerCancel={() => { gesture.current = null; useEditor.getState().previewCreative(null); setDraft(null); setDrawing(null); invalidate(); }}
+        onPointerCancel={() => { retouchPending.current=null; if(gesture.current?.kind==='draw'&&gesture.current.inkRaf!==undefined)cancelAnimationFrame(gesture.current.inkRaf); gesture.current = null; useEditor.getState().previewCreative(null); setDraft(null); setDrawing(null); invalidate(); }}
         onDoubleClick={event => {
+          if(tool==='polySelect'){finalizePolygonSelection();return;}
+          if(tool==='move'){
+            const point=position(event);
+            const active=activeLayer(useEditor.getState());
+            if(active&&!active.locked){
+              const shape=active.type==='vector'?active.shapes.find(item=>item.id===useEditor.getState().selectedShapeId):undefined;
+              const box=shape?shapeBounds(shape,active):layerBounds(active,doc.width,doc.height);
+              if(Math.abs(point.x-(box.x+box.width/2)) < 120/zoom &&
+                point.y>=box.y-63/zoom && point.y<=box.y-29/zoom){
+                window.dispatchEvent(new Event('huelith-precision-transform'));
+                return;
+              }
+            }
+          }
           if (tool === 'node') {
             const point=position(event);
             const editor=useEditor.getState();
