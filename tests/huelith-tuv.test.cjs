@@ -11,7 +11,7 @@ function load(name) {
   const source = fs.readFileSync(filename, 'utf8');
   const js = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   const module = { exports: {} };
-  new Function('module','exports','require',js)(module,module.exports,id => load(id.replace(/^\.\//, '')));
+  new Function('module','exports','require',js)(module,module.exports,id => load(path.posix.normalize(path.posix.join(path.posix.dirname(name),id))));
   modules.set(name,module.exports);
   return module.exports;
 }

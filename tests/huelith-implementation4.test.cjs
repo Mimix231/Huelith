@@ -10,7 +10,7 @@ function load(name){name=name.replace(/^\.\//,'');if(compiled[name])return compi
  const file=path.join(root,'src/editor',name+'.ts');
  const js=ts.transpileModule(fs.readFileSync(file,'utf8'),{fileName:file,compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText;
  const mod={exports:{}};compiled[name]=mod.exports;
- new Function('require','module','exports',js)(dep=>load(dep),mod,mod.exports);
+ new Function('require','module','exports',js)(dep=>load(path.posix.normalize(path.posix.join(path.posix.dirname(name),dep))),mod,mod.exports);
  return compiled[name]=mod.exports;
 }
 const types=load('types'),gradient=load('gradient'),catalog=load('effect-catalog');

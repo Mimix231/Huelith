@@ -26,7 +26,7 @@ function load(name) {
   const module = { exports: {} };
   const scope = { module, exports:module.exports, structuredClone, Date, Math, Set, Map, Number,
     String, TextEncoder, Uint8Array, DataView, Error, globalThis: {crypto:webcrypto},
-    require:specifier => specifier === 'zustand' ? fakeZustand() : load(specifier.slice(2)) };
+    require:specifier => specifier === 'zustand' ? fakeZustand() : load(path.posix.normalize(path.posix.join(path.posix.dirname(name),specifier))) };
   vm.runInNewContext(compiled, scope, {filename:file});
   modules.set(name,module.exports);
   return module.exports;

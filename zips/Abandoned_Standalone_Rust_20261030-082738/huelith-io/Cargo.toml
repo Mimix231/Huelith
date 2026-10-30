@@ -1,0 +1,12 @@
+[package]
+name = "huelith-io"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+[dependencies]
+huelith-core = { path = "../huelith-core" }
+huelith-render = { path = "../huelith-render" }
+anyhow.workspace = true
+serde_json.workspace = true
+base64.workspace = true
+image.workspace = true

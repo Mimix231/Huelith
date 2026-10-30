@@ -330,3 +330,6 @@ All **221 catalog entries** remain represented below; the **15 Huelith Originals
 ## Bottom line
 
 **25 explicitly revised entries; 196 catalog entries were not individually redesigned during this pass.** All 221 still require the actual intended-behavior, interactive-editor, export, save/reload, and performance qualification before they can honestly be labeled complete.
+
+
+> **30 October 2026 implementation addendum:** Eight expansion effect IDs (`atelier_4_0`, `atelier_3_12`, `atelier_7_0`, `atelier_7_1`, `atelier_7_10`, `atelier_7_2`, `atelier_2_15`, `atelier_7_11`) now dispatch to dedicated processors in `src/editor/effects/`. The original comparison is a historical audit; its "actual behavior" descriptions for these eight entries may now be outdated. See `docs/DEDICATED_EFFECT_IMPLEMENTATION_2026-10-30.md` for the tested replacement behavior and remaining limitations. Do **not** infer the remaining 213 effects are fixed.

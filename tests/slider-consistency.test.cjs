@@ -26,7 +26,7 @@ function load(name) {
   const module = { exports: {} };
   modules.set(name, module.exports);
   new Function('require', 'module', 'exports', transpiled)(specifier =>
-    specifier === 'zustand' ? { create } : load(specifier), module, module.exports);
+    specifier === 'zustand' ? { create } : load(path.posix.normalize(path.posix.join(path.posix.dirname(name),specifier))), module, module.exports);
   modules.set(name, module.exports);
   return module.exports;
 }

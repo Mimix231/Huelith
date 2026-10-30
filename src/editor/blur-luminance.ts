@@ -1,5 +1,11 @@
 import { createSurface } from './canvas-surface';
 import type { Effect } from './types';
+import { tryGpuSpatialBlur } from './effects/spatial-gpu';
+import { isImmutableEffectSource } from './immutable-effect-sources';
+import { motionBlurCpu } from './effects/motion-blur';
+import { radialBlurCpu } from './effects/radial-blur';
+import { lensBlurCpu } from './effects/lens-blur';
+import { renderSpatialRoi } from './effects/alpha-roi';
 
 /** Blur light transport works in premultiplied alpha space. Normalized weights
  * avoid the source-over repeated-overlay problem (which would leave an opaque
@@ -45,6 +51,24 @@ function sample(data:Uint8ClampedArray,w:number,h:number,x:number,y:number):[num
  * Includes true directional, rotational and finite-aperture bokeh patterns. */
 export function spatialBlurStable(source:HTMLCanvasElement,effect:Effect,mode:'motion'|'radial'|'lens'):HTMLCanvasElement {
  const {width:w,height:h}=source;
+ const cpu=mode==='motion'?motionBlurCpu:mode==='radial'?radialBlurCpu:lensBlurCpu;
+ // One authoritative native-resolution algorithm, with a GPU path if the
+ // user's hardware/preference supports it. ROI only removes transparent
+ // padding plus the mathematically required blur halo, never detail.
+ const process=(image:HTMLCanvasElement,settings:Effect):HTMLCanvasElement=>{
+   const gpu=typeof tryGpuSpatialBlur==='function'
+     ? tryGpuSpatialBlur(image,settings,mode,
+         typeof isImmutableEffectSource==='function' && isImmutableEffectSource(image))
+     : null;
+   if(gpu)return gpu;
+   if(typeof cpu==='function')return cpu(image,settings);
+   return image; // legacy isolated test loaders without the nested processor
+ };
+ if(typeof renderSpatialRoi==='function' && typeof cpu==='function'){
+   const roi=renderSpatialRoi(source,effect,mode,process);
+   if(roi)return roi;
+ }
+ if(typeof cpu==='function')return process(source,effect);
  const ctx=source.getContext('2d',{willReadFrequently:true});if(!ctx)throw Error('Canvas2D unavailable');
  const original=ctx.getImageData(0,0,w,h).data;
  const out=make(w,h),dst=out.getContext('2d',{willReadFrequently:true});if(!dst)throw Error('Canvas2D unavailable');

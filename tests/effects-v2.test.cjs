@@ -13,7 +13,7 @@ function load(module) {
     fileName: `${name}.ts`, compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
   }).outputText;
   const compiled = { exports: {} };
-  new Function('module', 'exports', 'require', js)(compiled, compiled.exports, load);
+  new Function('module', 'exports', 'require', js)(compiled, compiled.exports, id => load(path.posix.normalize(path.posix.join(path.posix.dirname(name),id))));
   cache.set(name, compiled.exports);
   return compiled.exports;
 }

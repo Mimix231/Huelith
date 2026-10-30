@@ -1,11 +1,12 @@
 import { EffectStackCache } from './effect-stack-cache';
+import { setSpatialGpuEnabled } from './effects/spatial-gpu';
 import { createSurface } from './canvas-surface';
 import { setEdgeCacheBudget, setSilhouetteCacheBudget } from './effect-ops';
 import type { Effect } from './types';
 
 interface WorkerRequest {
   kind?: 'render' | 'supersede' | 'budget';
-  graphMb?: number; edgeMb?: number; silhouetteMb?: number; sourceMb?: number;
+  graphMb?: number; edgeMb?: number; silhouetteMb?: number; sourceMb?: number; gpuAcceleration?: boolean;
   id: number;
   sourceId: number;
   bitmap?: ImageBitmap;
@@ -45,8 +46,20 @@ const scope = self as unknown as {
   postMessage: (message: unknown, transfer?: Transferable[]) => void;
 };
 
+// MessageChannel yields an actual worker event-loop turn without the nested
+// setTimeout clamp (which added hundreds of ms to an otherwise fast image).
+// Supersession/source changes remain observable between bounded work slices.
+const turnChannel = new MessageChannel();
+const waitingTurns: Array<() => void> = [];
+turnChannel.port1.onmessage = () => waitingTurns.shift()?.();
+const yieldWorkerTurn = (): Promise<void> => new Promise(resolve => {
+  waitingTurns.push(resolve);
+  turnChannel.port2.postMessage(null);
+});
+
 scope.onmessage = async event => {
   if (event.data.kind === 'budget') {
+    setSpatialGpuEnabled(event.data.gpuAcceleration !== false);
     stackCache.setBudget(event.data.graphMb ?? 128);
     setEdgeCacheBudget(event.data.edgeMb ?? 64);
     setSilhouetteCacheBudget(event.data.silhouetteMb ?? 80);
@@ -86,7 +99,7 @@ scope.onmessage = async event => {
       throw new Error(`Uncached effect source ${sourceId}`);
     }
     const output = await stackCache.renderCooperatively(sourceId, source, effects,
-      () => (newestRequest.get(sourceId) ?? id) > id);
+      () => (newestRequest.get(sourceId) ?? id) > id, yieldWorkerTurn);
     if (!output) {
       scope.postMessage({ id, aborted: true, evicted, processingMs: performance.now() - started,
         metrics: stackCache.lastMetrics });

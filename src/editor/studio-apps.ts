@@ -23,8 +23,8 @@ export const STUDIO_APPS: readonly HuelithStudioApp[] = [
   {id:'materials',name:'Materialia',summary:'Metal, fabric, stone and surfaces.',symbol:'◇',accent:'mint',groups:['Materials & Surfaces'],destination:'creativity'},
   {id:'digital',name:'Signalworks',summary:'Digital damage, pixels and signals.',symbol:'⌁',accent:'violet',groups:['Digital & Experimental'],destination:'creativity'},
   {id:'cinematic',name:'Optica',summary:'Lens treatments and cinematic finishing.',symbol:'◎',accent:'blue',groups:['Cinematic & Optical'],destination:'creativity'},
-  {id:'layerfx',name:'Layer Atelier',summary:'Outlines, glows, shadows and backdrops.',symbol:'◈',accent:'mint',groups:['Stylize','Creative effects'],destination:'effects'},
-  {id:'signature',name:'Huelith Originals',summary:'Distinctive one-of-a-kind signature FX.',symbol:'✷',accent:'rainbow',groups:['Signature FX'],destination:'fx'},
+  {id:'layerfx',name:'Layer Effects',summary:'Outlines, glows, shadows, cutout and backdrops.',symbol:'◈',accent:'mint',groups:['Stylize','Creative effects'],destination:'effects'},
+  {id:'signature',name:'Signature FX',summary:'Huelith Originals: independent, editable visual FX.',symbol:'✷',accent:'rainbow',groups:['Signature FX'],destination:'fx'},
   {id:'favorites',name:'Your Favorites',summary:'Your personally starred creative tools.',symbol:'★',accent:'amber',groups:[],destination:'creativity'},
   {id:'recent',name:'Recently Used',summary:'Return to the tools you used last.',symbol:'↺',accent:'sky',groups:[],destination:'creativity'},
 ];

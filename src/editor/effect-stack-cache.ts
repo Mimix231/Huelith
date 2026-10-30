@@ -99,8 +99,14 @@ export class EffectStackCache {
           // cancels work immediately rather than waiting for megabytes of
           // superseded pixels to finish rendering.
           const job = createExpansion120Job(current,effect);
+          let sliceStarted = performance.now();
           while (!job.runRows(8)) {
+            // Eight scanlines are a cancellation checkpoint, not a mandatory
+            // timer delay. Fast kernels can process many checkpoints in one
+            // short turn, rather than paying a clamped timer for every slice.
+            if (performance.now() - sliceStarted < 4) continue;
             await yieldTurn();
+            sliceStarted = performance.now();
             if (superseded()) {
               this.remember(sourceId,source,stages);
               this.lastMetrics={stages:enabled.length,reused,timing};

@@ -3,6 +3,7 @@
 //! GPU and replacement of the legacy FX graph are later Aurora phases.
 mod gpu;
 mod graph;
+mod native_effects;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::Instant;
@@ -26,6 +27,19 @@ pub struct CpuImageRegistry(Mutex<HashMap<String, Arc<RgbaImage>>>);
 pub struct CpuEffect {
     pub kind: String,
     pub amount: f32,
+    #[serde(default)]
+    pub parameters: Option<NativeParameters>,
+}
+
+#[derive(serde::Deserialize,serde::Serialize,Clone,Debug,Default)]
+#[serde(rename_all = "camelCase")]
+pub struct NativeParameters {
+    pub threshold: Option<f32>,
+    pub radius: Option<f32>,
+    pub frequency: Option<f32>,
+    pub angle: Option<f32>,
+    pub seed: Option<f32>,
+    pub color_mix: Option<f32>,
 }
 
 #[derive(serde::Serialize)]
@@ -212,10 +226,15 @@ fn cpu_blur(image: &RgbaImage, radius: usize, threads: usize) -> Vec<u8> {
 }
 
 pub(super) fn process(image: &RgbaImage, effects: &[CpuEffect], threads: usize) -> Result<RgbaImage, String> {
-    if effects.len() > 128 { return Err("CPU effect stack exceeds safety limit (128)".into()); }
+    if effects.len() > 1024 { return Err("CPU effect stack exceeds resource safety limit (1024)".into()); }
     let mut current = image.clone();
     for effect in effects {
         if !effect.amount.is_finite() || effect.amount.abs() > 1000.0 { return Err("Invalid CPU effect value".into()); }
+        if native_effects::supported(&effect.kind) {
+            native_effects::validate(effect)?;
+            current = native_effects::apply(&current,effect,threads)?;
+            continue;
+        }
         if !["brightness", "contrast", "saturate", "grayscale", "invert", "blur"].contains(&effect.kind.as_str()) {
             return Err(format!("Native CPU operation '{}' is not migrated yet", effect.kind));
         }
@@ -237,7 +256,7 @@ pub(super) fn process(image: &RgbaImage, effects: &[CpuEffect], threads: usize) 
 pub fn aurora_cpu_info() -> CpuInfo {
     CpuInfo {
         backend: "rust-cpu", available_threads: logical_cores(), max_threads: 32,
-        supported_operations: vec!["brightness", "contrast", "saturate", "grayscale", "invert", "blur"],
+        supported_operations: vec!["brightness", "contrast", "saturate", "grayscale", "invert", "blur", "atelier_3_12", "atelier_4_0", "atelier_7_0", "atelier_7_1"],
     }
 }
 
@@ -251,6 +270,34 @@ pub fn aurora_register_image(registry: State<'_, CpuImageRegistry>, controller: 
     entries.insert(id.clone(), image.clone());
     drop(entries);
     controller.0.graph.register_source(&id, image);
+    Ok(())
+}
+
+/// Retain native source once as raw RGBA bytes, never 8 million JSON integers.
+/// Body: magic HLRG, width u32 LE, height u32 LE, id length u16 LE,
+/// UTF-8 identifier, then exactly width*height*4 bytes.
+#[tauri::command]
+pub fn aurora_register_image_raw(
+    request: tauri::ipc::Request<'_>,
+    registry: State<'_, CpuImageRegistry>,
+    controller: State<'_, AuroraController>,
+) -> Result<(), String> {
+    let tauri::ipc::InvokeBody::Raw(bytes) = request.body() else { return Err("Raw RGBA body required".into()); };
+    if bytes.len() < 14 || &bytes[..4] != b"HLRG" { return Err("Invalid native image envelope".into()); }
+    let width = u32::from_le_bytes(bytes[4..8].try_into().unwrap()) as usize;
+    let height = u32::from_le_bytes(bytes[8..12].try_into().unwrap()) as usize;
+    let length = u16::from_le_bytes(bytes[12..14].try_into().unwrap()) as usize;
+    let body = 14usize.checked_add(length).ok_or("Identifier overflow")?;
+    if bytes.len() < body {return Err("Truncated image identifier".into());}
+    let id=std::str::from_utf8(&bytes[14..body]).map_err(|_|"Invalid UTF-8 image identifier")?.to_owned();
+    if id.is_empty() || id.len()>128 {return Err("Invalid image identifier".into());}
+    validate_dimensions(width,height,bytes.len()-body)?;
+    let image=Arc::new(RgbaImage{width,height,pixels:bytes[body..].to_vec()});
+    let mut entries=registry.0.lock().map_err(|_|"Native image registry lock failed")?;
+    if !entries.contains_key(&id) && entries.len()>=MAX_IMAGES {return Err("Native image registry is full".into());}
+    entries.insert(id.clone(),image.clone());
+    drop(entries);
+    controller.0.graph.register_source(&id,image);
     Ok(())
 }
 
@@ -278,7 +325,7 @@ pub async fn aurora_render_cpu(registry: State<'_, CpuImageRegistry>, id: String
 pub async fn aurora_cpu_self_test(threads: usize) -> Result<CpuSelfTest, String> {
     tauri::async_runtime::spawn_blocking(move || {
         let source = RgbaImage { width: 2, height: 1, pixels: vec![100, 80, 40, 255, 60, 70, 80, 0] };
-        let operations = [CpuEffect { kind: "brightness".into(), amount: 150.0 }, CpuEffect { kind: "invert".into(), amount: 100.0 }];
+        let operations = [CpuEffect { kind: "brightness".into(), amount: 150.0, parameters: None }, CpuEffect { kind: "invert".into(), amount: 100.0, parameters: None }];
         let parallel = process(&source, &operations, threads)?;
         let serial = process(&source, &operations, 1)?;
         let passed = parallel.pixels == serial.pixels && parallel.pixels[0] == 105 && parallel.pixels[3] == 255;
@@ -360,7 +407,7 @@ mod tests {
     #[test]
     fn ordered_effects_preserve_alpha_and_do_not_mutate_source() {
         let base = image();
-        let operations = [CpuEffect { kind: "brightness".into(), amount: 150.0 }, CpuEffect { kind: "invert".into(), amount: 100.0 }];
+        let operations = [CpuEffect { kind: "brightness".into(), amount: 150.0, parameters: None }, CpuEffect { kind: "invert".into(), amount: 100.0, parameters: None }];
         let result = process(&base, &operations, 2).unwrap();
         assert_eq!(result.pixels[0..4], [180, 105, 30, 255]);
         assert_eq!(base.pixels[0..4], [50, 100, 150, 255]);
@@ -369,12 +416,12 @@ mod tests {
     #[test]
     fn parallel_matches_single_thread() {
         let input = image();
-        let stack = [CpuEffect { kind: "grayscale".into(), amount: 75.0 }, CpuEffect { kind: "saturate".into(), amount: 115.0 }, CpuEffect { kind: "blur".into(), amount: 2.0 }];
+        let stack = [CpuEffect { kind: "grayscale".into(), amount: 75.0, parameters: None }, CpuEffect { kind: "saturate".into(), amount: 115.0, parameters: None }, CpuEffect { kind: "blur".into(), amount: 2.0, parameters: None }];
         assert_eq!(process(&input, &stack, 1).unwrap().pixels, process(&input, &stack, 4).unwrap().pixels);
     }
     #[test]
     fn reject_unknown_operations_instead_of_faking_results() {
-        let invalid = [CpuEffect { kind: "miasma".into(), amount: 90.0 }];
+        let invalid = [CpuEffect { kind: "miasma".into(), amount: 90.0, parameters: None }];
         assert!(process(&image(), &invalid, 2).unwrap_err().contains("not migrated"));
     }
 }
@@ -427,7 +474,7 @@ fn status(backend: &NativeBackend) -> AuroraBackendStatus {
         device: backend.gpu.as_ref().map(|gpu| gpu.adapter_name.clone()).unwrap_or_else(|| "System CPU".into()),
         fallback_reason: backend.fallback.clone(),
         gpu_supported_operations: vec!["brightness", "contrast", "saturate", "grayscale", "invert", "blur"],
-        cpu_supported_operations: vec!["brightness", "contrast", "saturate", "grayscale", "invert", "blur"],
+        cpu_supported_operations: vec!["brightness", "contrast", "saturate", "grayscale", "invert", "blur", "atelier_3_12", "atelier_4_0", "atelier_7_0", "atelier_7_1"],
     }
 }
 
@@ -469,8 +516,7 @@ pub async fn aurora_select_backend(controller: State<'_, AuroraController>, enab
     }).await.map_err(|error| format!("Backend change failed: {error}"))?
 }
 
-#[tauri::command]
-pub async fn aurora_render_graph(
+async fn render_graph_internal(
     registry: State<'_, CpuImageRegistry>,
     controller: State<'_, AuroraController>,
     id: String,
@@ -537,4 +583,29 @@ pub async fn aurora_render_graph(
             gpu_stages: result.gpu_stages, active_backend: backend,
         })
     }).await.map_err(|error| format!("Native graph render failed: {error}"))?
+}
+
+/// Binary response: a single RGBA ArrayBuffer rather than JSON-encoded bytes.
+/// Dimensions are the registered source dimensions; caller validates length.
+#[tauri::command]
+pub async fn aurora_render_graph_bytes(
+    registry: State<'_, CpuImageRegistry>,
+    controller: State<'_, AuroraController>,
+    id: String,
+    effects: Vec<CpuEffect>,
+    threads: usize,
+) -> Result<tauri::ipc::Response, String> {
+    let result=render_graph_internal(registry,controller,id,effects,threads).await?;
+    Ok(tauri::ipc::Response::new(result.pixels))
+}
+
+#[tauri::command]
+pub async fn aurora_render_graph(
+    registry: State<'_, CpuImageRegistry>,
+    controller: State<'_, AuroraController>,
+    id: String,
+    effects: Vec<CpuEffect>,
+    threads: usize,
+) -> Result<AuroraGraphRender, String> {
+    render_graph_internal(registry,controller,id,effects,threads).await
 }

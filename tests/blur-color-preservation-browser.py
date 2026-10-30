@@ -5,21 +5,32 @@ import subprocess,os,json
 root=Path(__file__).resolve().parent.parent
 env={**os.environ,'NODE_PATH':subprocess.check_output(['npm','root','-g'],text=True).strip()}
 script='''const ts=require('typescript'),fs=require('fs');process.stdout.write(ts.transpileModule(fs.readFileSync(process.argv[1],'utf8'),{fileName:process.argv[1],compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText)'''
-modules={name:subprocess.check_output(['node','-e',script,str(root/'src/editor'/f'{name}.ts')],text=True,env=env) for name in ['effect-ops','blur-luminance','detail-reconstruction','expansion-120']}
+names=['effect-ops','blur-luminance','detail-reconstruction',
+       'effects/spatial-gpu','effects/spatial-cpu','effects/motion-blur',
+       'effects/radial-blur','effects/lens-blur','effects/alpha-roi',
+       'effects/detail-gaussian','effects/sharpen','effects/unsharp-mask',
+       'effects/clarity','effects/texture-detail','effects/surface-blur','effects/noise-reduction']
+modules={name:subprocess.check_output(['node','-e',script,str(root/'src/editor'/f'{name}.ts')],text=True,env=env) for name in names}
 with sync_playwright() as p:
  b=p.chromium.launch(headless=True,executable_path='/usr/bin/chromium',args=['--no-sandbox']);page=b.new_page()
  result=page.evaluate('''mods=>{
   const map={};const surface={createSurface:()=>document.createElement('canvas')};
-  const exports=(name)=>{if(map[name])return map[name];let out={exports:{}};new Function('module','exports','require',mods[name])(out,out.exports,id=>{
-    if(id==='./canvas-surface')return surface;
-    if(id==='./detail-reconstruction')return exports('detail-reconstruction');
-    if(id==='./blur-luminance')return exports('blur-luminance');
-    if(id==='./expansion-120')return exports('expansion-120');
-    if(id==='./aurora-expansion')return {AURORA_NEW_KINDS:new Set()};
-    if(id==='./color-reconstruction')return {RECONSTRUCTED_COLOR_KINDS:new Set()};
-    if(id==='./stylize-reconstruction')return {DRAWING_STYLES:new Set()};
-    return {};
-  });return map[name]=out.exports;};
+  const exports=(name)=>{if(map[name])return map[name];const out={exports:{}};map[name]=out.exports;
+   new Function('module','exports','require',mods[name])(out,out.exports,id=>{
+     const parts=name.split('/');parts.pop();
+     for(const part of id.split('/')){if(part==='.')continue;if(part==='..')parts.pop();else parts.push(part);}
+     const child=parts.join('/');
+     if(child==='canvas-surface')return surface;
+     if(child==='immutable-effect-sources')return {isImmutableEffectSource:()=>false};
+     if(child==='effects/spatial-gpu')return {tryGpuSpatialBlur:()=>null};
+     if(child==='aurora-expansion')return {AURORA_NEW_KINDS:new Set()};
+     if(child==='color-reconstruction')return {RECONSTRUCTED_COLOR_KINDS:new Set()};
+     if(child==='stylize-reconstruction')return {DRAWING_STYLES:new Set()};
+     if(child==='expansion-120')return {EXPANSION_LOOKUP:new Set()};
+     if(child==='originals-expansion')return {};
+     return mods[child]?exports(child):{};
+   });return out.exports;
+  };
   const operations=exports('effect-ops');
   const canvas=document.createElement('canvas');canvas.width=60;canvas.height=44;
   const ctx=canvas.getContext('2d');ctx.fillStyle='#557799';ctx.fillRect(0,0,60,44);

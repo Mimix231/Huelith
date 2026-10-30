@@ -35,6 +35,7 @@ pub fn run() {
             list_system_fonts,
             aurora::aurora_cpu_info,
             aurora::aurora_register_image,
+            aurora::aurora_register_image_raw,
             aurora::aurora_release_image,
             aurora::aurora_render_cpu,
             aurora::aurora_cpu_self_test,
@@ -42,6 +43,7 @@ pub fn run() {
             aurora::aurora_backend_status,
             aurora::aurora_select_backend,
             aurora::aurora_render_graph,
+            aurora::aurora_render_graph_bytes,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Huelith");

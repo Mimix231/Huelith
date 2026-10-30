@@ -14,7 +14,7 @@ function requireEditor(name) {
   }).outputText;
   const module = { exports: {} };
   new Function('require', 'module', 'exports', result)(
-    specifier => requireEditor(specifier.replace('./', '')), module, module.exports,
+    specifier => requireEditor(path.posix.normalize(path.posix.join(path.posix.dirname(name),specifier))), module, module.exports,
   );
   cache.set(name, module.exports);
   return module.exports;

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { AutoAwesome, Close, Search, Tune, Palette, ArrowBack } from '@mui/icons-material';
+import { AutoAwesome, Close, Search, ArrowBack } from '@mui/icons-material';
 import { Slider } from '@mui/material';
 import EffectAdvancedEditors, { PreviewColorInput } from './EffectAdvancedEditors';
 import EffectIcon from './EffectIcon';
@@ -118,7 +118,9 @@ export default function FxStudio({ state, active, activeShape, onClose }: Props)
   const openGeneration=useRef(0);
   const writable = Boolean(active && !active.locked);
   const applied = appliedStudioItems(active?.effects ?? []);
-  const relevant = applied.filter(item => item.category === category);
+  // At the app hub, show the complete ordered layer stack rather than hiding
+  // existing FX behind a removed tab. Individual apps filter their own items.
+  const relevant = selectedApp ? applied.filter(item => item.category === category) : applied;
   const term = query.trim().toLowerCase();
   const app=selectedApp?STUDIO_APP_BY_ID.get(selectedApp):undefined;
   const browsingApp=Boolean(app);
@@ -290,8 +292,11 @@ export default function FxStudio({ state, active, activeShape, onClose }: Props)
   }, []);
 
   const editingEffects = editing ? appliedStudioItems(working).find(item => item.id === editing.id)?.effects ?? [] : [];
-  const shownLibrary = category === 'creativity' ? CREATIVITY_FILTERS : category === 'effects' ? LAYER_EFFECTS : [];
-  const groupNames = ['Color & light', 'Detail & texture', 'Stylize', ...new Set(EXPANSION_120.map(item=>item.group))];
+  const searchAll = !browsingApp && term.length > 0;
+  const shownLibrary = searchAll || app?.id==='favorites' || app?.id==='recent'
+    ? [...CREATIVITY_FILTERS,...LAYER_EFFECTS]
+    : category === 'creativity' ? CREATIVITY_FILTERS : category === 'effects' ? LAYER_EFFECTS : [];
+  const groupNames = ['Color & light', 'Detail & texture', 'Stylize', 'Creative effects', ...new Set(EXPANSION_120.map(item=>item.group))];
 
   return (
     <div className="fx-overlay huelith-studio-v3" id="huelith-fx-studio" role="dialog"
@@ -306,7 +311,7 @@ export default function FxStudio({ state, active, activeShape, onClose }: Props)
             : <span className="fx-overlay-symbol"><AutoAwesome fontSize="small" /></span>}
           <div><strong>{editing?.title ?? app?.name ?? 'Huelith Studio'}</strong>
             <small>{editing ? `${STUDIO_CATEGORIES[editing.category]} · non-destructive editor`
-              : browsingApp ? 'Creativity · App hub / ' + app?.name : 'Your creative applications'}</small></div>
+              : browsingApp ? 'Apps / ' + app?.name : 'Your creative applications'}</small></div>
         </div>
         <button type="button" aria-label="Close FX studio" className="fx-close" onClick={dismiss}>
           <Close fontSize="small" />
@@ -361,7 +366,7 @@ export default function FxStudio({ state, active, activeShape, onClose }: Props)
                     <input type="checkbox" checked={effect.enabled}
                       onChange={event => change(effect.id, { enabled: event.target.checked })} /> Enabled
                   </label>
-                  <ResponsiveSlider key={`${effect.id}-amount`} label={`${effect.kind} ${descriptor.label}`}
+                  <ResponsiveSlider key={`${effect.id}-amount`} label={descriptor.label}
                     value={effect.amount} min={descriptor.min} max={descriptor.max} step={descriptor.step}
                     unit={descriptor.unit}
                     onPreview={amount => change(effect.id, { amount }, true)}
@@ -375,7 +380,7 @@ export default function FxStudio({ state, active, activeShape, onClose }: Props)
                     const raw = (effect.parameters as Record<string, unknown> | undefined)?.[control.key];
                     const value = typeof raw === 'number' ? raw : control.initial;
                     return (
-                      <ResponsiveSlider key={`${effect.id}-${control.key}`} label={`${effect.kind} ${control.label}`}
+                      <ResponsiveSlider key={`${effect.id}-${control.key}`} label={control.label}
                         value={value} min={control.min} max={control.max} step={control.step ?? 1}
                         unit={control.unit ?? ''}
                         onPreview={amount => change(effect.id, { parameters: { [control.key]: amount } }, true)}
@@ -423,16 +428,8 @@ export default function FxStudio({ state, active, activeShape, onClose }: Props)
         </div>
       ) : (
         <>
-          <div className="fx-studio-tabs" role="tablist" aria-label="Huelith Studio categories">
-            {(['creativity', 'effects', 'fx'] as const).map(tab => (
-              <button key={tab} type="button" role="tab" aria-selected={category === tab}
-                className={category === tab ? 'active' : ''} onClick={() => { setSelectedApp(null); setCategory(tab); setQuery(''); }}>
-                {tab === 'creativity' ? <Tune fontSize="small" /> : tab === 'effects'
-                  ? <Palette fontSize="small" /> : <AutoAwesome fontSize="small" />}
-                <span>{STUDIO_CATEGORIES[tab]}</span>
-              </button>
-            ))}
-          </div>
+          {/* Effects and FX are independent Studio apps, not top-level tabs.
+              Retain internal categories for saved-project compatibility. */}
           <label className="fx-search"><Search fontSize="small" />
             <input type="search" aria-label="Search Studio library" placeholder="Find a creative tool…"
               value={query} onChange={event => setQuery(event.target.value)} />
@@ -471,7 +468,8 @@ export default function FxStudio({ state, active, activeShape, onClose }: Props)
                       <button type="button" className="fx-filter-card"
                         disabled={!writable} onClick={() => {
                           const effect = createStudioFilter(item.kind);
-                          begin(item.kind === 'cutout' ? 'Remove background' : item.label, category, effect.id, [effect]);
+                          const origin = LAYER_EFFECTS.some(layerItem=>layerItem.kind === item.kind) ? 'effects' : category;
+                          begin(item.kind === 'cutout' ? 'Remove background' : item.label, origin, effect.id, [effect]);
                         }} title={`Open ${item.label} editor`}>
                         <EffectIcon kind={item.kind} className="fx-filter-mark" />
                         {!item.kind.startsWith('atelier_') && <EffectPreview kind={item.kind} onDemand className="fx-filter-live-preview" />}
@@ -485,7 +483,7 @@ export default function FxStudio({ state, active, activeShape, onClose }: Props)
                 </section>;
               })}
             </div>}
-            {category === 'fx' && <div className="fx-presets"><h3>Huelith signature FX</h3>
+            {(category === 'fx' || (searchAll && Object.keys(FX_PRESETS).some(matches))) && <div className="fx-presets"><h3>Huelith signature FX</h3>
               <p className="fx-subtle">Dedicated Huelith FX renderers with independently editable parameters. Old chain-based projects still work.</p>
               <div className="fx-preset-grid">
                 {Object.keys(FX_PRESETS).filter(matches).map(name => <button type="button"
@@ -501,7 +499,7 @@ export default function FxStudio({ state, active, activeShape, onClose }: Props)
               </div>
             </div>}
             <section className="studio-applied-section">
-              <div className="fx-applied-heading"><h3>Applied {category === 'creativity' ? 'Filters' : STUDIO_CATEGORIES[category]}</h3><span>{relevant.length}</span></div>
+              <div className="fx-applied-heading"><h3>{selectedApp ? `Applied ${category === 'creativity' ? 'Filters' : STUDIO_CATEGORIES[category]}` : 'Applied to this layer'}</h3><span>{relevant.length}</span></div>
               <div className="studio-applied-grid">
                 {relevant.map(item => <div key={item.id} className="studio-applied-tile">
                   <button type="button" className="studio-app-icon" onClick={() => reopen(item)}

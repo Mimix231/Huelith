@@ -41,7 +41,7 @@ function load(name) {
   const module = { exports: {} };
   const localRequire = specifier => {
     if (specifier === 'zustand') return fakeZustand();
-    if (specifier.startsWith('./')) return load(specifier.slice(2));
+    if ((specifier.startsWith('./') || specifier.startsWith('../'))) return load(path.posix.normalize(path.posix.join(path.posix.dirname(name),specifier)));
     throw new Error(`Unexpected module: ${specifier}`);
   };
   const context = {

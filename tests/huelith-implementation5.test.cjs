@@ -12,7 +12,7 @@ function transpiled(file) {
   const js = ts.transpileModule(src, {fileName:file+'.ts',compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
   const mod = {exports:{}};
   instances.set(file,mod.exports);
-  new Function('require','module','exports',js)(dependency => transpiled(dependency.replace(/^\.\//,'')),mod,mod.exports);
+  new Function('require','module','exports',js)(dependency => transpiled(path.posix.normalize(path.posix.join(path.posix.dirname(file),dependency))),mod,mod.exports);
   instances.set(file,mod.exports);
   return mod.exports;
 }

@@ -834,7 +834,7 @@ function Inspector({ state }: { state: EditorStore }) {
               else { setFxClosing(false); setFxOpen(true); }
             }}>
             <span className="fx-launcher-glyph"><AutoAwesome fontSize="small" /></span>
-            <span className="fx-launcher-copy"><strong>Huelith FX</strong><small>Creativity · Effects · FX</small></span>
+            <span className="fx-launcher-copy"><strong>Huelith FX</strong><small>Creative apps · Layer Effects · Signature FX</small></span>
             <span className="fx-launcher-count">{active?.effects?.length ?? 0}</span>
             <span aria-hidden="true">{fxOpen ? '‹' : '›'}</span>
           </button>

@@ -189,6 +189,150 @@ for(const operation of EXPANSION_120){
   EFFECT_PARAMETER_SCHEMA[operation.kind]=controls;
 }
 
+// Dedicated processors only expose controls that their math actually consumes.
+// The old shared-expansion controls could silently show placebo sliders.
+const dedicatedControls:Record<string, ScalarControl[]> = {
+  atelier_4_0: [parameter('frequency','Dot pitch',10,150,50,'%'),parameter('angle','Screen angle',-180,180,45,'°'),pct('colorMix','Ink contrast',50)],
+  atelier_3_12: [pct('threshold','Sort brightness threshold',45),parameter('frequency','Sort segment length',10,150,50,'%'),parameter('angle','Sort axis (0° row / 90° column)',0,90,0,'°')],
+  atelier_7_0: [parameter('frequency','Halation spread',10,150,50,'%'),parameter('threshold','Highlight threshold',0,255,172),pct('colorMix','Warmth',50)],
+  atelier_7_1: [parameter('frequency','Streak length',10,150,50,'%'),parameter('threshold','Highlight threshold',0,255,174),pct('colorMix','Blue anamorphic tint',50)],
+  atelier_7_2: [...xy,parameter('frequency','Ghost softness',10,150,50,'%'),parameter('threshold','Highlight threshold',0,255,172),pct('colorMix','Spectral intensity',50)],
+  atelier_7_10: [parameter('frequency','Readout oscillation',10,150,50,'%'),parameter('angle','Readout phase',-180,180,0,'°')],
+  atelier_7_11: [...xy,parameter('frequency','Defocus radius',10,150,50,'%'),parameter('angle','Split angle',-180,180,20,'°')],
+  atelier_2_15: [parameter('frequency','Pane size',10,150,50,'%'),parameter('seed','Pane geometry',0,9999,0),pct('colorMix','Glass color richness',50)],
+};
+// Six spatial Lighting processors: only controls used by their real math.
+Object.assign(dedicatedControls, {
+  atelier_1_0: [parameter('frequency','Ray length',10,150,50,'%'),parameter('angle','Light direction',-180,180,-35,'°'),parameter('threshold','Emitter threshold',0,255,165)],
+  atelier_1_1: [parameter('frequency','Diffraction radius',10,150,50,'%'),parameter('threshold','Spark threshold',0,255,175),pct('colorMix','Ray thickness',50)],
+  atelier_1_2: [parameter('frequency','Scattering distance',10,150,50,'%'),parameter('threshold','Source threshold',0,255,172),pct('colorMix','Scattering warmth',50)],
+  atelier_1_3: [parameter('frequency','Rim thickness',10,150,50,'%'),parameter('angle','Light direction',-180,180,-30,'°'),pct('colorMix','Rim temperature',50)],
+  atelier_1_7: [parameter('frequency','Wave pitch',10,150,50,'%'),parameter('angle','Wave direction',-180,180,17,'°'),pct('colorMix','Light intensity',50)],
+  atelier_1_10:[parameter('frequency','Star size',10,150,50,'%'),parameter('threshold','Spark threshold',0,255,172),parameter('seed','Pattern seed',0,9999,0),pct('colorMix','Spark color',50)],
+});
+Object.assign(dedicatedControls, {
+  atelier_1_4: [...xy,parameter('frequency','Ray count',10,150,50,'%'),parameter('threshold','Sun threshold',0,255,160),pct('colorMix','Beam sharpness',50)],
+  atelier_1_5: [parameter('centerY','Fog horizon',0,100,50,'%'),parameter('frequency','Turbulence scale',10,150,50,'%'),parameter('seed','Mist seed',0,9999,0),pct('colorMix','Fog color temperature',50)],
+  atelier_1_6: [parameter('frequency','Haze diffusion',10,150,50,'%'),parameter('threshold','Bright source threshold',0,255,155),pct('colorMix','Haze temperature',50)],
+  atelier_1_8: [...xy,parameter('frequency','Bolt irregularity',10,150,50,'%'),parameter('seed','Discharge seed',0,9999,0),pct('colorMix','Electrical tint',50)],
+  atelier_1_9: [parameter('frequency','Wrap radius',10,150,50,'%'),parameter('angle','Wrap light angle',-180,180,35,'°'),pct('colorMix','Environment tint',50)],
+  atelier_1_11:[parameter('centerY','Sunrise horizon',0,100,60,'%'),parameter('angle','Horizon tilt',-180,180,-18,'°'),pct('colorMix','Warm color temperature',50)],
+  atelier_1_12:[parameter('angle','Moonlight direction',-180,180,-35,'°'),pct('colorMix','Moonlight saturation',50)],
+  atelier_1_13:[parameter('centerY','Mist depth',0,100,60,'%'),parameter('frequency','Mist turbulence',10,150,50,'%'),parameter('seed','Mist seed',0,9999,0),pct('colorMix','Mist tint',50)],
+});
+// Dedicated Signalworks/Optica processors: no generic sliders without a real
+// calculation path. All controls below are consumed by the matching module.
+Object.assign(dedicatedControls, {
+  atelier_6_0: [parameter('frequency','Stripe height',10,150,50,'%'),parameter('seed','Byte corruption seed',0,9999,0)],
+  atelier_6_1: [parameter('frequency','Remaining bit depth',10,150,50,'%')],
+  atelier_6_2: [parameter('frequency','Channel displacement',10,150,50,'%'),parameter('angle','Ghost direction',-180,180,18,'°')],
+  atelier_6_3: [parameter('frequency','Damaged macroblock size',10,150,50,'%'),parameter('seed','Corruption seed',0,9999,0)],
+  atelier_6_4: [parameter('frequency','Tracking band width',10,150,50,'%'),parameter('angle','Readout phase',-180,180,0,'°')],
+  atelier_6_5: [parameter('frequency','Block size / quantization',10,150,50,'%')],
+  atelier_6_6: [parameter('frequency','Tile size',10,150,50,'%'),parameter('seed','Rearrangement seed',0,9999,0)],
+  atelier_6_7: [parameter('frequency','LCD pixel pitch',10,150,50,'%'),parameter('seed','Defect seed',0,9999,0)],
+  atelier_6_8: [parameter('frequency','Static amplitude',10,150,50,'%'),parameter('seed','Noise seed',0,9999,0)],
+  atelier_6_9: [parameter('frequency','Phosphor raster strength',10,150,50,'%')],
+  atelier_6_10:[parameter('frequency','RGB subpixel pitch',10,150,50,'%')],
+  atelier_6_11:[parameter('frequency','Tear band width',10,150,50,'%'),parameter('seed','Signal seed',0,9999,0)],
+  atelier_6_12:[parameter('frequency','Sector division count',10,150,50,'%'),parameter('seed','Sector pattern seed',0,9999,0)],
+  atelier_6_13:[parameter('frequency','Matrix lamp pitch',10,150,50,'%')],
+  atelier_7_3: [...xy,parameter('frequency','Peripheral falloff',10,150,50,'%')],
+  atelier_7_4: [...xy,parameter('frequency','Prismatic dispersion',10,150,50,'%')],
+  atelier_7_5: [parameter('frequency','Star ray length',10,150,50,'%'),parameter('angle','Star rotation',-180,180,0,'°'),parameter('threshold','Bright emitter threshold',0,255,155)],
+  atelier_7_6: [parameter('frequency','Contrast slope',10,150,50,'%')],
+  atelier_7_7: [pct('colorMix','Film base mask compensation',50)],
+  atelier_7_8: [pct('colorMix','Retained silver density',50)],
+  atelier_7_9: [...xy,parameter('frequency','Lens curvature',10,150,50,'%')],
+  atelier_7_12:[...xy,parameter('frequency','Lateral color shift',10,150,50,'%')],
+  atelier_7_13:[...xy,parameter('frequency','Flare spread',10,150,50,'%'),parameter('threshold','Source threshold',0,255,165)],
+});
+// Manga Lab: each name uses its own geometry or ink chemistry.
+Object.assign(dedicatedControls, {
+  atelier_4_1:[parameter('frequency','Screen dot spacing',10,150,50,'%'),parameter('angle','Print screen rotation',-180,180,45,'°')],
+  atelier_4_2:[parameter('frequency','Hatching pitch',10,150,50,'%'),parameter('angle','Stroke rotation',-180,180,35,'°')],
+  atelier_4_3:[...xy,parameter('frequency','Radial line density',10,150,50,'%')],
+  atelier_4_4:[pct('threshold','Shadow ink threshold',40)],
+  atelier_4_5:[parameter('frequency','Highlight band contrast',10,150,50,'%')],
+  atelier_4_6:[parameter('frequency','Print plate offset',10,150,50,'%')],
+  atelier_4_7:[...xy,parameter('frequency','Manual eye separation / glow radius',10,150,50,'%')],
+  atelier_4_8:[parameter('frequency','Ink band spacing',10,150,50,'%')],
+  atelier_4_9:[pct('threshold','Contour edge threshold',45)],
+  atelier_4_10:[pct('threshold','Two-ink split',40)],
+  atelier_4_11:[...xy,parameter('frequency','Perspective strength',10,150,50,'%')],
+  atelier_4_12:[...xy,parameter('frequency','Energy line density',10,150,50,'%')],
+  atelier_4_13:[parameter('frequency','Regional color smoothing',10,150,50,'%')],
+  atelier_4_14:[parameter('frequency','Scratch spacing',10,150,50,'%'),parameter('seed','Ink mark seed',0,9999,0)],
+  atelier_4_15:[parameter('frequency','Misregistered screen pitch',10,150,50,'%')],
+});
+// Materialia: surface geometry settings correspond to the named material.
+Object.assign(dedicatedControls, {
+  atelier_5_0:[parameter('frequency','Micro-brush density',10,150,50,'%'),parameter('seed','Surface pattern seed',0,9999,0)],
+  atelier_5_1:[parameter('frequency','Crumpled foil facet scale',10,150,50,'%'),parameter('seed','Surface pattern seed',0,9999,0)],
+  atelier_5_2:[parameter('frequency','Environment stripe count',10,150,50,'%')],
+  atelier_5_3:[parameter('frequency','Glaze micro-roughness',10,150,50,'%')],
+  atelier_5_4:[parameter('frequency','Diffusion radius',10,150,50,'%')],
+  atelier_5_5:[parameter('frequency','Weave thread pitch',10,150,50,'%')],
+  atelier_5_6:[parameter('frequency','Parchment stain scale',10,150,50,'%'),parameter('seed','Surface pattern seed',0,9999,0)],
+  atelier_5_7:[parameter('frequency','Sandstone particle scale',10,150,50,'%'),parameter('seed','Surface pattern seed',0,9999,0)],
+  atelier_5_8:[parameter('frequency','Leather pebble pitch',10,150,50,'%'),parameter('seed','Surface pattern seed',0,9999,0)],
+  atelier_5_9:[parameter('frequency','Carbon weave size',10,150,50,'%')],
+  atelier_5_10:[parameter('frequency','Interference bands',10,150,50,'%')],
+  atelier_5_11:[parameter('frequency','Concrete pore scale',10,150,50,'%'),parameter('seed','Surface pattern seed',0,9999,0)],
+  atelier_5_12:[parameter('frequency','Gemstone facet size',10,150,50,'%'),parameter('seed','Surface pattern seed',0,9999,0)],
+  atelier_5_13:[parameter('frequency','Growth ring spacing',10,150,50,'%'),parameter('seed','Surface pattern seed',0,9999,0)],
+});
+// Paintoria: pigment/process-specific controls, not generic placebo knobs.
+Object.assign(dedicatedControls, {
+  atelier_2_0:[parameter('frequency','Charcoal pressure',10,150,50,'%'),parameter('seed','Pigment grain seed',0,9999,0)],
+  atelier_2_1:[parameter('frequency','Chalk roughness',10,150,50,'%'),parameter('seed','Pigment grain seed',0,9999,0)],
+  atelier_2_2:[parameter('frequency','Pastel smudge radius',10,150,50,'%'),parameter('seed','Pigment grain seed',0,9999,0)],
+  atelier_2_3:[parameter('frequency','Gouache paint block size',10,150,50,'%')],
+  atelier_2_4:[parameter('frequency','Wood grain pitch',10,150,50,'%')],
+  atelier_2_5:[parameter('frequency','Engraving hatch density',10,150,50,'%')],
+  atelier_2_6:[parameter('frequency','Charcoal line spacing',10,150,50,'%'),parameter('seed','Pigment grain seed',0,9999,0)],
+  atelier_2_7:[parameter('frequency','Stippling spacing',10,150,50,'%'),parameter('seed','Pigment grain seed',0,9999,0)],
+  atelier_2_8:[parameter('frequency','Pencil hatch spacing',10,150,50,'%'),parameter('seed','Pigment grain seed',0,9999,0)],
+  atelier_2_9:[parameter('frequency','Oil stroke thickness',10,150,50,'%'),parameter('seed','Pigment grain seed',0,9999,0)],
+  atelier_2_10:[parameter('frequency','Pigment diffusion radius',10,150,50,'%'),parameter('seed','Pigment grain seed',0,9999,0)],
+  atelier_2_11:[parameter('frequency','Stone press grain',10,150,50,'%'),parameter('seed','Pigment grain seed',0,9999,0)],
+  atelier_2_12:[parameter('frequency','Marker width',10,150,50,'%'),parameter('seed','Pigment grain seed',0,9999,0)],
+  atelier_2_13:[parameter('frequency','Wax track spacing',10,150,50,'%'),parameter('seed','Pigment grain seed',0,9999,0)],
+  atelier_2_14:[parameter('frequency','Airbrush diffusion radius',10,150,50,'%'),parameter('seed','Pigment grain seed',0,9999,0)],
+  atelier_2_16:[parameter('frequency','Graphite tooth strength',10,150,50,'%'),parameter('seed','Pigment grain seed',0,9999,0)],
+  atelier_2_17:[parameter('frequency','Brush bristle spacing',10,150,50,'%'),parameter('seed','Pigment grain seed',0,9999,0)],
+});
+// Inverse geometry implementations expose just their real degrees of freedom.
+Object.assign(dedicatedControls, {
+  atelier_3_0:[...xy,parameter('frequency','Polar turns',10,150,50,'%'),parameter('angle','Polar rotation',-180,180,0,'°')],
+  atelier_3_1:[...xy,parameter('frequency','Pinch power',10,150,50,'%')],
+  atelier_3_2:[...xy,parameter('frequency','Barrel coefficient',10,150,50,'%')],
+  atelier_3_3:[...xy,parameter('frequency','Pincushion coefficient',10,150,50,'%')],
+  atelier_3_4:[...xy,parameter('frequency','Shear strength',10,150,50,'%'),parameter('angle','Shear axis',-180,180,25,'°')],
+  atelier_3_5:[parameter('frequency','Noise wavelength',10,150,50,'%'),parameter('seed','Displacement seed',0,9999,0)],
+  atelier_3_6:[...xy,parameter('frequency','Fold repetitions',10,150,50,'%'),parameter('angle','Fold axis',-180,180,15,'°')],
+  atelier_3_7:[...xy,parameter('frequency','Reflections',10,150,50,'%'),parameter('angle','Mirror orientation',-180,180,0,'°')],
+  atelier_3_8:[parameter('frequency','Wave frequency',10,150,50,'%'),parameter('angle','Wave axis',-180,180,30,'°')],
+  atelier_3_9:[...xy,parameter('frequency','Vortex rotation',10,150,50,'%'),parameter('angle','Vortex offset',-180,180,0,'°')],
+  atelier_3_10:[parameter('frequency','Shard size',10,150,50,'%'),parameter('seed','Fragment seed',0,9999,0),pct('colorMix','Shard separation',50)],
+  atelier_3_11:[parameter('frequency','Slice width',10,150,50,'%'),parameter('angle','Slice direction',-180,180,0,'°')],
+  atelier_3_13:[...xy,parameter('frequency','Lens curvature',10,150,50,'%')],
+});
+// Color Science has independent processors. No misleading generic Frequency or
+// Angle controls: those were present in the old 120-way placeholder switch.
+const colorScienceLabels = [
+  'Target illuminant temperature','Shadow hue balance','Highlight warmth',
+  'Wheel balance','Processing chemistry','Silver/chroma retention',
+  'Shadow/highlight balance','Channel compression knee',
+  'Chroma isolation strength','Shoulder compression','Toe compression',
+  'Logarithmic latitude','Target hue family','Gamut compression pressure',
+  'Palette size','Shadow/highlight balance',
+];
+colorScienceLabels.forEach((label,index)=>{
+  dedicatedControls[`atelier_0_${index}`] = [pct('colorMix',label,50)];
+});
+for(const [kind,controls] of Object.entries(dedicatedControls)) EFFECT_PARAMETER_SCHEMA[kind as EffectKind]=controls;
+
 export function defaultParameters(kind: EffectKind): EffectParameters {
   const controls = EFFECT_PARAMETER_SCHEMA[kind] ?? [];
   const values = Object.fromEntries(controls.map(({ key, initial }) => [key, initial])) as EffectParameters;

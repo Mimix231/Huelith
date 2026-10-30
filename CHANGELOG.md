@@ -235,3 +235,9 @@ The first public alpha already contained the following implemented **features an
 - Added searchable Creativity category navigation, favorite operations and recent filters.
 - Corrected unexpected brightness and alpha loss in Gaussian, Box, Motion, Radial, Lens and Surface Blur, and transparent border artifacts in Glass and Frosted Glass.
 - Added Chromium pixel-identity and color-preservation regression coverage.
+
+### Project Fluidity — 2026-10-30 (development pass)
+- Removed Huelith Studio's redundant Effects and FX tabs, routing them to Layer Effects and Signature FX apps in the Studio hub.
+- Wired 11 original effects to dedicated `src/editor/effects/` implementations, with pixel-level reference and alpha tests.
+- Added optional full-resolution WebGL2 spatial blur kernels plus a CPU fallback, visible-alpha ROI and reusable immutable Gaussian stages.
+- Improved direct CPU performance in representative blur benchmarks. The 20–50 ms universal target remains outstanding; GPU/WebView2 runtime validation is still required.

@@ -55,19 +55,23 @@ export function installEffectsWorker(): () => void {
 
   rendererProblem=null;
   type Profile = 'economy' | 'balanced' | 'responsive';
-  const profileOptions: Record<Profile, { graphMb: number; edgeMb: number; silhouetteMb: number; sourceMb: number; supersedeWindowMs: number }> = {
-    economy: { graphMb: 64, edgeMb: 16, silhouetteMb: 32, sourceMb: 64, supersedeWindowMs: 650 },
-    balanced: { graphMb: 192, edgeMb: 64, silhouetteMb: 80, sourceMb: 128, supersedeWindowMs: 450 },
-    responsive: { graphMb: 384, edgeMb: 160, silhouetteMb: 192, sourceMb: 256, supersedeWindowMs: 220 },
+  const profileOptions: Record<Profile, { graphMb: number; edgeMb: number; silhouetteMb: number; sourceMb: number }> = {
+    economy: { graphMb: 64, edgeMb: 16, silhouetteMb: 32, sourceMb: 64 },
+    balanced: { graphMb: 192, edgeMb: 64, silhouetteMb: 80, sourceMb: 128 },
+    responsive: { graphMb: 384, edgeMb: 160, silhouetteMb: 192, sourceMb: 256 },
   };
   let profile: Profile = 'balanced';
+  function savedGpuAcceleration(): boolean {
+    try { return JSON.parse(localStorage.getItem('huelith-aurora-preferences-v1') ?? 'null')?.gpuAcceleration !== false; }
+    catch { return true; }
+  }
   function updateBudget(): void {
     try {
       const saved = JSON.parse(localStorage.getItem('huelith-aurora-preferences-v1') ?? 'null');
       profile = saved?.budgetProfile === 'economy' || saved?.budgetProfile === 'responsive'
         ? saved.budgetProfile : 'balanced';
     } catch { profile = 'balanced'; }
-    worker.postMessage({ kind: 'budget', ...profileOptions[profile] });
+    worker.postMessage({ kind: 'budget', ...profileOptions[profile], gpuAcceleration: savedGpuAcceleration() });
   }
   updateBudget();
   // A setting change is also applied to the resident worker without closing
@@ -79,10 +83,6 @@ export function installEffectsWorker(): () => void {
   const latest = new Map<string, Job>();
   const sourceIds = new WeakMap<HTMLCanvasElement, number>();
   const residentSources = new Set<number>();
-  // A recent correct frame gives the user a stable image while the worker
-  // abandons obsolete suffixes. When nothing has been presented recently,
-  // allow a full exact frame through to prevent infinite cancellation.
-  const recentlyDisplayed = new Map<string, number>();
   const supersededRunning = new Set<number>();
   let disposed = false;
   const reportError = (message: string): void => {
@@ -98,7 +98,6 @@ export function installEffectsWorker(): () => void {
     latest.clear();
     running = null;
     residentSources.clear();
-    recentlyDisplayed.clear();
     supersededRunning.clear();
     worker.terminate();
     rendererProblem=reason;
@@ -173,7 +172,11 @@ export function installEffectsWorker(): () => void {
       const reason=event.data.error;
       if (reason.startsWith('Uncached effect source ')) {
         residentSources.delete(finished.sourceId);
-        latest.set(finished.layer, {...finished,id:nextId++,queuedAt:performance.now()});
+        // A cache miss must not replace a newer slider/source request with
+        // the failed old value while preparing the source upload again.
+        if (!latest.has(finished.layer)) {
+          latest.set(finished.layer, {...finished,id:nextId++,queuedAt:performance.now()});
+        }
       } else reportError(`Effect ${finished.effects.at(-1)?.kind ?? 'render'}: ${reason}`);
       void dispatch();
       return;
@@ -183,9 +186,9 @@ export function installEffectsWorker(): () => void {
       // previous slider value. Publish it in submission order instead of
       // starving the canvas indefinitely because a newer value is pending.
       // Once the drag ends, never publish superseded frames.
-      if (!latest.has(finished.layer) || isInteractiveEffectPreview(finished.layer)) {
+      const pending = latest.get(finished.layer);
+      if (!pending || (pending.sourceId === finished.sourceId && isInteractiveEffectPreview(finished.layer))) {
         finished.complete(event.data.result);
-        if (isInteractiveEffectPreview(finished.layer)) recentlyDisplayed.set(finished.layer, performance.now());
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new Event('huelith-exact-fx-frame'));
           window.dispatchEvent(new CustomEvent('huelith-aurora-render-metric', { detail: {
@@ -223,19 +226,17 @@ export function installEffectsWorker(): () => void {
     });
     // Keep the bounded queue responsive if multiple layers have effects.
     if (latest.size > 12) latest.delete(latest.keys().next().value as string);
-    // Phase M: keep genuine complete intermediate frames, but avoid spending
-    // hundreds of milliseconds finishing obsolete *remaining* effect stages
-    // when we already displayed an accurate frame in the last 450 ms.
-    // Cooperative cancellation happens BETWEEN effects, never in the middle
-    // of a non-interruptible kernel; do not starve the very first image.
+    // A continuous drag is a stream, not a sequence of cancelled renders.
+    // Finish each in-flight frame of this unchanged source, publish it, then
+    // render the newest pending value. Cancelling that frame on every input
+    // starved the canvas until the pointer stopped. Source/cel switches and
+    // an actively edited different layer still cancel irrelevant work.
     if (running && !supersededRunning.has(running.id)) {
       // An animation cel switch changes source identity even if the layer ID
       // stays the same; prevent its obsolete pixels from blocking the new cel.
       const sameSource = running.layer === layer && running.sourceId === sourceId;
-      const freshExactFrame = performance.now() - (recentlyDisplayed.get(layer) ?? -Infinity) < profileOptions[profile].supersedeWindowMs;
-      const shouldSupersede = sameSource
-        ? isInteractiveEffectPreview(layer) && freshExactFrame
-        : running.layer === layer || isInteractiveEffectPreview(layer);
+      const shouldSupersede = !sameSource &&
+        (running.layer === layer || isInteractiveEffectPreview(layer));
       if (shouldSupersede) {
         supersededRunning.add(running.id);
         worker.postMessage({ kind: 'supersede', id: revision, sourceId: running.sourceId });
@@ -251,7 +252,6 @@ export function installEffectsWorker(): () => void {
     disposed = true;
     latest.clear();
     residentSources.clear();
-    recentlyDisplayed.clear();
     supersededRunning.clear();
     worker.terminate();
     rendererProblem=null;

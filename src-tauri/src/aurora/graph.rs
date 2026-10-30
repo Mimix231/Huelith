@@ -21,7 +21,7 @@ impl Default for GraphRegistry {
 
 struct CachedGraph {
     source: Arc<RgbaImage>,
-    signatures: Vec<(String, u32)>,
+    signatures: Vec<(String, u32, String)>,
     stages: Vec<Arc<RgbaImage>>,
 }
 
@@ -60,16 +60,22 @@ impl GraphRegistry {
         effects: &[CpuEffect],
         mut operation: impl FnMut(&RgbaImage, &CpuEffect) -> Result<(RgbaImage, bool), String>,
     ) -> Result<GraphResult, String> {
-        if effects.len() > 128 { return Err("Native graph has more than 128 effects".into()); }
+        if effects.len() > 1024 { return Err("Native graph exceeds resource safety limit (1024)".into()); }
         // Validate the entire graph before considering a cached output; invalid
         // amounts and unknown operations never bypass validation on cache hit.
         for effect in effects {
             if !effect.amount.is_finite() || effect.amount.abs() > 1000.0 ||
-                !["brightness", "contrast", "saturate", "grayscale", "invert", "blur"].contains(&effect.kind.as_str()) {
+                (!["brightness", "contrast", "saturate", "grayscale", "invert", "blur"].contains(&effect.kind.as_str()) && !super::native_effects::supported(&effect.kind)) {
                 return Err(format!("Unsupported or invalid native effect: {}", effect.kind));
             }
         }
-        let signatures: Vec<(String, u32)> = effects.iter().map(|effect| (effect.kind.clone(), effect.amount.to_bits())).collect();
+        for effect in effects {
+            if super::native_effects::supported(&effect.kind) {super::native_effects::validate(effect)?;}
+        }
+        let signatures: Vec<(String, u32, String)> = effects.iter().map(|effect| (
+            effect.kind.clone(), effect.amount.to_bits(),
+            serde_json::to_string(&effect.parameters).unwrap_or_else(|_| "invalid".into()),
+        )).collect();
         let (mut current, mut prefix) = {
             let map = self.cache.lock().map_err(|_| "Graph cache lock poisoned")?;
             if let Some(cache) = map.get(id).filter(|entry| Arc::ptr_eq(&entry.source, &source)) {
@@ -111,7 +117,7 @@ impl GraphRegistry {
 mod tests {
     use super::*;
     fn image() -> Arc<RgbaImage> { Arc::new(RgbaImage {width: 2,height: 1,pixels: vec![10,30,80,255,40,40,40,255]}) }
-    fn effect(kind: &str, amount: f32) -> CpuEffect { CpuEffect {kind:kind.into(),amount} }
+    fn effect(kind: &str, amount: f32) -> CpuEffect { CpuEffect {kind:kind.into(),amount,parameters:None} }
     #[test]
     fn reuses_only_matching_prefixes() {
         let graph = GraphRegistry::default();

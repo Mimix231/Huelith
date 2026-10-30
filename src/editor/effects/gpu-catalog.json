@@ -1,0 +1,37 @@
+[
+  {
+    "body": "rgb = floor(clamp(source.rgb * (amount / 100.0), 0.0, 1.0) * 255.0 + 0.0001) / 255.0;",
+    "kind": "brightness",
+    "module": "color_light/brightness.rs"
+  },
+  {
+    "body": "rgb = floor(clamp((source.rgb - vec3(0.5)) * (amount / 100.0) + vec3(0.5), 0.0, 1.0) * 255.0 + 0.0001) / 255.0;",
+    "kind": "contrast",
+    "module": "color_light/contrast.rs"
+  },
+  {
+    "body": "float gray = dot(source.rgb, vec3(0.213, 0.715, 0.072)); rgb = vec3(gray) + (source.rgb - vec3(gray)) * (amount / 100.0);",
+    "kind": "saturate",
+    "module": "color_light/saturation.rs"
+  },
+  {
+    "body": "\nfloat angle = radians(amount); float s = sin(angle); float c = cos(angle);\nrgb.r = dot(source.rgb, vec3(0.213+c*0.787-s*0.213, 0.715-c*0.715-s*0.715, 0.072-c*0.072+s*0.928));\nrgb.g = dot(source.rgb, vec3(0.213-c*0.213+s*0.143, 0.715+c*0.285+s*0.140, 0.072-c*0.072-s*0.283));\nrgb.b = dot(source.rgb, vec3(0.213-c*0.213-s*0.787, 0.715-c*0.715+s*0.715, 0.072+c*0.928+s*0.072));\n",
+    "kind": "hue",
+    "module": "color_light/hue_rotation.rs"
+  },
+  {
+    "body": "float gray = dot(source.rgb, vec3(0.213, 0.715, 0.072)); rgb = mix(source.rgb, vec3(gray), clamp(amount / 100.0, 0.0, 1.0));",
+    "kind": "grayscale",
+    "module": "color_light/grayscale.rs"
+  },
+  {
+    "body": "\nvec3 graded = vec3(dot(source.rgb, vec3(0.393,0.769,0.189)), dot(source.rgb, vec3(0.349,0.686,0.168)), dot(source.rgb, vec3(0.272,0.534,0.131)));\nrgb = mix(source.rgb, graded, clamp(amount / 100.0, 0.0, 1.0));\n",
+    "kind": "sepia",
+    "module": "color_light/sepia.rs"
+  },
+  {
+    "body": "rgb = floor(clamp(mix(source.rgb, vec3(1.0) - source.rgb, clamp(amount / 100.0, 0.0, 1.0)), 0.0, 1.0) * 255.0 + 0.0001) / 255.0;",
+    "kind": "invert",
+    "module": "color_light/invert.rs"
+  }
+]

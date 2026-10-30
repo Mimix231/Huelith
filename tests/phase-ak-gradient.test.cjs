@@ -9,7 +9,7 @@ function load(name){name=name.replace(/^\.\//,'');if(cache.has(name))return cach
  const source=fs.readFileSync(file,'utf8');
  const js=ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText;
  const module={exports:{}};cache.set(name,module.exports);
- new Function('module','exports','require',js)(module,module.exports,id=>load(id));
+ new Function('module','exports','require',js)(module,module.exports,id=>load(path.posix.normalize(path.posix.join(path.posix.dirname(name),id))));
  cache.set(name,module.exports);return module.exports;
 }
 const transforms=load('gradient-transforms'),gradient=load('gradient'),types=load('types');

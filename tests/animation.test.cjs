@@ -26,7 +26,7 @@ function load(name) {
   const module = { exports: {} };
   const scope = { module, exports: module.exports, structuredClone, Date, Math, Set, Map, Number, String,
     TextEncoder, Uint8Array, DataView, Error, globalThis: { crypto: webcrypto },
-    require: spec => spec === 'zustand' ? fakeZustand() : load(spec.slice(2)) };
+    require: spec => spec === 'zustand' ? fakeZustand() : load(path.posix.normalize(path.posix.join(path.posix.dirname(name),spec))) };
   vm.runInNewContext(compiled, scope, { filename: name });
   modules.set(name, module.exports);
   return module.exports;
@@ -150,11 +150,15 @@ test('ZIP sequence encoder creates central-directory records', () => {
   assert.equal(view.getUint32(bytes.length - 22, true), 0x06054b50);
 });
 
-test('obsolete cleanup only uses fixed paths and does nothing by default', () => {
-  const script = fs.readFileSync(path.resolve(__dirname, '../scripts/remove-obsolete.mjs'), 'utf8');
+test('migration cleanup deletes only manifest-listed files and refuses referenced sources', () => {
+  const script = fs.readFileSync(path.resolve(__dirname, '../scripts/cleanup-migrated.mjs'), 'utf8');
+  const manifest = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../scripts/obsolete-migration-files.json'), 'utf8'));
+  assert.match(script, /manifest\.obsolete/);
+  assert.match(script, /references\.length/);
+  assert.match(script, /realpathSync/);
   assert.match(script, /--apply/);
-  assert.match(script, /knownObsolete/);
   assert.doesNotMatch(script, /rmSync\(root/);
+  assert.deepEqual(manifest.obsolete, [], 'No active TypeScript processor should be deleted before parity');
 });
 
 test('changing FPS changes real playback timing, preserving relative frame durations', () => {

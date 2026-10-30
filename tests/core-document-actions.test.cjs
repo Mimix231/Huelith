@@ -3,7 +3,7 @@ const root=path.resolve(__dirname,'../src/editor'),modules=new Map();
 function load(name){if(modules.has(name))return modules.get(name);
  if(name==='render')return {decodeImage:async()=>null,prepareImages:async()=>{},exportCanvas:()=>null};
  const filename=path.join(root,`${name}.ts`),js=ts.transpileModule(fs.readFileSync(filename,'utf8'),{fileName:filename,compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText;
- const mod={exports:{}};modules.set(name,mod.exports);vm.runInNewContext(js,{module:mod,exports:mod.exports,structuredClone,Date,Math,Set,Map,Number,String,TextEncoder,Uint8Array,DataView,Error,globalThis:{crypto:webcrypto},require:dep=>load(dep.slice(2))},{filename});modules.set(name,mod.exports);return mod.exports;
+ const mod={exports:{}};modules.set(name,mod.exports);vm.runInNewContext(js,{module:mod,exports:mod.exports,structuredClone,Date,Math,Set,Map,Number,String,TextEncoder,Uint8Array,DataView,Error,globalThis:{crypto:webcrypto},require:dep=>load(path.posix.normalize(path.posix.join(path.posix.dirname(name),dep)))},{filename});modules.set(name,mod.exports);return mod.exports;
 }
 const actions=load('document-actions'),types=load('types'),animation=load('animation'),guide=load('smart-snapping'),layerActions=load('layer-actions');
 const gradient=()=>({id:'grad',kind:'gradient',x:0,y:0,width:200,height:100,fill:'none',stroke:'none',strokeWidth:0,gradientMode:'linear'});

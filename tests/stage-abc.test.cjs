@@ -28,7 +28,7 @@ function load(name) {
   });
   assert.equal(output.diagnostics?.filter(item => item.category === ts.DiagnosticCategory.Error).length ?? 0, 0);
   const module = { exports: {} };
-  const requireDependency = specifier => specifier === 'zustand' ? { create } : load(specifier.slice(2));
+  const requireDependency = specifier => specifier === 'zustand' ? { create } : load(path.posix.normalize(path.posix.join(path.posix.dirname(name),specifier)));
   const invoke = new Function('require', 'module', 'exports', 'structuredClone', 'document', 'localStorage',
     'crypto', 'requestAnimationFrame', 'cancelAnimationFrame', output.outputText);
   invoke(requireDependency, module, module.exports, structuredClone,
@@ -145,7 +145,8 @@ test('Focus Text exposes organized styling controls and canvas intercepts text h
   assert.match(canvas, /mode: handle === 'rotate' \? 'rotate' : 'scale'/);
   assert.match(studio, /commitStudioEffects/);
   assert.match(studio, /cancelStudioEffects/);
-  assert.match(studio, /Applied \{category === 'creativity'/);
+  assert.match(studio, /Applied to this layer/);
+  assert.doesNotMatch(studio, /className=\"fx-studio-tabs\"/);
 });
 
 test('Stage B moving one applied FX icon moves its whole processing group', () => {

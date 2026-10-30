@@ -1,0 +1,4 @@
+{
+  "description": "Only add a migrated file after ALL consumers and parity tests are updated. No auto-delete by suffix.",
+  "obsolete": []
+}

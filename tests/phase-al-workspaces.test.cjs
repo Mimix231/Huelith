@@ -9,7 +9,7 @@ function load(name){if(loaded.has(name))return loaded.get(name);
  const file=path.join(root,`${name}.ts`);
  const js=ts.transpileModule(fs.readFileSync(file,'utf8'),{fileName:file,compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText;
  const mod={exports:{}};loaded.set(name,mod.exports);
- vm.runInNewContext(js,{module:mod,exports:mod.exports,structuredClone,Date,Math,Set,Map,Number,String,TextEncoder,Uint8Array,DataView,Error,globalThis:{crypto:webcrypto},require:id=>id==='zustand'?fakeZustand():load(id.slice(2))},{filename:file});
+ vm.runInNewContext(js,{module:mod,exports:mod.exports,structuredClone,Date,Math,Set,Map,Number,String,TextEncoder,Uint8Array,DataView,Error,globalThis:{crypto:webcrypto},require:id=>id==='zustand'?fakeZustand():load(path.posix.normalize(path.posix.join(path.posix.dirname(name),id)))},{filename:file});
  loaded.set(name,mod.exports);return mod.exports;
 }
 const types=load('types'),animation=load('animation'),gradient=load('gradient'),{useEditor,activeTab}=load('store');

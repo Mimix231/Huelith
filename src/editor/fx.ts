@@ -288,6 +288,8 @@ export function queueLayerEffectPreview(layerId: string, effects: readonly Effec
 }
 
 let asyncProcessor: AsyncEffectsProcessor | null = null;
+/** Used only by the optional Rust bridge after the authoritative worker is installed. */
+export function currentAsyncEffectsProcessor(): AsyncEffectsProcessor | null { return asyncProcessor; }
 export function setAsyncEffectsProcessor(renderer: AsyncEffectsProcessor | null): void {
   asyncProcessor = renderer;
 }

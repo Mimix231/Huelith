@@ -221,7 +221,7 @@ mod tests {
         }}
         let image = RgbaImage { width: 19, height: 11, pixels };
         for radius in [0., 1., 2., 4., 11., 80.] {
-            let effect = CpuEffect { kind: "blur".into(), amount: radius };
+            let effect = CpuEffect { kind: "blur".into(), amount: radius, parameters: None };
             let cpu = process(&image, std::slice::from_ref(&effect), 2).unwrap();
             let gpu_result = gpu.apply(&image, &effect).unwrap();
             for (index,(a,b)) in cpu.pixels.iter().zip(gpu_result.pixels.iter()).enumerate() {
@@ -243,7 +243,7 @@ mod tests {
         ] };
         for kind in ["brightness", "contrast", "saturate", "grayscale", "invert"] {
             for amount in [0., 35., 100., 175., 200.] {
-                let effect = CpuEffect { kind: kind.to_owned(), amount };
+                let effect = CpuEffect { kind: kind.to_owned(), amount, parameters: None };
                 let expected = process(&image, std::slice::from_ref(&effect), 1).unwrap();
                 let actual = gpu.apply(&image, &effect).unwrap();
                 for (gpu_byte, cpu_byte) in actual.pixels.iter().zip(expected.pixels.iter()) {

@@ -20,7 +20,9 @@ test('Motion and radial blur keep their authoritative early return without unrea
   const switchBody = apply.slice(apply.indexOf('switch (kind)'));
   assert.doesNotMatch(switchBody,/case 'motionblur'\s*:/);
   assert.doesNotMatch(switchBody,/case 'radialblur'\s*:/);
-  assert.match(switchBody,/case 'blur'\s*:\s*case 'surfaceblur'/);
+  assert.match(apply,/if \(kind === 'surfaceblur'\) return renderSurfaceBlur/);
+  assert.doesNotMatch(switchBody,/case 'surfaceblur'\s*:/);
+  assert.match(switchBody,/case 'blur'\s*:/);
   const result = ts.transpileModule(file,{fileName:'effect-ops.ts',reportDiagnostics:true,compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}});
   assert.equal(result.diagnostics?.filter(item=>item.category === ts.DiagnosticCategory.Error).length ?? 0,0);
 });

@@ -1,0 +1,15 @@
+[package]
+name = "huelith-desktop"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+[dependencies]
+huelith-core = { path = "../huelith-core" }
+huelith-effects = { path = "../huelith-effects" }
+huelith-render = { path = "../huelith-render" }
+huelith-io = { path = "../huelith-io" }
+anyhow.workspace = true
+serde_json.workspace = true
+eframe.workspace = true
+rfd.workspace = true
+wgpu.workspace = true

@@ -59,7 +59,7 @@ test('Phase L: edits to an effect reuse the unchanged PREFIX and retain all foll
   assert.equal(second.stack[2], 'glow:90');
 });
 
-test('Phase M: a running slider is not starved until an accurate frame has been displayed', async () => {
+test('a continuous slider stream keeps completing frames instead of cancelling until pointer release', async () => {
   const saved = [global.Worker, global.OffscreenCanvas, global.createImageBitmap, global.window];
   let processor, worker;
   class WorkerMock {
@@ -89,14 +89,14 @@ test('Phase M: a running slider is not starved until an accurate frame has been 
     await Promise.resolve();
     const second = worker.messages.filter(m => m.effects)[1];
     processor(src, [{ kind: 'glow', amount: 3 }], 'L', () => seen.push(3));
-    assert.ok(worker.messages.some(m => m.kind === 'supersede' && m.sourceId === second.sourceId),
-      'after a genuine frame, expensive obsolete remaining stages may be superseded');
-    worker.onmessage({ data: { id: second.id, aborted: true } });
+    assert.equal(worker.messages.some(m => m.kind === 'supersede'), false,
+      'later frames must not be starved just because the first frame was displayed');
+    worker.onmessage({ data: { id: second.id, result: { width: 10, close() {} } } });
     await Promise.resolve();
     const third = worker.messages.filter(m => m.effects)[2];
     assert.ok(third && third.effects[0].amount === 3);
     worker.onmessage({ data: { id: third.id, result: { width: 10, close() {} } } });
-    assert.deepEqual(seen, [1, 3]);
+    assert.deepEqual(seen, [1, 2, 3]);
     dispose();
   } finally {
     [global.Worker, global.OffscreenCanvas, global.createImageBitmap, global.window] = saved;

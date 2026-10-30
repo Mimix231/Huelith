@@ -4,7 +4,7 @@ const root=path.resolve(__dirname,'../src/editor');const cache=new Map();
 function load(name){if(cache.has(name))return cache.get(name);
  const file=path.join(root,`${name}.ts`),js=ts.transpileModule(fs.readFileSync(file,'utf8'),{fileName:file,compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText;
  const module={exports:{}};cache.set(name,module.exports);
- vm.runInNewContext(js,{module,exports:module.exports,structuredClone,Date,Math,Set,Map,Number,String,TextEncoder,Uint8Array,DataView,Error,globalThis:{crypto:webcrypto},require:dep=>load(dep.replace('./',''))},{filename:file});
+ vm.runInNewContext(js,{module,exports:module.exports,structuredClone,Date,Math,Set,Map,Number,String,TextEncoder,Uint8Array,DataView,Error,globalThis:{crypto:webcrypto},require:dep=>load(path.posix.normalize(path.posix.join(path.posix.dirname(name),dep)))},{filename:file});
  cache.set(name,module.exports);return module.exports;}
 const meme=load('meme-creator'),types=load('types'),animation=load('animation');
 const settings={...meme.MEME_DEFAULTS};const doc=()=>types.createDocument('Test meme',640,400,'#ffffff');

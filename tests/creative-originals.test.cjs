@@ -15,7 +15,7 @@ function load(name) {
   }).outputText;
   const mod = { exports: {} };
   modules.set(name, mod.exports);
-  new Function('require', 'module', 'exports', source)(path => load(path), mod, mod.exports);
+  new Function('require', 'module', 'exports', source)(dependency => load(require('node:path').posix.normalize(require('node:path').posix.join(require('node:path').posix.dirname(name),dependency))), mod, mod.exports);
   modules.set(name, mod.exports);
   return mod.exports;
 }

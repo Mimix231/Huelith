@@ -15,7 +15,7 @@ function load(name) {
     compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
   }).outputText;
   const module = { exports: {} };
-  new Function('require', 'module', 'exports', output)(specifier => load(specifier), module, module.exports);
+  new Function('require', 'module', 'exports', output)(specifier => load(path.posix.normalize(path.posix.join(path.posix.dirname(name),specifier))), module, module.exports);
   cache.set(name, module.exports);
   return module.exports;
 }

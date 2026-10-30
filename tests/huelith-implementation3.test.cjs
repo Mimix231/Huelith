@@ -14,7 +14,7 @@ function load(name) {
     compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
   const mod = {exports:{}};
   modules.set(name, mod.exports);
-  new Function('require','module','exports',out)(specifier => load(specifier),mod,mod.exports);
+  new Function('require','module','exports',out)(specifier => load(path.posix.normalize(path.posix.join(path.posix.dirname(name),specifier))),mod,mod.exports);
   modules.set(name, mod.exports);
   return mod.exports;
 }

@@ -14,7 +14,7 @@ function load(name) {
   }).outputText;
   const module = { exports: {} };
   new Function('require', 'module', 'exports', js)(
-    dependency => load(dependency.replace(/^\.\//, '')),
+    dependency => load(path.posix.normalize(path.posix.join(path.posix.dirname(name),dependency))),
     module,
     module.exports,
   );

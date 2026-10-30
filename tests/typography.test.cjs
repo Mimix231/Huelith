@@ -39,7 +39,7 @@ function load(name) {
   };
   const context = {
     require: specifier => specifier === 'zustand' ? { create: createStore }
-      : specifier.startsWith('./') ? load(specifier.slice(2)) : (() => { throw Error(specifier); })(),
+      : (specifier.startsWith('./') || specifier.startsWith('../')) ? load(path.posix.normalize(path.posix.join(path.posix.dirname(name),specifier))) : (() => { throw Error(specifier); })(),
     exports: module.exports,
     module,
     document: dom,

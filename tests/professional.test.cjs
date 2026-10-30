@@ -33,8 +33,8 @@ function load(modulePath) {
         return hook;
       },
     };
-    if (!dependency.startsWith('./')) throw new Error(`Unexpected dependency ${dependency}`);
-    return load(dependency.slice(2));
+    if (!(dependency.startsWith('./') || dependency.startsWith('../'))) throw new Error(`Unexpected dependency ${dependency}`);
+    return load(path.posix.normalize(path.posix.join(path.posix.dirname(modulePath),dependency)));
   };
   vm.runInNewContext(js, {
     module, exports: module.exports, require: dependencies,

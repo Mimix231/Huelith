@@ -12,7 +12,7 @@ function load(id) {
   const compiled = ts.transpileModule(source, {compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText;
   const module = {exports:{}};
   cache.set(id,module.exports);
-  new Function('module','exports','require',compiled)(module,module.exports,dep=>load(dep));
+  new Function('module','exports','require',compiled)(module,module.exports,dep=>load(path.posix.normalize(path.posix.join(path.posix.dirname(id),dep))));
   cache.set(id,module.exports);
   return module.exports;
 }

@@ -4,7 +4,7 @@ function load(name){if(loaded.has(name))return loaded.get(name);
  const file=path.join(root,`${name}.ts`),mod={exports:{}};
  loaded.set(name,mod.exports);
  const code=ts.transpileModule(fs.readFileSync(file,'utf8'),{fileName:file,compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText;
- new Function('module','exports','require','structuredClone',code)(mod,mod.exports,dep=>load(dep.replace(/^\.\//,'')),structuredClone);
+ new Function('module','exports','require','structuredClone',code)(mod,mod.exports,dep=>load(path.posix.normalize(path.posix.join(path.posix.dirname(name),dep))),structuredClone);
  loaded.set(name,mod.exports);return mod.exports;}
 const gradient=load('gradient'),ops=load('operations'),snap=load('smart-snapping'),types=load('types');
 const stops=[{id:'black',position:0,color:'#000000',opacity:1},{id:'white',position:1,color:'#ffffff',opacity:1}];

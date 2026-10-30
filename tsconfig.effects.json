@@ -1,0 +1,5 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {"types": []},
+  "include": ["src/editor/effects/**/*.ts", "src/editor/expansion-120.ts", "src/editor/effect-schema.ts"]
+}

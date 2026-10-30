@@ -1,0 +1,222 @@
+#,Category,Registered Name,Effect ID,Native Rust Migration Status,Native File,Verified Production Ready
+1,Color & light,Brightness,brightness,Legacy TypeScript; no dedicated Rust module,,NO
+2,Color & light,Contrast,contrast,Legacy TypeScript; no dedicated Rust module,,NO
+3,Color & light,Saturation,saturate,Legacy TypeScript; no dedicated Rust module,,NO
+4,Color & light,Hue rotation,hue,Legacy TypeScript; no dedicated Rust module,,NO
+5,Color & light,Grayscale,grayscale,Legacy TypeScript; no dedicated Rust module,,NO
+6,Color & light,Sepia,sepia,Legacy TypeScript; no dedicated Rust module,,NO
+7,Color & light,Invert,invert,Legacy TypeScript; no dedicated Rust module,,NO
+8,Color & light,Exposure,exposure,Legacy TypeScript; no dedicated Rust module,,NO
+9,Color & light,Highlights,highlights,Legacy TypeScript; no dedicated Rust module,,NO
+10,Color & light,Shadows,shadows,Legacy TypeScript; no dedicated Rust module,,NO
+11,Color & light,Whites,whites,Legacy TypeScript; no dedicated Rust module,,NO
+12,Color & light,Blacks,blacks,Legacy TypeScript; no dedicated Rust module,,NO
+13,Color & light,Temperature,temperature,Legacy TypeScript; no dedicated Rust module,,NO
+14,Color & light,Tint,tint,Legacy TypeScript; no dedicated Rust module,,NO
+15,Color & light,Vibrance,vibrance,Legacy TypeScript; no dedicated Rust module,,NO
+16,Color & light,Gamma,gamma,Legacy TypeScript; no dedicated Rust module,,NO
+17,Color & light,Tonal curves,curves,Legacy TypeScript; no dedicated Rust module,,NO
+18,Color & light,Levels,levels,Legacy TypeScript; no dedicated Rust module,,NO
+19,Color & light,Color balance,balance,Legacy TypeScript; no dedicated Rust module,,NO
+20,Color & light,Selective color,selective,Legacy TypeScript; no dedicated Rust module,,NO
+21,Color & light,RGB channel mixer,mixer,Legacy TypeScript; no dedicated Rust module,,NO
+22,Color & light,Gradient map,gradientmap,Legacy TypeScript; no dedicated Rust module,,NO
+23,Color & light,Duotone,duotone,Legacy TypeScript; no dedicated Rust module,,NO
+24,Color & light,Solarize,solarize,Legacy TypeScript; no dedicated Rust module,,NO
+25,Detail & texture,Gaussian blur,blur,Legacy TypeScript; no dedicated Rust module,,NO
+26,Detail & texture,Box blur,boxblur,Legacy TypeScript; no dedicated Rust module,,NO
+27,Detail & texture,Motion blur,motionblur,Legacy TypeScript; no dedicated Rust module,,NO
+28,Detail & texture,Radial blur,radialblur,Legacy TypeScript; no dedicated Rust module,,NO
+29,Detail & texture,Shock zoom,zoomblur,Legacy TypeScript; no dedicated Rust module,,NO
+30,Detail & texture,Lens blur,lensblur,Legacy TypeScript; no dedicated Rust module,,NO
+31,Detail & texture,Surface blur,surfaceblur,Legacy TypeScript; no dedicated Rust module,,NO
+32,Detail & texture,Sharpen,sharpen,Legacy TypeScript; no dedicated Rust module,,NO
+33,Detail & texture,Unsharp mask,unsharp,Legacy TypeScript; no dedicated Rust module,,NO
+34,Detail & texture,High pass,highpass,Legacy TypeScript; no dedicated Rust module,,NO
+35,Detail & texture,Clarity,clarity,Legacy TypeScript; no dedicated Rust module,,NO
+36,Detail & texture,Texture detail,texture,Legacy TypeScript; no dedicated Rust module,,NO
+37,Detail & texture,Noise reduction,denoise,Legacy TypeScript; no dedicated Rust module,,NO
+38,Detail & texture,Film grain,grain,Legacy TypeScript; no dedicated Rust module,,NO
+39,Detail & texture,RGB noise,noise,Legacy TypeScript; no dedicated Rust module,,NO
+40,Detail & texture,Emboss,emboss,Legacy TypeScript; no dedicated Rust module,,NO
+41,Detail & texture,Edge detection,edges,Legacy TypeScript; no dedicated Rust module,,NO
+42,Detail & texture,Pixelate,pixelate,Legacy TypeScript; no dedicated Rust module,,NO
+43,Detail & texture,Halftone,halftone,Legacy TypeScript; no dedicated Rust module,,NO
+44,Detail & texture,Dither,dither,Legacy TypeScript; no dedicated Rust module,,NO
+45,Detail & texture,Vignette,vignette,Legacy TypeScript; no dedicated Rust module,,NO
+46,Stylize,Anime Cel Studio,animecel,Legacy TypeScript; no dedicated Rust module,,NO
+47,Stylize,Graphic Novel,graphicnovel,Legacy TypeScript; no dedicated Rust module,,NO
+48,Stylize,Holographic Foil,foil,Legacy TypeScript; no dedicated Rust module,,NO
+49,Stylize,Chromatic Silk,chromaticsilk,Legacy TypeScript; no dedicated Rust module,,NO
+50,Stylize,Pixel Poster,pixelposter,Legacy TypeScript; no dedicated Rust module,,NO
+51,Stylize,Ink Wash,inkwash,Legacy TypeScript; no dedicated Rust module,,NO
+52,Stylize,Retro Dreamscape,retrodream,Legacy TypeScript; no dedicated Rust module,,NO
+53,Stylize,Aurora illumination,aurora,Legacy TypeScript; no dedicated Rust module,,NO
+54,Stylize,Radial energy burst,burst,Legacy TypeScript; no dedicated Rust module,,NO
+55,Stylize,Posterize,posterize,Legacy TypeScript; no dedicated Rust module,,NO
+56,Stylize,Cartoon,cartoon,Legacy TypeScript; no dedicated Rust module,,NO
+57,Stylize,Comic ink,comicink,Legacy TypeScript; no dedicated Rust module,,NO
+58,Stylize,Oil painting,oilpaint,Legacy TypeScript; no dedicated Rust module,,NO
+59,Stylize,Watercolor,watercolor,Legacy TypeScript; no dedicated Rust module,,NO
+60,Stylize,Pencil sketch,sketch,Legacy TypeScript; no dedicated Rust module,,NO
+61,Stylize,Ink drawing,ink,Legacy TypeScript; no dedicated Rust module,,NO
+62,Stylize,Neon edges,neonedge,Legacy TypeScript; no dedicated Rust module,,NO
+63,Stylize,Chromatic split,chromatic,Legacy TypeScript; no dedicated Rust module,,NO
+64,Stylize,Digital glitch,glitch,Legacy TypeScript; no dedicated Rust module,,NO
+65,Stylize,VHS,vhs,Legacy TypeScript; no dedicated Rust module,,NO
+66,Stylize,CRT monitor,crt,Legacy TypeScript; no dedicated Rust module,,NO
+67,Stylize,Mosaic tiles,mosaic,Legacy TypeScript; no dedicated Rust module,,NO
+68,Stylize,Swirl,swirl,Legacy TypeScript; no dedicated Rust module,,NO
+69,Stylize,Ripple,ripple,Legacy TypeScript; no dedicated Rust module,,NO
+70,Stylize,Wave,wave,Legacy TypeScript; no dedicated Rust module,,NO
+71,Stylize,Glass refraction,glass,Legacy TypeScript; no dedicated Rust module,,NO
+72,Stylize,Frosted glass,frosted,Legacy TypeScript; no dedicated Rust module,,NO
+73,Layer Effects,Remove background,cutout,Legacy TypeScript; no dedicated Rust module,,NO
+74,Layer Effects,Hyper outline,outline,Legacy TypeScript; no dedicated Rust module,,NO
+75,Layer Effects,Spectrum glow,glow,Legacy TypeScript; no dedicated Rust module,,NO
+76,Layer Effects,Shadow forge,shadow,Legacy TypeScript; no dedicated Rust module,,NO
+77,Layer Effects,Backdrop,backdrop,Legacy TypeScript; no dedicated Rust module,,NO
+78,Layer Effects,Holy Radiance,radiance,Legacy TypeScript; no dedicated Rust module,,NO
+79,Layer Effects,Miasma,miasma,Legacy TypeScript; no dedicated Rust module,,NO
+80,Signature FX,Hyper Outline,sig_0,Legacy TypeScript; no dedicated Rust module,,NO
+81,Signature FX,Neon Pulse,sig_1,Legacy TypeScript; no dedicated Rust module,,NO
+82,Signature FX,Shadow Forge,sig_2,Legacy TypeScript; no dedicated Rust module,,NO
+83,Signature FX,Dream Bloom,sig_3,Legacy TypeScript; no dedicated Rust module,,NO
+84,Signature FX,Glitch Matrix,sig_4,Legacy TypeScript; no dedicated Rust module,,NO
+85,Signature FX,Comic Pop,sig_5,Legacy TypeScript; no dedicated Rust module,,NO
+86,Signature FX,Frostbite,sig_6,Legacy TypeScript; no dedicated Rust module,,NO
+87,Signature FX,Ember Glow,sig_7,Legacy TypeScript; no dedicated Rust module,,NO
+88,Signature FX,Prism Split,sig_8,Legacy TypeScript; no dedicated Rust module,,NO
+89,Signature FX,Golden Hour,sig_9,Legacy TypeScript; no dedicated Rust module,,NO
+90,Signature FX,Aurora Flow,sig_10,Legacy TypeScript; no dedicated Rust module,,NO
+91,Signature FX,Electric Edge,sig_11,Legacy TypeScript; no dedicated Rust module,,NO
+92,Signature FX,Holographic,sig_12,Legacy TypeScript; no dedicated Rust module,,NO
+93,Signature FX,Retro Vision,sig_13,Legacy TypeScript; no dedicated Rust module,,NO
+94,Signature FX,Spectrum Burst,sig_14,Legacy TypeScript; no dedicated Rust module,,NO
+95,Signature FX,Plasma Veins,sig_15,Legacy TypeScript; no dedicated Rust module,,NO
+96,Signature FX,Nebula Bloom,sig_16,Legacy TypeScript; no dedicated Rust module,,NO
+97,Signature FX,Spectral Refraction,sig_17,Legacy TypeScript; no dedicated Rust module,,NO
+98,Signature FX,Rift Distortion,sig_18,Legacy TypeScript; no dedicated Rust module,,NO
+99,Signature FX,Inferno Aura,sig_19,Legacy TypeScript; no dedicated Rust module,,NO
+100,Signature FX,Crystal Resonance,sig_20,Legacy TypeScript; no dedicated Rust module,,NO
+101,Signature FX,Liquid Light,sig_21,Legacy TypeScript; no dedicated Rust module,,NO
+102,Expanded: Color Science,Chromatic Adaptation,atelier_0_0,Legacy TypeScript; no dedicated Rust module,,NO
+103,Expanded: Color Science,Shadow Chromaticity,atelier_0_1,Legacy TypeScript; no dedicated Rust module,,NO
+104,Expanded: Color Science,Highlight Chromaticity,atelier_0_2,Legacy TypeScript; no dedicated Rust module,,NO
+105,Expanded: Color Science,Three-Way Grade,atelier_0_3,Legacy TypeScript; no dedicated Rust module,,NO
+106,Expanded: Color Science,Cross Process,atelier_0_4,Legacy TypeScript; no dedicated Rust module,,NO
+107,Expanded: Color Science,Bleach Bypass,atelier_0_5,Legacy TypeScript; no dedicated Rust module,,NO
+108,Expanded: Color Science,Teal & Amber,atelier_0_6,Legacy TypeScript; no dedicated Rust module,,NO
+109,Expanded: Color Science,Channel Compression,atelier_0_7,Legacy TypeScript; no dedicated Rust module,,NO
+110,Expanded: Color Science,Luma-Chroma Separation,atelier_0_8,Legacy TypeScript; no dedicated Rust module,,NO
+111,Expanded: Color Science,Filmic Shoulder,atelier_0_9,Legacy TypeScript; no dedicated Rust module,,NO
+112,Expanded: Color Science,Filmic Toe,atelier_0_10,Legacy TypeScript; no dedicated Rust module,,NO
+113,Expanded: Color Science,Logarithmic Grade,atelier_0_11,Legacy TypeScript; no dedicated Rust module,,NO
+114,Expanded: Color Science,Selective Chromaticity,atelier_0_12,Legacy TypeScript; no dedicated Rust module,,NO
+115,Expanded: Color Science,Gamut Soft Clip,atelier_0_13,Legacy TypeScript; no dedicated Rust module,,NO
+116,Expanded: Color Science,Palette Quantizer,atelier_0_14,Legacy TypeScript; no dedicated Rust module,,NO
+117,Expanded: Color Science,Split Tone Spectrum,atelier_0_15,Legacy TypeScript; no dedicated Rust module,,NO
+118,Expanded: Lighting & Atmosphere,Directional Light Shafts,atelier_1_0,Legacy TypeScript; no dedicated Rust module,,NO
+119,Expanded: Lighting & Atmosphere,Specular Glints,atelier_1_1,Legacy TypeScript; no dedicated Rust module,,NO
+120,Expanded: Lighting & Atmosphere,Light Scattering,atelier_1_2,Legacy TypeScript; no dedicated Rust module,,NO
+121,Expanded: Lighting & Atmosphere,Silhouette Rimlight,atelier_1_3,Legacy TypeScript; no dedicated Rust module,,NO
+122,Expanded: Lighting & Atmosphere,Sunburst Rays,atelier_1_4,Legacy TypeScript; no dedicated Rust module,,NO
+123,Expanded: Lighting & Atmosphere,Atmospheric Fog,atelier_1_5,Legacy TypeScript; no dedicated Rust module,,NO
+124,Expanded: Lighting & Atmosphere,Cinematic Haze,atelier_1_6,Legacy TypeScript; no dedicated Rust module,,NO
+125,Expanded: Lighting & Atmosphere,Underwater Caustics,atelier_1_7,Legacy TypeScript; no dedicated Rust module,,NO
+126,Expanded: Lighting & Atmosphere,Lightning Flash,atelier_1_8,Legacy TypeScript; no dedicated Rust module,,NO
+127,Expanded: Lighting & Atmosphere,Ambient Wrap Lighting,atelier_1_9,Legacy TypeScript; no dedicated Rust module,,NO
+128,Expanded: Lighting & Atmosphere,Sparkling Highlights,atelier_1_10,Legacy TypeScript; no dedicated Rust module,,NO
+129,Expanded: Lighting & Atmosphere,Sunrise Illumination,atelier_1_11,Legacy TypeScript; no dedicated Rust module,,NO
+130,Expanded: Lighting & Atmosphere,Moonlight Casting,atelier_1_12,Legacy TypeScript; no dedicated Rust module,,NO
+131,Expanded: Lighting & Atmosphere,Shadowed Mist,atelier_1_13,Legacy TypeScript; no dedicated Rust module,,NO
+132,Expanded: Artistic Painting,Charcoal Drawing,atelier_2_0,Legacy TypeScript; no dedicated Rust module,,NO
+133,Expanded: Artistic Painting,Sidewalk Chalk,atelier_2_1,Legacy TypeScript; no dedicated Rust module,,NO
+134,Expanded: Artistic Painting,Soft Pastel,atelier_2_2,Legacy TypeScript; no dedicated Rust module,,NO
+135,Expanded: Artistic Painting,Opaque Gouache,atelier_2_3,Legacy TypeScript; no dedicated Rust module,,NO
+136,Expanded: Artistic Painting,Woodcut Engraving,atelier_2_4,Legacy TypeScript; no dedicated Rust module,,NO
+137,Expanded: Artistic Painting,Copper Etching,atelier_2_5,Legacy TypeScript; no dedicated Rust module,,NO
+138,Expanded: Artistic Painting,Charcoal Hatching,atelier_2_6,Legacy TypeScript; no dedicated Rust module,,NO
+139,Expanded: Artistic Painting,Ink Stippling,atelier_2_7,Legacy TypeScript; no dedicated Rust module,,NO
+140,Expanded: Artistic Painting,Colored Pencils,atelier_2_8,Legacy TypeScript; no dedicated Rust module,,NO
+141,Expanded: Artistic Painting,Oil Impasto,atelier_2_9,Legacy TypeScript; no dedicated Rust module,,NO
+142,Expanded: Artistic Painting,Watercolor Bleeding,atelier_2_10,Legacy TypeScript; no dedicated Rust module,,NO
+143,Expanded: Artistic Painting,Lithographic Press,atelier_2_11,Legacy TypeScript; no dedicated Rust module,,NO
+144,Expanded: Artistic Painting,Felt-Tip Drawing,atelier_2_12,Legacy TypeScript; no dedicated Rust module,,NO
+145,Expanded: Artistic Painting,Wax Crayon,atelier_2_13,Legacy TypeScript; no dedicated Rust module,,NO
+146,Expanded: Artistic Painting,Airbrush Spray,atelier_2_14,Legacy TypeScript; no dedicated Rust module,,NO
+147,Expanded: Artistic Painting,Stained Glass,atelier_2_15,Legacy TypeScript; no dedicated Rust module,,NO
+148,Expanded: Artistic Painting,Graphite Shading,atelier_2_16,Legacy TypeScript; no dedicated Rust module,,NO
+149,Expanded: Artistic Painting,Dry Brush Painting,atelier_2_17,Legacy TypeScript; no dedicated Rust module,,NO
+150,Expanded: Distortion & Geometry,Polar Warp,atelier_3_0,Legacy TypeScript; no dedicated Rust module,,NO
+151,Expanded: Distortion & Geometry,Pinch Lens,atelier_3_1,Legacy TypeScript; no dedicated Rust module,,NO
+152,Expanded: Distortion & Geometry,Barrel Distortion,atelier_3_2,Legacy TypeScript; no dedicated Rust module,,NO
+153,Expanded: Distortion & Geometry,Pincushion Distortion,atelier_3_3,Legacy TypeScript; no dedicated Rust module,,NO
+154,Expanded: Distortion & Geometry,Oblique Shear,atelier_3_4,Legacy TypeScript; no dedicated Rust module,,NO
+155,Expanded: Distortion & Geometry,Noise Displacement,atelier_3_5,Legacy TypeScript; no dedicated Rust module,,NO
+156,Expanded: Distortion & Geometry,Sine Fold,atelier_3_6,Legacy TypeScript; no dedicated Rust module,,NO
+157,Expanded: Distortion & Geometry,Quadrant Kaleidoscope,atelier_3_7,Legacy TypeScript; no dedicated Rust module,,NO
+158,Expanded: Distortion & Geometry,Warped Waves,atelier_3_8,Legacy TypeScript; no dedicated Rust module,,NO
+159,Expanded: Distortion & Geometry,Spiral Vortex,atelier_3_9,Legacy TypeScript; no dedicated Rust module,,NO
+160,Expanded: Distortion & Geometry,Crystal Shatter,atelier_3_10,Legacy TypeScript; no dedicated Rust module,,NO
+161,Expanded: Distortion & Geometry,Mirror Slices,atelier_3_11,Legacy TypeScript; no dedicated Rust module,,NO
+162,Expanded: Distortion & Geometry,Pixel Sorting,atelier_3_12,Experimental Rust candidate; NOT built or parity-tested,src-tauri/src/aurora/native_effects/pixel_sorting.rs,NO
+163,Expanded: Distortion & Geometry,Curved Glass,atelier_3_13,Legacy TypeScript; no dedicated Rust module,,NO
+164,Expanded: Anime & Comics,Manga Screentones,atelier_4_0,Experimental Rust candidate; NOT built or parity-tested,src-tauri/src/aurora/native_effects/manga_screentones.rs,NO
+165,Expanded: Anime & Comics,Diagonal Screentone,atelier_4_1,Legacy TypeScript; no dedicated Rust module,,NO
+166,Expanded: Anime & Comics,Crosshatch Ink,atelier_4_2,Legacy TypeScript; no dedicated Rust module,,NO
+167,Expanded: Anime & Comics,Impact Speedlines,atelier_4_3,Legacy TypeScript; no dedicated Rust module,,NO
+168,Expanded: Anime & Comics,Black Ink Shadows,atelier_4_4,Legacy TypeScript; no dedicated Rust module,,NO
+169,Expanded: Anime & Comics,Cel Highlight Bands,atelier_4_5,Legacy TypeScript; no dedicated Rust module,,NO
+170,Expanded: Anime & Comics,Color Registration,atelier_4_6,Legacy TypeScript; no dedicated Rust module,,NO
+171,Expanded: Anime & Comics,Energy Eyes,atelier_4_7,Legacy TypeScript; no dedicated Rust module,,NO
+172,Expanded: Anime & Comics,Manga Shadow Bands,atelier_4_8,Legacy TypeScript; no dedicated Rust module,,NO
+173,Expanded: Anime & Comics,Sharp Contour Ink,atelier_4_9,Legacy TypeScript; no dedicated Rust module,,NO
+174,Expanded: Anime & Comics,Two-Tone Comic Ink,atelier_4_10,Legacy TypeScript; no dedicated Rust module,,NO
+175,Expanded: Anime & Comics,Panel Perspective,atelier_4_11,Legacy TypeScript; no dedicated Rust module,,NO
+176,Expanded: Anime & Comics,Anime Energy Lines,atelier_4_12,Legacy TypeScript; no dedicated Rust module,,NO
+177,Expanded: Anime & Comics,Flat Anime Colors,atelier_4_13,Legacy TypeScript; no dedicated Rust module,,NO
+178,Expanded: Anime & Comics,Scratch Ink,atelier_4_14,Legacy TypeScript; no dedicated Rust module,,NO
+179,Expanded: Anime & Comics,Retro Comic Misprint,atelier_4_15,Legacy TypeScript; no dedicated Rust module,,NO
+180,Expanded: Materials & Surfaces,Brushed Aluminum,atelier_5_0,Legacy TypeScript; no dedicated Rust module,,NO
+181,Expanded: Materials & Surfaces,Gold Foil,atelier_5_1,Legacy TypeScript; no dedicated Rust module,,NO
+182,Expanded: Materials & Surfaces,Reflective Chrome,atelier_5_2,Legacy TypeScript; no dedicated Rust module,,NO
+183,Expanded: Materials & Surfaces,Ceramic Glaze,atelier_5_3,Legacy TypeScript; no dedicated Rust module,,NO
+184,Expanded: Materials & Surfaces,Frosted Acrylic,atelier_5_4,Legacy TypeScript; no dedicated Rust module,,NO
+185,Expanded: Materials & Surfaces,Woven Linen,atelier_5_5,Legacy TypeScript; no dedicated Rust module,,NO
+186,Expanded: Materials & Surfaces,Aged Parchment,atelier_5_6,Legacy TypeScript; no dedicated Rust module,,NO
+187,Expanded: Materials & Surfaces,Sandstone Grain,atelier_5_7,Legacy TypeScript; no dedicated Rust module,,NO
+188,Expanded: Materials & Surfaces,Leather Texture,atelier_5_8,Legacy TypeScript; no dedicated Rust module,,NO
+189,Expanded: Materials & Surfaces,Carbon Fiber,atelier_5_9,Legacy TypeScript; no dedicated Rust module,,NO
+190,Expanded: Materials & Surfaces,Iridescent Film,atelier_5_10,Legacy TypeScript; no dedicated Rust module,,NO
+191,Expanded: Materials & Surfaces,Concrete Pores,atelier_5_11,Legacy TypeScript; no dedicated Rust module,,NO
+192,Expanded: Materials & Surfaces,Gemstone Facets,atelier_5_12,Legacy TypeScript; no dedicated Rust module,,NO
+193,Expanded: Materials & Surfaces,Polished Wood,atelier_5_13,Legacy TypeScript; no dedicated Rust module,,NO
+194,Expanded: Digital & Experimental,Databent Stripes,atelier_6_0,Legacy TypeScript; no dedicated Rust module,,NO
+195,Expanded: Digital & Experimental,Bitplane Crush,atelier_6_1,Legacy TypeScript; no dedicated Rust module,,NO
+196,Expanded: Digital & Experimental,Chromatic Ghost,atelier_6_2,Legacy TypeScript; no dedicated Rust module,,NO
+197,Expanded: Digital & Experimental,Damaged Data Blocks,atelier_6_3,Legacy TypeScript; no dedicated Rust module,,NO
+198,Expanded: Digital & Experimental,Tracking Roll,atelier_6_4,Legacy TypeScript; no dedicated Rust module,,NO
+199,Expanded: Digital & Experimental,Codec Mosaic,atelier_6_5,Legacy TypeScript; no dedicated Rust module,,NO
+200,Expanded: Digital & Experimental,Pixel Rearrangement,atelier_6_6,Legacy TypeScript; no dedicated Rust module,,NO
+201,Expanded: Digital & Experimental,Broken LCD,atelier_6_7,Legacy TypeScript; no dedicated Rust module,,NO
+202,Expanded: Digital & Experimental,Signal Static,atelier_6_8,Legacy TypeScript; no dedicated Rust module,,NO
+203,Expanded: Digital & Experimental,Green Phosphor,atelier_6_9,Legacy TypeScript; no dedicated Rust module,,NO
+204,Expanded: Digital & Experimental,RGB Subpixel Mask,atelier_6_10,Legacy TypeScript; no dedicated Rust module,,NO
+205,Expanded: Digital & Experimental,Color Data Tears,atelier_6_11,Legacy TypeScript; no dedicated Rust module,,NO
+206,Expanded: Digital & Experimental,Corrupted Sectors,atelier_6_12,Legacy TypeScript; no dedicated Rust module,,NO
+207,Expanded: Digital & Experimental,Dot Matrix Display,atelier_6_13,Legacy TypeScript; no dedicated Rust module,,NO
+208,Expanded: Cinematic & Optical,Film Halation,atelier_7_0,Experimental Rust candidate; NOT built or parity-tested,src-tauri/src/aurora/native_effects/film_halation.rs,NO
+209,Expanded: Cinematic & Optical,Anamorphic Streak,atelier_7_1,Experimental Rust candidate; NOT built or parity-tested,src-tauri/src/aurora/native_effects/anamorphic_streak.rs,NO
+210,Expanded: Cinematic & Optical,Lens Ghost,atelier_7_2,Legacy TypeScript; no dedicated Rust module,,NO
+211,Expanded: Cinematic & Optical,Edge Focus Vignette,atelier_7_3,Legacy TypeScript; no dedicated Rust module,,NO
+212,Expanded: Cinematic & Optical,Prismatic Lens,atelier_7_4,Legacy TypeScript; no dedicated Rust module,,NO
+213,Expanded: Cinematic & Optical,Star Filter,atelier_7_5,Legacy TypeScript; no dedicated Rust module,,NO
+214,Expanded: Cinematic & Optical,Cinematic Contrast Curve,atelier_7_6,Legacy TypeScript; no dedicated Rust module,,NO
+215,Expanded: Cinematic & Optical,Film Negative,atelier_7_7,Legacy TypeScript; no dedicated Rust module,,NO
+216,Expanded: Cinematic & Optical,Silver Retention,atelier_7_8,Legacy TypeScript; no dedicated Rust module,,NO
+217,Expanded: Cinematic & Optical,Lens Curvature,atelier_7_9,Legacy TypeScript; no dedicated Rust module,,NO
+218,Expanded: Cinematic & Optical,Rolling Shutter,atelier_7_10,Legacy TypeScript; no dedicated Rust module,,NO
+219,Expanded: Cinematic & Optical,Split Diopter,atelier_7_11,Legacy TypeScript; no dedicated Rust module,,NO
+220,Expanded: Cinematic & Optical,Optical Color Fringe,atelier_7_12,Legacy TypeScript; no dedicated Rust module,,NO
+221,Expanded: Cinematic & Optical,Golden Lens Flare,atelier_7_13,Legacy TypeScript; no dedicated Rust module,,NO

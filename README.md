@@ -1,3 +1,5 @@
+> **Development continuation, 30 Oct 2026:** All 120 expanded Creativity operations now route to individually named TypeScript processors under `src/editor/effects/`; the old 120-way placeholder switch has been removed. This is a **tested integration checkpoint, not artistic-completion or 25–30ms FPS certification**. See `docs/HUELITH_DEDICATED_MIGRATION_CONTINUATION_2026_10_30.md` for known limitations and measured CPU render times.
+
 ![Huelith artwork](DrawingArtwork.png)
 
 # 🌈 Huelith

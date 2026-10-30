@@ -7,7 +7,14 @@ import { renderSubjectOutline } from './subject-outline';
 import { isImmutableEffectSource } from './immutable-effect-sources';
 import { drawStyle, DRAWING_STYLES } from './stylize-reconstruction';
 import { reconstructColor, RECONSTRUCTED_COLOR_KINDS } from './color-reconstruction';
-import { boxKernel, shockZoom } from './detail-reconstruction';
+import {renderBoxBlur} from './effects/box-blur';
+import {renderShockZoom} from './effects/shock-zoom';
+import {renderSharpen} from './effects/sharpen';
+import {renderUnsharpMask} from './effects/unsharp-mask';
+import {renderClarity} from './effects/clarity';
+import {renderTextureDetail} from './effects/texture-detail';
+import {renderSurfaceBlur} from './effects/surface-blur';
+import {renderNoiseReduction} from './effects/noise-reduction';
 import { applyCreativeEffect, applySignatureFX } from './creative-reconstruction';
 import { applyGradientMap, applyPrecisionColor, applyPainterly, applyMosaic } from './advanced-ops';
 import type { Effect, EffectKind } from './types';
@@ -1178,8 +1185,15 @@ export function applyEffect(source: HTMLCanvasElement, effect: Effect): HTMLCanv
   if (kind === 'radiance' || kind === 'miasma') return applyCreativeEffect(source, effect);
   if (RECONSTRUCTED_COLOR_KINDS.has(kind)) return reconstructColor(source, effect);
   if (EXPANSION_LOOKUP.has(kind)) return renderExpansion120(source,effect);
-  if (kind === 'boxblur') return boxKernel(source, effect);
-  if (kind === 'zoomblur') return shockZoom(source, effect);
+  // Legacy filters now dispatch to their own independently tested processors.
+  if (kind === 'sharpen') return renderSharpen(source,effect);
+  if (kind === 'unsharp') return renderUnsharpMask(source,effect);
+  if (kind === 'clarity') return renderClarity(source,effect);
+  if (kind === 'texture') return renderTextureDetail(source,effect);
+  if (kind === 'surfaceblur') return renderSurfaceBlur(source,effect);
+  if (kind === 'denoise') return renderNoiseReduction(source,effect);
+  if (kind === 'boxblur') return renderBoxBlur(source, effect);
+  if (kind === 'zoomblur') return renderShockZoom(source, effect);
   if (kind === 'lensblur') return spatialBlurStable(source,effect,'lens');
   if (kind === 'motionblur'||kind === 'radialblur') return spatialBlurStable(source,effect,kind==='motionblur'?'motion':'radial');
   switch (kind) {
@@ -1189,8 +1203,8 @@ export function applyEffect(source: HTMLCanvasElement, effect: Effect): HTMLCanv
       return filtered(source, `${name}(${effect.amount}${kind === 'hue' ? 'deg' : '%'})`);
     }
     // Motion and radial blur are handled by spatialBlurStable before this switch.
-    case 'blur': case 'surfaceblur': case 'sharpen': case 'unsharp': case 'highpass':
-    case 'clarity': case 'texture': case 'denoise': case 'emboss': case 'edges': case 'pixelate':
+    case 'blur': case 'highpass':
+    case 'emboss': case 'edges': case 'pixelate':
     case 'ink': case 'comicink': case 'neonedge': case 'cartoon': case 'frosted':
       return detailEffect(source, effect);
     case 'gradientmap': case 'duotone': return applyGradientMap(source, effect);

@@ -15,8 +15,8 @@
     "desktop:build": "tauri build",
     "test:browser": "node tests/browser-smoke.cjs && node tests/authoritative-effect-preview.cjs",
     "test:ui": "python tests/ui-e2e.py",
-    "clean:obsolete": "node scripts/remove-obsolete.mjs --apply",
-    "clean:obsolete:dry": "node scripts/remove-obsolete.mjs --dry-run",
+    "clean:obsolete": "node scripts/cleanup-migrated.mjs --apply",
+    "clean:obsolete:dry": "node scripts/cleanup-migrated.mjs --dry-run",
     "test:timeline": "python tests/timeline-css.py",
     "audit:effects": "node scripts/audit-effects.mjs",
     "test:stage-abc": "node --test tests/stage-abc.test.cjs",
@@ -52,7 +52,11 @@
     "test:meme": "node --test tests/meme-creator.test.cjs && python tests/meme-creator-browser.py",
     "test:expansion": "node --test tests/effects-order7.test.cjs",
     "test:expansion:browser": "python tests/expansion-120-browser.py && python tests/blur-color-preservation-browser.py",
-    "test:studio-hub": "node --test tests/studio-hub-freeze-regression.test.cjs tests/worker-polish.test.cjs && python tests/worker-exact-scanline-browser.py"
+    "test:studio-hub": "node --test tests/studio-hub-freeze-regression.test.cjs tests/worker-polish.test.cjs && python tests/worker-exact-scanline-browser.py",
+    "pretauri": "node scripts/cleanup-migrated.mjs --apply",
+    "clean:migrated": "node scripts/cleanup-migrated.mjs --apply",
+    "clean:migrated:dry": "node scripts/cleanup-migrated.mjs --dry-run",
+    "predesktop:dev": "node scripts/cleanup-migrated.mjs --apply"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
