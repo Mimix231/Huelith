@@ -109,7 +109,10 @@ test('Phase K: draw-only Glow/filters do not insist on Canvas2D software readbac
   assert.match(creative, /readPixels = false/);
   assert.match(creative, /copy\(source, true\)/);
   assert.match(creative, /ctx\(source, true\)\.getImageData/);
-  assert.match(ops, /const ctx = output\.getContext\('2d'\)/);
+  // The active dispatcher now routes processing to dedicated modules.
+  assert.match(ops, /renderLayerSpectrumGlow\(source,effect\)/);
+  const glow = read('src/editor/effects/layer-spectrum-glow.ts');
+  assert.match(glow, /const ctx=out\.getContext\('2d'\)/);
   assert.match(creative, /getStencil\(source, color\)/);
   assert.doesNotMatch(creative, /paintGpuEffectDraft/);
 });

@@ -42,8 +42,8 @@ test('new patterns and softened blur controls are implemented by different algor
  const shader=read('src/editor/gradient.ts');
  for(const kind of ['sunburst','speedlines','gradientRaySoftness','gradientRayWidth','gradientRayTaper','gradientRaySeed'])assert.ok(shader.includes(kind),kind);
  const detail=read('src/editor/effect-ops.ts');
- for(const filter of ["effect.kind === 'clarity'","effect.kind === 'texture'","effect.kind === 'sharpen'","effect.kind === 'unsharp'"])
-   assert.ok(detail.includes(filter));
+ for(const processor of ['renderClarity','renderTextureDetail','renderSharpen','renderUnsharpMask'])
+   assert.ok(detail.includes(processor+'(source,effect)'),processor);
 });
 test('Gradient Designer uses direct canvas drawing and a dedicated Gradient Atelier, no legacy studio',()=>{
  const app=read('src/App.tsx');

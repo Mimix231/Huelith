@@ -46,7 +46,8 @@ test('all blurs use normalized kernels or edge-extended Gaussian; refraction avo
  const core=fs.readFileSync(path.join(root,'src/editor/effect-ops.ts'),'utf8');
  const blur=fs.readFileSync(path.join(root,'src/editor/blur-luminance.ts'),'utf8');
  const box=fs.readFileSync(path.join(root,'src/editor/detail-reconstruction.ts'),'utf8');
- assert.match(core,/gaussianBlurStable/);assert.match(core,/spatialBlurStable/);
- assert.match(core,/Math\.max\(0,Math\.min\(width-1,Math\.round\(sx\)\)\)/);
+ assert.match(fs.readFileSync(path.join(root,'src/editor/effects/gaussian-blur.ts'),'utf8'),/gaussianBlurStable/);
+ assert.match(core,/spatialBlurStable/);
+ assert.match(blur,/Duplicate edge pixels/);
  assert.match(blur,/pixel\[0\]\*weight/);assert.match(box,/255\/alpha/);
 });

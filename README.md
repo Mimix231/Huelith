@@ -178,7 +178,7 @@ Huelith is distributed under the GNU General Public License, version 3. See [LIC
 
 For architecture, tests and limitations, see [Core Editing Actions & Magnetic Canvas Snapping](docs/HUELITH_CORE_ACTIONS_AND_MAGNETIC_SNAPPING.md).
 
-### Smart Transform & Gradient Atelier (Order 2)
+### Smart Transform & Gradient Atelier
 Use **Move** to scale/rotate selected artwork with cyan guides and a draggable transform pivot. Drag corners to scale proportionally; hold **Shift** for free resizing, or **Alt** to bypass snapping. Snapping to canvas center forms a visible + guide. Double-click the transform dimensions or press **Ctrl+T** for exact numeric edits. Gradient Atelier's Color Bands and procedural field transformations work with patterned Gradient layers. See [Order 2 notes](docs/HUELITH_AM2_SMART_TRANSFORM.md).
 
 ### Magnetic transforms and canvas-only editing
@@ -186,7 +186,7 @@ Press **Ctrl+T** to select the entire active layer and reveal on-canvas scaling 
 
 Selection, drawing, and new layer moves begin only within the document canvas. Middle-mouse and Hand-tool panning remain possible in the surrounding workspace.
 
-### Brush Atelier & continuous line art (v0.2-alpha)
+### Brush Atelier & continuous line art
 Choose **Ink Pen** from the left toolbar for a continuous filled-contour stroke instead of stamped brush-tip circles. For softer paint, use **Brush**. Click **✦ Brush Atelier** in the top context toolbar to switch engines, tune brush width (1–2000 px), stabilization, flow, spacing, pressure response, opacity and taper, or load/save presets. Available starter presets: Smooth Ink, Comic Line, Fine Liner, Soft Paint, Round Brush and Marker. Pen tablets use native pointer pressure; mouse strokes use full pressure. Symmetry, selections, masks and animation-cel painting remain supported. Each finished stroke is one undoable operation.
 
 ### Painting, selection and retouch
@@ -196,29 +196,3 @@ The **Selection Studio** tool picker adds Magic Wand, Freehand Lasso, Polygon Se
 Select **Edit mask shapes (◇)** inside Cutout to pick and move committed strokes and shapes. Rectangle and Ellipse have four corner grips; line endpoints and polygon/lasso nodes are editable. Double-click on a segment to insert a vertex. Delete the selected point or shape, nudge with arrow keys, and adjust the selected mask shape's width or Keep/Remove action. Shape moves and parameter edits are undoable, and editable shape data is saved with the project while previous raster-only masks remain loadable.
 
 See [Drawing and Cutout Editing](docs/HUELITH_DRAWING_SELECTION_CUTOUT.md) for behavior, tests and limits.
-
-
-### Animation Studio — Layer Timeline & Exposures (v0.2-alpha)
-The Animation Studio supports a layer-based exposure sheet in addition to its frame thumbnail timeline. Select raster/vector cels per layer, hold drawings across frames without repeating their pixel buffers, label frames, duplicate or delete selected frames, and apply shared frame durations. Shift/Ctrl-click to select multiple frames, and Alt-click or right-click a layer cel to hold/release the preceding drawing. Loop ranges, one-shot and ping-pong playback preserve variable frame durations. Persistent layer effects remain shared across every cel.
-
-See `docs/HUELITH_ANIMATION_STUDIO_EXPOSURES.md` for workflow and known limitations.
-
-### Meme Creator & professional workspace (Huelith 0.2-alpha)
-
-**Edit → Create Meme** opens a Huelith-themed layout studio for creating nine kinds of memes without damaging the original artwork. Captions remain editable vector text; speech bubbles and background panels remain native shapes. Optional comparison images become separate raster layers. Drag captions inside the live preview, apply in a single undoable operation, then edit using the standard canvas tools.
-
-**Edit → Export Meme as PNG/JPEG/WebP** uses the established native-quality export pipeline. The workspace now features consistent surface depth, theme-specific icons and palettes, a Sakura pink/pearl/purple treatment, and transform grips accessible outside the white canvas. Read `docs/HUELITH_MEME_CREATOR_AND_WORKSPACE.md` for limitations and validation.
-
-### Find the Meme Creator
-
-Click **Meme Creator** in the top bar or **Meme** in the left tool rail. You can also use **Creative → Open Meme Creator…**, **Edit → Create Meme…**, or **Ctrl+Alt+M**. All routes open the same non-destructive workspace. On narrow screens, the header launcher collapses to an icon; its tooltip still says **Meme Creator**.
-
-### Expanded Creativity library (v0.2-alpha)
-Huelith Studio includes **120 additional locally processed, non-destructive image operations** in eight Creativity families: Color Science, Lighting & Atmosphere, Artistic Painting, Distortion & Geometry, Anime & Comics, Materials & Surfaces, Digital & Experimental, and Cinematic & Optical. Use the horizontal category selector, search across all families, or favorite an operation to find it later. Each operation has its own Canvas2D processing rule and vector icon. Results remain editable on the layer and use the same render pipeline for preview and export.
-
-The Gaussian, Box, Motion, Radial, Lens, and Surface blur paths have additional luminance/alpha normalization. Tests verify that flat opaque images do not become brighter or transparent under blur stacks. Complex effects may still take longer to render on CPU-only machines.
-
-**Meme Creator is opened only from the prominent top title-bar button or Edit → Create Meme.**
-
-### Creativity App Hub & Responsive Studio
-The **Creativity** tab now opens Huelith's app hub. Open Chromatica, Luminara, Detailworks, Paintoria, Manga Lab, Warpworks, Signalworks and other focused apps to see their associated creative filters and styles. **Back to apps** returns to the hub; Effects and Signature FX are also available as apps or direct tabs. The catalog uses lightweight hand-designed effect icons instead of eagerly rendering all 120 pixel thumbnails. The exact artwork preview still uses the original full-resolution effects pipeline. The dedicated worker renders expanded effects with cancellable scanline scheduling. Unsupported WebView2 versions display a renderer warning instead of freezing the main canvas. See [Studio app hub and rendering notes](docs/HUELITH_CREATIVITY_APP_HUB_AND_FREEZE_FIX.md).

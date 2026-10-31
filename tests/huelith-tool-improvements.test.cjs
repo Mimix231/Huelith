@@ -21,7 +21,7 @@ test('Gradient is a separate direct-draw tool with eight retained modes and inte
   assert.match(gradient, /gradientMirror/);
 });
 test('Cutout processes sampled background and keeps correction strokes non-destructively', () => {
-  const ops=read('src/editor/effect-ops.ts');
+  const ops=read('src/editor/effects/layer-cutout.ts');
   const ui=read('src/components/EffectAdvancedEditors.tsx');
   assert.match(ops, /protectedPixels/);
   assert.match(ops, /backgroundGlobal/);

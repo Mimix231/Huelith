@@ -53,12 +53,12 @@ test('the README and changelog describe the correct release eras', () => {
 
 test('Glow palette uses the stable serialized spectrum value after app rename', () => {
   const ui = read('src/components/EffectAdvancedEditors.tsx');
-  const rendering = read('src/editor/effect-ops.ts');
+  const rendering = read('src/editor/effects/layer-spectrum-glow.ts');
   const types = read('src/editor/types.ts');
   assert.match(types, /glowPalette\?: 'single' \| 'spectrum'/);
   assert.match(ui, /value="spectrum">Spectral gradient<\/option>/);
   assert.match(ui, /palette === 'spectrum' && <GradientEditor/);
   assert.match(ui, /glowPalette: event\.target\.value as 'single' \| 'spectrum'/);
-  assert.match(rendering, /effect\.parameters\?\.glowPalette === 'spectrum'/);
+  assert.match(rendering, /glowPalette==='spectrum'/);
   assert.doesNotMatch(ui, /glowPalette: event\.target\.value as 'single' \| 'huelith'/);
 });

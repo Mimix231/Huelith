@@ -10,11 +10,12 @@ export function renderSharpen(source:HTMLCanvasElement,effect:Effect):HTMLCanvas
   const out=new ImageData(w,h),r=out.data;
   const strength=Math.max(0,Math.min(2,effect.amount/65));
   const threshold=Math.max(0,effect.parameters?.threshold??0);
+  const step=Math.max(1,Math.min(8,Math.round(Math.sqrt(Math.max(0,effect.parameters?.radius??4)/4))));
   for(let y=0;y<h;y++)for(let x=0;x<w;x++){
     const i=(y*w+x)*4,a=d[i+3];r[i+3]=a;
     if(!a){r[i]=r[i+1]=r[i+2]=0;continue;}
-    const l=(y*w+Math.max(0,x-1))*4,R=(y*w+Math.min(w-1,x+1))*4;
-    const t=(Math.max(0,y-1)*w+x)*4,b=(Math.min(h-1,y+1)*w+x)*4;
+    const l=(y*w+Math.max(0,x-step))*4,R=(y*w+Math.min(w-1,x+step))*4;
+    const t=(Math.max(0,y-step)*w+x)*4,b=(Math.min(h-1,y+step)*w+x)*4;
     for(let k=0;k<3;k++){
       const center=d[i+k];
       const edge=(d[l+3]?d[l+k]:center)+(d[R+3]?d[R+k]:center)+

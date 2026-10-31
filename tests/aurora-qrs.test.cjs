@@ -65,5 +65,7 @@ test('S: responsive profile retains more reference data without reducing image p
   assert.match(runtime, /stackCache\.setBudget/);
   assert.match(runtime, /setEdgeCacheBudget/);
   assert.match(runtime, /setSilhouetteCacheBudget/);
-  assert.match(read('src/editor/effect-ops.ts'), /function neonEdges\(/);
+  assert.match(read('src/editor/effect-ops.ts'), /renderNeonEdges\(source,effect\)/);
+  assert.match(read('src/editor/effects/neon-edges.ts'), /getNeonEdgeStrength/);
+  assert.match(read('src/editor/effects/edge-field.ts'), /setEdgeCacheBudget/);
 });

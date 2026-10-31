@@ -104,13 +104,14 @@ test('Phase G/F: cooperative worker finishes no superseded remaining stages, kee
 test('Phase H: no lookalike FX algorithms or pixel downgrades were reintroduced', () => {
   const fx = read('src/editor/fx.ts');
   const stack = read('src/editor/effect-stack-cache.ts');
-  const silhouette = read('src/editor/effect-ops.ts');
+  const silhouette = read('src/editor/effects/layer-distance.ts');
   const hyper = read('src/editor/subject-outline.ts');
   assert.match(fx, /processEffects/);
   assert.doesNotMatch(fx, /paintGpuEffectDraft|paintCanvasEffectDraft/);
   assert.match(stack, /applyEffect\(current, effect\)/);
   assert.match(silhouette, /isImmutableEffectSource/);
-  assert.match(silhouette, /silhouetteDistances/);
+  assert.match(silhouette, /layerDistance/);
+  assert.match(silhouette, /setSilhouetteCacheBudget/);
   assert.match(hyper, /retainedMattes/);
   assert.match(read('src/settings/aurora-parity.ts'), /compareNativeRgba/);
 });

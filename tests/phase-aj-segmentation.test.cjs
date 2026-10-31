@@ -57,7 +57,7 @@ test('Re-running identical segmentation is deterministic', () => {
   assert.deepEqual(a,b);
 });
 test('Engine modes, controls and full workspace are registered, with no network downloads', () => {
-  const effectOps=source('src/editor/effect-ops.ts');
+  const effectOps=source('src/editor/effects/layer-cutout.ts');
   const editor=source('src/components/EffectAdvancedEditors.tsx');
   const types=source('src/editor/types.ts');
   const schema=source('src/editor/effect-schema.ts');

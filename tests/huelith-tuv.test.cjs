@@ -22,10 +22,17 @@ const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
 
 test('Phase T: VHS, Chromatic Shift and Digital Glitch have separate color-safe renderers', () => {
   const source = read('src/editor/effect-ops.ts');
-  for (const name of ['chromaticShift', 'vhsTracking', 'digitalGlitch']) assert.match(source, new RegExp(`function ${name}\\(`));
-  assert.doesNotMatch(source, /case 'chromatic': case 'glitch': case 'vhs'/);
-  assert.doesNotMatch(source.slice(source.indexOf('function chromaticShift('), source.indexOf('/** Render each shadow')), /globalCompositeOperation = 'screen'/);
-  assert.match(source, /src\[from \+ c\]/);
+  for (const [kind, renderer, filename] of [
+    ['chromatic', 'renderChromaticSplit', 'chromatic-split'],
+    ['vhs', 'renderVhs', 'vhs'],
+    ['glitch', 'renderDigitalGlitch', 'digital-glitch'],
+  ]) {
+    assert.match(source, new RegExp(`kind === '${kind}'[^\\n]*${renderer}\\(source,effect\\)`));
+    const implementation = read(`src/editor/effects/${filename}.ts`);
+    assert.match(implementation, new RegExp(`export function ${renderer}\\(`));
+    assert.match(implementation, /const image=read\(source\),src=new Uint8ClampedArray\(image.data\)/);
+    assert.doesNotMatch(implementation, /globalCompositeOperation\s*=\s*'screen'/);
+  }
 });
 
 test('Phase T: animation layers inherit saved FX stacks without modifying other cel artwork', () => {
@@ -70,10 +77,13 @@ test('Phase U: Originals inspector uses centralized theme colors and a direct pl
 
 test('Phase V: mask corrections are editable only and do not paint into source-layer pixels', () => {
   const editor = read('src/components/EffectAdvancedEditors.tsx');
-  const processor = read('src/editor/effect-ops.ts');
+  const processor = read('src/editor/effects/layer-cutout.ts');
+  const dispatcher = read('src/editor/effect-ops.ts');
   assert.match(editor,/Keep subject/);
   assert.match(editor,/Remove background/);
   assert.match(editor,/maskStrokes/);
-  assert.match(processor,/applyBackgroundMask/);
-  assert.match(processor,/backgroundAuto === 0/);
+  assert.match(processor,/maskStrokes/);
+  assert.match(processor,/backgroundAuto\s*===\s*0/);
+  assert.match(processor,/segmentSubject/);
+  assert.match(dispatcher,/renderLayerCutout\(source,effect\)/);
 });

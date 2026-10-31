@@ -1,5 +1,13 @@
 {
   "extends": "./tsconfig.json",
-  "compilerOptions": {"types": []},
-  "include": ["src/editor/effects/**/*.ts", "src/editor/expansion-120.ts", "src/editor/effect-schema.ts"]
+  "compilerOptions": {
+    "types": []
+  },
+  "include": [
+    "src/editor/effects/**/*.ts",
+    "src/editor/expansion-120.ts",
+    "src/editor/effect-schema.ts",
+    "src/editor/effect-ops.ts",
+    "src/editor/effects-worker.ts"
+  ]
 }

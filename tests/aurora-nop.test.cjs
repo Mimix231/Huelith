@@ -36,12 +36,12 @@ test('N: all seven Effects-tab tools retain independent controls',()=>{
  assert.equal(schema.defaultParameters('radiance').raySpread,100);
 });
 test('N: transparent edge, dual outline and procedural field controls exist in actual renderer source',()=>{
- assert.match(read('src/editor/effect-ops.ts'),/renderSubjectOutline\(source, effect\)/);
+ assert.match(read('src/editor/effects/layer-outline.ts'),/renderSubjectOutline\(source,effect\)/);
  assert.match(read('src/editor/subject-outline.ts'),/secondaryWidth/);
- assert.match(read('src/editor/creative-reconstruction.ts'),/raySpread/);
- assert.match(read('src/editor/creative-reconstruction.ts'),/windX/);
- assert.match(read('src/editor/effect-ops.ts'),/createRadialGradient\(0, 0/);
- assert.match(read('src/editor/effect-ops.ts'),/style === 'perspective'/);
+ assert.match(read('src/editor/effects/layer-holy-radiance.ts'),/raySpread/);
+ assert.match(read('src/editor/effects/atmosphere-core.ts'),/windX/);
+ assert.match(read('src/editor/effects/layer-backdrop.ts'),/createRadialGradient\(0,0/);
+ assert.match(read('src/editor/effects/layer-shadow.ts'),/style===\'perspective\'/);
 });
 test('O: recipes retain effect ID and stack identity; reset restores the original kind',()=>{
  const effect={...fx.newEffect('glow'),id:'same-layer-effect',studioGroupId:'chain',studioPreset:'custom FX',color:'#123456'};

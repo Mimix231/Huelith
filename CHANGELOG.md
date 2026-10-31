@@ -77,6 +77,14 @@ Huelith is the new name for the image editor previously released as Spectrum. Th
 - Preserved native-resolution output, project/animation serialization, legacy Sunburst/Speed Lines and manual Inspector Cutout functionality.
 - Added native Canvas2D and regression tests. Full dependency-aware Windows build still requires local verification.
 
+
+### Project Fluidity — original-effect module migration (31 October 2026, development-only)
+- Routed the 90 remaining original registered effect kinds into individually authored modules under `src/editor/effects`. The 11 already migrated kinds remain intact, producing 101/101 legacy source routes.
+- Added specialized color LUTs, native color filter modules, alpha-aware geometry, painting/style processors, layer effects and 22 Signature FX modules, with shared mathematical primitives where appropriate.
+- Added Chromium render and transparency tests; updated outdated source-location tests. The recorded Node regression suite currently passes in eight batches.
+- Known limitations: 20–50ms live render requirement **not achieved** on several full-resolution CPU effects; full Tauri/Windows/GPU certification **not performed**; multiple artistic/parameter behaviors still require refinement.
+- See `docs/PROJECT_FLUIDITY_LEGACY_90_2026-10-31.md` and `docs/HUELITH_221_EFFECTS_STATUS_2026-10-31.md`.
+
 ## 0.2.0 — Huelith (25 October 2026)
 
 **Renamed the app and improved reliability.** This is the first Huelith-branded development release.

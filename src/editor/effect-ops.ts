@@ -1,11 +1,96 @@
-import { segmentSubject } from './subject-segmentation';
+import {renderLayerMiasma} from './effects/layer-miasma';
+import {renderLayerHolyRadiance} from './effects/layer-holy-radiance';
+import {renderLayerBackdrop} from './effects/layer-backdrop';
+import {renderLayerShadow} from './effects/layer-shadow';
+import {renderLayerSpectrumGlow} from './effects/layer-spectrum-glow';
+import {renderLayerOutline} from './effects/layer-outline';
+import {renderLayerCutout} from './effects/layer-cutout';
+import {renderSigLiquidLight} from './effects/sig-liquid-light';
+import {renderSigCrystalResonance} from './effects/sig-crystal-resonance';
+import {renderSigInfernoAura} from './effects/sig-inferno-aura';
+import {renderSigRiftDistortion} from './effects/sig-rift-distortion';
+import {renderSigSpectralRefraction} from './effects/sig-spectral-refraction';
+import {renderSigNebulaBloom} from './effects/sig-nebula-bloom';
+import {renderSigPlasmaVeins} from './effects/sig-plasma-veins';
+import {renderSigSpectrumBurst} from './effects/sig-spectrum-burst';
+import {renderSigRetroVision} from './effects/sig-retro-vision';
+import {renderSigHolographic} from './effects/sig-holographic';
+import {renderSigElectricEdge} from './effects/sig-electric-edge';
+import {renderSigAuroraFlow} from './effects/sig-aurora-flow';
+import {renderSigGoldenHour} from './effects/sig-golden-hour';
+import {renderSigPrismSplit} from './effects/sig-prism-split';
+import {renderSigEmberGlow} from './effects/sig-ember-glow';
+import {renderSigFrostbite} from './effects/sig-frostbite';
+import {renderSigComicPop} from './effects/sig-comic-pop';
+import {renderSigGlitchMatrix} from './effects/sig-glitch-matrix';
+import {renderSigDreamBloom} from './effects/sig-dream-bloom';
+import {renderSigShadowForge} from './effects/sig-shadow-forge';
+import {renderSigNeonPulse} from './effects/sig-neon-pulse';
+import {renderSigHyperOutline} from './effects/sig-hyper-outline';
+import {renderRetroDreamscape} from './effects/retro-dreamscape';
+import {renderInkWash} from './effects/ink-wash';
+import {renderPixelPoster} from './effects/pixel-poster';
+import {renderChromaticSilk} from './effects/chromatic-silk';
+import {renderHolographicFoil} from './effects/holographic-foil';
+import {renderGraphicNovel} from './effects/graphic-novel';
+import {renderAnimeCelStudio} from './effects/anime-cel-studio';
+import {renderMosaicTiles} from './effects/mosaic-tiles';
+import {renderNeonEdges} from './effects/neon-edges';
+import {renderPosterize} from './effects/posterize';
+import {renderGaussianBlur} from './effects/gaussian-blur';
+import {renderInvert} from './effects/invert';
+import {renderSepia} from './effects/sepia';
+import {renderGrayscale} from './effects/grayscale';
+import {renderHueRotation} from './effects/hue-rotation';
+import {renderSaturation} from './effects/saturation';
+import {renderContrast} from './effects/contrast';
+import {renderBrightness} from './effects/brightness';
+import {renderWatercolor} from './effects/watercolor';
+import {renderOilPainting} from './effects/oil-painting';
+import {renderRadialEnergyBurst} from './effects/radial-energy-burst';
+import {renderAuroraIllumination} from './effects/aurora-illumination';
+import {renderFrostedGlass} from './effects/frosted-glass';
+import {renderCrtMonitor} from './effects/crt-monitor';
+import {renderDigitalGlitch} from './effects/digital-glitch';
+import {renderVhs} from './effects/vhs';
+import {renderChromaticSplit} from './effects/chromatic-split';
+import {renderGlassRefraction} from './effects/glass-refraction';
+import {renderWave} from './effects/wave';
+import {renderRipple} from './effects/ripple';
+import {renderSwirl} from './effects/swirl';
+import {renderCartoon} from './effects/cartoon';
+import {renderComicInk} from './effects/comic-ink';
+import {renderInkDrawing} from './effects/ink-drawing';
+import {renderPencilSketch} from './effects/pencil-sketch';
+import { renderExposure } from './effects/exposure';
+import { renderHighlights } from './effects/highlights';
+import { renderShadows } from './effects/shadows';
+import { renderWhites } from './effects/whites';
+import { renderBlacks } from './effects/blacks';
+import { renderTemperature } from './effects/temperature';
+import { renderTint } from './effects/tint';
+import { renderVibrance } from './effects/vibrance';
+import { renderGamma } from './effects/gamma';
+import { renderSolarize } from './effects/solarize';
+import { renderCurves } from './effects/curves';
+import { renderLevels } from './effects/levels';
+import { renderBalance } from './effects/balance';
+import { renderSelective } from './effects/selective';
+import { renderMixer } from './effects/mixer';
+import { renderGradientmap } from './effects/gradientmap';
+import { renderDuotone } from './effects/duotone';
+import { renderHighPass } from './effects/high-pass';
+import { renderFilmGrain } from './effects/film-grain';
+import { renderRgbNoise } from './effects/rgb-noise';
+import { renderEmboss } from './effects/emboss';
+import { renderEdgeDetection } from './effects/edge-detection';
+import { renderHalftone } from './effects/halftone';
+import { renderDither } from './effects/dither';
+import { renderVignette } from './effects/vignette';
+import { renderPixelate } from './effects/pixelate';
 import { createSurface } from './canvas-surface';
 import { EXPANSION_LOOKUP, renderExpansion120 } from './expansion-120';
-import { gaussianBlurStable, spatialBlurStable } from './blur-luminance';
 import { AURORA_NEW_KINDS, renderAuroraExpansion } from './aurora-expansion';
-import { renderSubjectOutline } from './subject-outline';
-import { isImmutableEffectSource } from './immutable-effect-sources';
-import { drawStyle, DRAWING_STYLES } from './stylize-reconstruction';
 import { reconstructColor, RECONSTRUCTED_COLOR_KINDS } from './color-reconstruction';
 import {renderBoxBlur} from './effects/box-blur';
 import {renderShockZoom} from './effects/shock-zoom';
@@ -15,9 +100,12 @@ import {renderClarity} from './effects/clarity';
 import {renderTextureDetail} from './effects/texture-detail';
 import {renderSurfaceBlur} from './effects/surface-blur';
 import {renderNoiseReduction} from './effects/noise-reduction';
-import { applyCreativeEffect, applySignatureFX } from './creative-reconstruction';
-import { applyGradientMap, applyPrecisionColor, applyPainterly, applyMosaic } from './advanced-ops';
 import type { Effect, EffectKind } from './types';
+
+import { applySignatureFX } from './creative-reconstruction';
+import { spatialBlurStable } from './blur-luminance';
+export { setEdgeCacheBudget } from './effects/edge-field';
+export { setSilhouetteCacheBudget } from './effects/layer-distance';
 
 /** Canvas2D processors shared by interactive previews, saved layers, and exports. */
 function surface(width: number, height: number): HTMLCanvasElement {
@@ -61,29 +149,6 @@ function fromPixels(image: ImageData): HTMLCanvasElement {
   const output = surface(image.width, image.height);
   context(output).putImageData(image, 0, 0);
   return output;
-}
-
-function copyImage(source: HTMLCanvasElement): HTMLCanvasElement {
-  const output = surface(source.width, source.height);
-  const painter = output.getContext('2d');
-  if (!painter) throw new Error('Huelith requires Canvas 2D.');
-  painter.drawImage(source, 0, 0);
-  return output;
-}
-
-function filtered(source: HTMLCanvasElement, filter: string): HTMLCanvasElement {
-  const output = surface(source.width, source.height);
-  // Let Chromium's compositor accelerate genuine native CSS filter kernels;
-  // requesting willReadFrequently here unnecessarily forces a slow readback path.
-  const ctx = output.getContext('2d');
-  if (!ctx) throw new Error('Huelith requires Canvas 2D.');
-  ctx.filter = filter;
-  ctx.drawImage(source, 0, 0);
-  return output;
-}
-
-function softened(source: HTMLCanvasElement, radius: number): HTMLCanvasElement {
-  return radius < 0.3 ? copyImage(source) : gaussianBlurStable(source,clamp(radius,0,80));
 }
 
 function shade(r: number, g: number, b: number): number {
@@ -268,921 +333,102 @@ function pixelEffect(source: HTMLCanvasElement, effect: Effect): HTMLCanvasEleme
   return fromPixels(image);
 }
 
-/** Store immutable Sobel results across interactive parameter drags.
- * Only worker-marked immutable canvases qualify; mutable raster/vector sources
- * always get freshly measured edges. Eviction affects speed, never fidelity.
- */
-const edgeResults = new WeakMap<HTMLCanvasElement, ImageData>();
-const edgeLRU: HTMLCanvasElement[] = [];
-let edgeCacheBudget = 64 * 1024 * 1024;
-export function setEdgeCacheBudget(mebibytes: number): void {
-  edgeCacheBudget = Math.max(8, Math.min(512, Math.round(mebibytes))) * 1024 * 1024;
-  trimEdgeResults();
-}
-function trimEdgeResults(): void {
-  let bytes = edgeLRU.reduce((cost, canvas) => cost + (edgeResults.get(canvas)?.data.byteLength ?? 0), 0);
-  while (bytes > edgeCacheBudget && edgeLRU.length > 1) {
-    const oldest = edgeLRU.shift()!;
-    bytes -= edgeResults.get(oldest)?.data.byteLength ?? 0;
-    edgeResults.delete(oldest);
-  }
-}
-/** Sobel luminance derivative, retaining the original alpha plane. */
-function edgeMap(source: HTMLCanvasElement): ImageData {
-  if (isImmutableEffectSource(source)) {
-    const hit = edgeResults.get(source);
-    if (hit && hit.width === source.width && hit.height === source.height) {
-      const index = edgeLRU.indexOf(source);
-      if (index >= 0) { edgeLRU.splice(index, 1); edgeLRU.push(source); }
-      return hit;
-    }
-  }
-
-  const original = pixels(source);
-  const result = new ImageData(original.width, original.height);
-  const { width, height, data } = original;
-  // Compute luminance exactly once, rather than eight RGB multiplications
-  // for EVERY Sobel neighbor in every output pixel. Float64 preserves the
-  // same arithmetic as the reference shade() calculation (no precision nerf).
-  const luminance = new Float64Array(width * height);
-  for (let pixel = 0; pixel < luminance.length; pixel++) {
-    const i = pixel * 4;
-    luminance[pixel] = shade(data[i], data[i + 1], data[i + 2]);
-  }
-  const at = (x: number, y: number): number =>
-    luminance[Math.min(height - 1, Math.max(0, y)) * width + Math.min(width - 1, Math.max(0, x))];
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      const gx = -at(x - 1, y - 1) + at(x + 1, y - 1) - 2 * at(x - 1, y)
-        + 2 * at(x + 1, y) - at(x - 1, y + 1) + at(x + 1, y + 1);
-      const gy = -at(x - 1, y - 1) - 2 * at(x, y - 1) - at(x + 1, y - 1)
-        + at(x - 1, y + 1) + 2 * at(x, y + 1) + at(x + 1, y + 1);
-      const i = (y * width + x) * 4;
-      result.data[i] = result.data[i + 1] = result.data[i + 2] = clamp(Math.hypot(gx, gy) / 4);
-      result.data[i + 3] = data[i + 3];
-    }
-  }
-  if (isImmutableEffectSource(source)) {
-    edgeResults.set(source, result);
-    const index = edgeLRU.indexOf(source);
-    if (index >= 0) edgeLRU.splice(index, 1);
-    edgeLRU.push(source);
-    trimEdgeResults();
-  }
-  return result;
-}
-
-/**
- * Neon Edges hot path. The old generic detail processor first calculated an
- * entirely UNUSED full-resolution blur, then ran Sobel twice, and parsed the
- * same hex color for every RGB component of every pixel. This computes exactly
- * the same pixel formula and the same final glow/composite with one Sobel map.
- */
-function neonEdges(source: HTMLCanvasElement, effect: Effect): HTMLCanvasElement {
-  const amount = effect.amount;
-  const original = pixels(source);
-  const base = original.data;
-  const map = edgeMap(source).data;
-  const rgb = colorFromHex(effect.color, '#52dcff');
-  const threshold = effect.parameters?.threshold ?? 45;
-  const factor = amount / 100;
-  for (let i = 0; i < base.length; i += 4) {
-    const level = Math.max(0, map[i] - threshold);
-    base[i] = clamp(base[i] * .12 + level * rgb[0] / 80 * factor);
-    base[i + 1] = clamp(base[i + 1] * .12 + level * rgb[1] / 80 * factor);
-    base[i + 2] = clamp(base[i + 2] * .12 + level * rgb[2] / 80 * factor);
-  }
-  const rendered = fromPixels(original);
-  const glowRadius = effect.parameters?.glowRadius ?? 0;
-  if (glowRadius <= 0) return rendered;
-  const bloom = softened(rendered, glowRadius);
-  const composite = copyImage(bloom);
-  const target = context(composite);
-  target.globalCompositeOperation = 'screen';
-  target.drawImage(rendered, 0, 0);
-  const branching = effect.parameters?.branching ?? 0;
-  if (branching > 0) {
-    const rngSeed = effect.parameters?.seed ?? 42;
-    target.strokeStyle = effect.color ?? '#60e8ff';
-    target.lineWidth = .7;
-    target.globalCompositeOperation = 'screen';
-    target.globalAlpha = Math.min(.9, branching / 100);
-    let drawn = 0;
-    for (let y = 2; y < source.height - 3 && drawn < Math.floor(branching * 2); y += 3) {
-      for (let x = 2; x < source.width - 3 && drawn < Math.floor(branching * 2); x += 3) {
-        const index = (y * source.width + x) * 4;
-        if (map[index] < 35 || noise(x, y, rngSeed) > branching / 900) continue;
-        const angle = noise(y, x, rngSeed) * Math.PI * 2;
-        const length = 3 + noise(x, y, rngSeed + 7) * 10;
-        target.beginPath();
-        target.moveTo(x, y);
-        target.lineTo(x + Math.cos(angle) * length * .5, y + Math.sin(angle) * length * .2);
-        target.lineTo(x + Math.cos(angle + .5) * length, y + Math.sin(angle) * length);
-        target.stroke();
-        drawn++;
-      }
-    }
-  }
-  return composite;
-}
-
-function detailEffect(source: HTMLCanvasElement, effect: Effect): HTMLCanvasElement {
-  if (effect.kind === 'neonedge') return neonEdges(source, effect);
-  const amount = effect.amount;
-  const { width, height } = source;
-  if (['blur', 'boxblur', 'surfaceblur', 'frosted'].includes(effect.kind)) {
-    const radius = effect.kind === 'boxblur' ? (amount + (effect.parameters?.radiusY ?? amount)) * 0.27
-      : effect.kind === 'blur' ? (amount + (effect.parameters?.radiusY ?? amount)) / 2 : amount;
-    if (effect.kind === 'frosted') return distort(softened(source, radius * 0.5), { ...effect, amount: amount * (effect.parameters?.diffusion ?? 60) / 100 });
-    if (effect.kind === 'surfaceblur') {
-      const softenedImage = pixels(softened(source, radius));
-      const base = pixels(source);
-      for (let i = 0; i < base.data.length; i += 4) {
-        const originalLum = shade(base.data[i], base.data[i + 1], base.data[i + 2]);
-        const blurredLum = shade(softenedImage.data[i], softenedImage.data[i + 1], softenedImage.data[i + 2]);
-        const tonalGap=Math.abs(originalLum-blurredLum);
-        const threshold=Math.max(1,effect.parameters?.threshold ?? 60);
-        // Fast edge-aware surface smoothing retains hard silhouettes while
-        // blending similarly colored interior pixels more strongly.
-        const weight=Math.pow(1 - clamp(tonalGap/threshold,0,1),2);
-        for (let channel=0;channel<3;channel++) base.data[i+channel]=mix(base.data[i+channel],softenedImage.data[i+channel],weight);
-      }
-      return fromPixels(base);
-    }
-    return softened(source, radius);
-  }
-  if (effect.kind === 'lensblur') {
-    const output = surface(width, height);
-    const target = context(output);
-    const blades = Math.max(3, Math.round(effect.parameters?.blades ?? 6));
-    const samples = Math.min(42, blades * 5);
-    const radius = amount * 0.35;
-    target.globalAlpha = 1 / samples;
-    for (let index = 0; index < samples; index++) {
-      const angle = Math.floor(index / 5) / blades * Math.PI * 2;
-      const distance = radius * ((index % 5 + 1) / 5);
-      target.drawImage(source, Math.cos(angle) * distance, Math.sin(angle) * distance);
-    }
-    target.globalAlpha = 1;
-    return output;
-  }
-  if (effect.kind === 'pixelate' || effect.kind === 'mosaic') {
-    const cell = Math.max(1, Math.round(amount));
-    const cellY = Math.max(1, Math.round(effect.parameters?.cellY ?? cell));
-    const small = surface(Math.max(1, Math.ceil(width / cell)), Math.max(1, Math.ceil(height / cellY)));
-    context(small).drawImage(source, 0, 0, small.width, small.height);
-    const output = surface(width, height);
-    const ctx = context(output);
-    ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(small, 0, 0, width, height);
-    if (effect.kind === 'mosaic') {
-      ctx.strokeStyle = '#00000055';
-      ctx.lineWidth = Math.max(0.5, cell * 0.06);
-      for (let x = cell; x < width; x += cell) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke(); }
-      for (let y = cell; y < height; y += cell) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke(); }
-    }
-    return output;
-  }
-  if (effect.kind === 'motionblur' || effect.kind === 'radialblur' || effect.kind === 'zoomblur') {
-    const output = surface(width, height);
-    const ctx = context(output);
-    const count = 13;
-    const radius = amount * 0.8;
-    ctx.globalAlpha = 1 / count;
-    for (let i = 0; i < count; i++) {
-      const t = (i / (count - 1)) * 2 - 1;
-      ctx.save();
-      if (effect.kind === 'motionblur') {
-        const angle = (effect.parameters?.angle ?? 0) * Math.PI / 180;
-        ctx.drawImage(source, Math.cos(angle) * t * radius, Math.sin(angle) * t * radius);
-      } else {
-        ctx.translate(width * (effect.parameters?.centerX ?? 50) / 100, height * (effect.parameters?.centerY ?? 50) / 100);
-        if (effect.kind === 'radialblur') ctx.rotate(t * radius / 180);
-        else ctx.scale(1 + t * radius / 400, 1 + t * radius / 400);
-        ctx.drawImage(source, -width * (effect.parameters?.centerX ?? 50) / 100, -height * (effect.parameters?.centerY ?? 50) / 100);
-      }
-      ctx.restore();
-    }
-    return output;
-  }
-  if (['sharpen', 'unsharp', 'highpass', 'clarity', 'texture', 'denoise', 'emboss', 'edges', 'ink', 'comicink', 'cartoon'].includes(effect.kind)) {
-    const output = pixels(source);
-    const base = output.data;
-    const blurRadius = effect.kind === 'clarity' || effect.kind === 'texture' ? (effect.parameters?.radius ?? (effect.kind === 'clarity' ? 9 : 3))
-      : effect.kind === 'denoise' ? (effect.parameters?.radius ?? 2) : effect.kind === 'unsharp' || effect.kind === 'sharpen'
-        ? (effect.parameters?.radius ?? 2) : effect.kind === 'highpass' ? amount : 2;
-    const blur = pixels(softened(source, blurRadius)).data;
-    const edges = ['edges', 'emboss', 'ink', 'comicink', 'cartoon'].includes(effect.kind) ? edgeMap(source).data : null;
-    const original = effect.kind === 'emboss' ? pixels(source).data : null;
-    for (let i = 0; i < base.length; i += 4) {
-      const diff = edges?.[i] ?? 0;
-      const a = effect.kind === 'texture' ? amount / 100 : effect.kind === 'clarity' ? amount / 100 : amount / 100;
-      for (let c = 0; c < 3; c++) {
-        if (['sharpen', 'unsharp', 'clarity', 'texture'].includes(effect.kind)) {
-          const delta = base[i + c] - blur[i + c];
-          const threshold = effect.kind === 'unsharp' || effect.kind === 'sharpen' ? (effect.parameters?.threshold ?? 0) : 0;
-          if (effect.kind === 'clarity') {
-            // Clarity changes local contrast in the midtones; keep the deep
-            // shadows and near-white highlights substantially protected.
-            const luma = shade(base[i],base[i+1],base[i+2])/255;
-            const midtone = Math.pow(Math.max(0,1-Math.abs(luma-.5)*2),1.3);
-            base[i+c] = clamp(base[i+c]+delta*a*1.45*midtone);
-          } else if (effect.kind === 'texture') {
-            // Texture processes high-frequency material details with a
-            // smaller, edge-gated response so it does not imitate Clarity.
-            const edge=Math.abs(delta);
-            const micro = Math.min(1,edge/22) * (1-Math.min(1,edge/125)*.62);
-            base[i+c]=clamp(base[i+c]+delta*a*micro*1.3);
-          } else if (effect.kind === 'sharpen') {
-            // Sharpen responds strongly to thin edges with a narrow halo.
-            base[i+c]=clamp(base[i+c]+(Math.abs(delta)>=threshold?delta:0)*a*2.1);
-          } else {
-            // Unsharp Mask is distinct: subtract an adjustable blurred
-            // reference only above the user-selected threshold.
-            base[i+c]=clamp(base[i+c]+(Math.abs(delta)>=threshold?delta:0)*a);
-          }
-        } else if (effect.kind === 'highpass') {
-          base[i + c] = clamp(128 + base[i + c] - blur[i + c]);
-        } else if (effect.kind === 'denoise') {
-          const preserve = (effect.parameters?.detail ?? 45) / 100;
-          const edge = Math.abs(base[i + c] - blur[i + c]);
-          base[i + c] = mix(base[i + c], blur[i + c], a * (1 - Math.min(1, edge / 110) * preserve));
-        } else if (effect.kind === 'edges') {
-          base[i + c] = clamp(Math.max(0, diff - (effect.parameters?.threshold ?? 10)) * a);
-        } else if (effect.kind === 'emboss') {
-          const x = (i / 4) % width, y = Math.floor(i / 4 / width);
-          const theta = (effect.parameters?.angle ?? 45) * Math.PI / 180;
-          const sx = Math.max(0, Math.min(width - 1, Math.round(x + Math.cos(theta) * 2)));
-          const sy = Math.max(0, Math.min(height - 1, Math.round(y + Math.sin(theta) * 2)));
-          base[i + c] = clamp(128 + (original![i + c] - original![(sy * width + sx) * 4 + c]) * a * 3);
-        } else if (effect.kind === 'ink' || effect.kind === 'comicink') {
-          const threshold = effect.parameters?.threshold ?? (effect.kind === 'ink' ? 20 : 34);
-          base[i + c] = diff > threshold ? clamp(base[i + c] * (1 - a)) : (effect.kind === 'ink' ? 245 : base[i + c]);
-        } else if (effect.kind === 'cartoon') {
-          const step = 255 / Math.max(3, 11 - Math.round(amount / 12));
-          base[i + c] = diff > (100 - (effect.parameters?.edgeStrength ?? 65)) ? 18 : Math.round(base[i + c] / step) * step;
-
-        }
-      }
-    }
-    const rendered = fromPixels(output);
-    return rendered;
-  }
-  return pixelEffect(source, effect);
-}
-
-/** Squared Euclidean distance transform, linear in pixel count (two separable 1D passes). */
-function distanceTransform(source: Uint8ClampedArray, width: number, height: number, inverted = false): Float64Array {
-  const n = width * height;
-  const stage = new Float64Array(n);
-  const out = new Float64Array(n);
-  const inf = 1e14;
-  function edt(length: number, sample: (i: number) => number, write: (i: number, value: number) => void): void {
-    const sites = new Int32Array(length);
-    const cuts = new Float64Array(length + 1);
-    let count = -1;
-    for (let q = 0; q < length; q++) {
-      const fq = sample(q);
-      if (fq >= inf) continue;
-      let intersect = -Infinity;
-      while (count >= 0) {
-        const k = sites[count];
-        intersect = ((fq + q * q) - (sample(k) + k * k)) / (2 * (q - k));
-        if (intersect > cuts[count]) break;
-        count--;
-      }
-      count++;
-      sites[count] = q;
-      cuts[count] = count === 0 ? -Infinity : intersect;
-      cuts[count + 1] = Infinity;
-    }
-    if (count < 0) { for (let q = 0; q < length; q++) write(q, inf); return; }
-    let k = 0;
-    for (let q = 0; q < length; q++) {
-      while (cuts[k + 1] < q) k++;
-      const d = q - sites[k];
-      write(q, d * d + sample(sites[k]));
-    }
-  }
-  for (let x = 0; x < width; x++) {
-    edt(height, y => (source[(y * width + x) * 4 + 3] >= 15) !== inverted ? 0 : inf, (y, value) => { stage[y * width + x] = value; });
-  }
-  for (let y = 0; y < height; y++) {
-    edt(width, x => stage[y * width + x], (x, value) => { out[y * width + x] = value; });
-  }
-  return out;
-}
-
-/**
- * The expensive Euclidean distance field is independent of glow amount,
- * tint, spread, falloff and softness. Keep it only for the immutable worker
- * graph, never for mutable editor canvases. Pixels and quality are unchanged.
- */
-type RetainedDistance = {
-  width: number; height: number; outside: Float64Array; inside?: Float64Array;
-};
-const retainedSilhouettes = new WeakMap<HTMLCanvasElement, RetainedDistance>();
-const distanceLRU: HTMLCanvasElement[] = [];
-let distanceCacheBudget = 80 * 1024 * 1024;
-export function setSilhouetteCacheBudget(mebibytes: number): void {
-  distanceCacheBudget = Math.max(16, Math.min(512, Math.round(mebibytes))) * 1024 * 1024;
-  trimDistanceCache();
-}
-function trimDistanceCache(): void {
-  let bytes = 0;
-  for (const canvas of distanceLRU) {
-    const entry = retainedSilhouettes.get(canvas);
-    if (entry) bytes += entry.outside.byteLength + (entry.inside?.byteLength ?? 0);
-  }
-  while (bytes > distanceCacheBudget && distanceLRU.length > 1) {
-    const victim = distanceLRU.shift()!;
-    const entry = retainedSilhouettes.get(victim);
-    bytes -= (entry?.outside.byteLength ?? 0) + (entry?.inside?.byteLength ?? 0);
-    retainedSilhouettes.delete(victim);
-  }
-}
-function rememberSilhouette(canvas: HTMLCanvasElement, value: RetainedDistance): void {
-  retainedSilhouettes.set(canvas, value);
-  const previous = distanceLRU.indexOf(canvas);
-  if (previous >= 0) distanceLRU.splice(previous, 1);
-  distanceLRU.push(canvas);
-  trimDistanceCache();
-}
-
-function silhouetteDistances(source: HTMLCanvasElement, alpha: Uint8ClampedArray, inner: boolean): {
-  outside: Float64Array; inside: Float64Array | null;
-} {
-  const canReuse = isImmutableEffectSource(source);
-  let cached = canReuse ? retainedSilhouettes.get(source) : undefined;
-  if (!cached || cached.width !== source.width || cached.height !== source.height) {
-    cached = { width: source.width, height: source.height,
-      outside: distanceTransform(alpha, source.width, source.height) };
-  }
-  if (inner && !cached.inside) cached.inside = distanceTransform(alpha, source.width, source.height, true);
-  if (canReuse) rememberSilhouette(source, cached);
-  return { outside: cached.outside, inside: inner ? cached.inside! : null };
-}
-
-/** Separate alpha-distance-based layer glow and outline. Alpha is never baked into the source. */
-function silhouetteEffect(source: HTMLCanvasElement, effect: Effect): HTMLCanvasElement {
-  const { width, height } = source;
-  const original = pixels(source);
-  const output = surface(width, height);
-  const ctx = context(output);
-  const tint = colorFromHex(effect.color, effect.kind === 'glow' ? '#9b6bff' : '#ffffff');
-  const opacity = clamp(effect.parameters?.opacity ?? (effect.kind === 'glow' ? 75 : 100), 0, 100) / 100;
-  const isGlow = effect.kind === 'glow';
-  const mode = effect.parameters?.glowMode ?? 'outer';
-  const atmosphere = isGlow && mode === 'atmosphere';
-  const energy = isGlow && mode === 'energy';
-  const radius = Math.max(0, effect.amount);
-  const softness = isGlow ? Math.max(0.5, (effect.parameters?.softness ?? 24) * (0.45 + radius / 35))
-    : Math.max(0, effect.parameters?.softness ?? 0);
-  const spread = isGlow ? Math.max(0, effect.parameters?.spread ?? 0) + radius * 0.16 : radius;
-  const falloff = 0.6 + (effect.parameters?.falloff ?? 55) / 100 * 3;
-  const color = `rgb(${tint[0]}, ${tint[1]}, ${tint[2]})`;
-
-  if (isGlow && mode === 'bloom') {
-    const highlights = surface(width, height);
-    const highlightCtx = context(highlights);
-    const image = new ImageData(new Uint8ClampedArray(original.data), width, height);
-    const threshold = clamp(effect.parameters?.threshold ?? 150, 0, 255);
-    for (let i = 0; i < image.data.length; i += 4) {
-      const lum = image.data[i] * 0.2126 + image.data[i + 1] * 0.7152 + image.data[i + 2] * 0.0722;
-      image.data[i + 3] = Math.round(image.data[i + 3] * Math.min(1, Math.max(0, (lum - threshold) / Math.max(1, 255 - threshold))));
-    }
-    highlightCtx.putImageData(image, 0, 0);
-    ctx.drawImage(source, 0, 0);
-    ctx.save();
-    ctx.globalCompositeOperation = 'screen';
-    ctx.globalAlpha = opacity;
-    ctx.filter = `blur(${Math.min(160, softness + radius * 0.6)}px)`;
-    ctx.drawImage(highlights, 0, 0);
-    ctx.restore();
-    return output;
-  }
-
-  // Opaque photographs and imported backdrops have no useful alpha boundary.
-  // A pure silhouette glow would remain invisible on them. Build an internal
-  // luminance-contour emitter instead, without changing the source geometry.
-  if (isGlow && radius > 0 && (mode === 'outer' || mode === 'both' || mode === 'energy' || mode === 'atmosphere')) {
-    let opaque = 0;
-    for (let i = 3; i < original.data.length; i += 4) if (original.data[i] > 250) opaque++;
-    if (opaque / Math.max(1, width * height) > 0.98) {
-      const edges = edgeMap(source);
-      const emissive = new ImageData(width, height);
-      const sensitivity = clamp(effect.parameters?.threshold ?? 35, 0, 255);
-      for (let i = 0; i < edges.data.length; i += 4) {
-        emissive.data[i] = tint[0]; emissive.data[i + 1] = tint[1]; emissive.data[i + 2] = tint[2];
-        emissive.data[i + 3] = Math.round(255 * Math.max(0, (edges.data[i] - sensitivity) / Math.max(1, 255 - sensitivity)));
-      }
-      const emitter = fromPixels(emissive);
-      ctx.drawImage(source, 0, 0);
-      ctx.save();
-      ctx.globalCompositeOperation = 'screen';
-      ctx.globalAlpha = opacity * clamp(radius / 22, 0, 1);
-      ctx.filter = `blur(${Math.min(100, softness + radius * 0.35)}px)`;
-      ctx.drawImage(emitter, 0, 0);
-      ctx.filter = 'none';
-      ctx.globalAlpha = opacity * Math.min(1, radius / 15) * (mode === 'energy' ? .9 : .4);
-      ctx.drawImage(emitter, 0, 0);
-      ctx.restore();
-      return output;
-    }
-  }
-  const { outside, inside } = silhouetteDistances(source, original.data,
-    isGlow && (mode === 'inner' || mode === 'both'));
-  const image = new ImageData(width, height);
-  const stops = isGlow && effect.parameters?.glowPalette === 'spectrum'
-    ? [...(effect.parameters?.stops ?? [])].sort((a, b) => a.position - b.position) : [];
-  const palette = stops.length >= 2 ? stops.map(item => colorFromHex(item.color, '#986dff')) : [];
-  for (let i = 0; i < width * height; i++) {
-    const alpha = original.data[i * 4 + 3] / 255;
-    const distance = Math.sqrt(outside[i]);
-    const delta = Math.max(0, distance - (atmosphere ? spread * 2.1 : spread));
-    const effectiveSoftness = atmosphere ? softness * 2.4 : energy ? Math.max(0.5, softness * 0.6) : softness;
-    const outer = delta <= 0 ? 1 : effectiveSoftness > 0 ? Math.exp(-(energy ? falloff * 1.75 : falloff) * (delta / effectiveSoftness) ** 2) : 0;
-    const innerDist = inside ? Math.sqrt(inside[i]) : 0;
-    const inner = inside && alpha > 0
-      ? Math.exp(-falloff * (innerDist / Math.max(0.5, softness)) ** 2) * alpha : 0;
-    const showOuter = !isGlow || mode === 'outer' || mode === 'both' || atmosphere || energy;
-    const outerAlpha = showOuter && alpha < 1 ? outer * (1 - alpha) : 0;
-    const glowAlpha = mode === 'inner' ? inner : mode === 'both' ? Math.max(outerAlpha, inner) : outerAlpha;
-    const x = i % width, y = Math.floor(i / width);
-    const phase = (Math.atan2(y - height / 2, x - width / 2) / (2 * Math.PI) + 1) % 1;
-    let shade = tint;
-    if (palette.length >= 2) {
-      const upper = Math.max(1, stops.findIndex(stop => stop.position >= phase));
-      const low = Math.min(upper - 1, stops.length - 2);
-      const high = low + 1;
-      const t = clamp((phase - stops[low].position) / Math.max(0.00001, stops[high].position - stops[low].position), 0, 1);
-      shade = [mix(palette[low][0], palette[high][0], t), mix(palette[low][1], palette[high][1], t),
-        mix(palette[low][2], palette[high][2], t)];
-    }
-    image.data[i * 4] = shade[0];
-    image.data[i * 4 + 1] = shade[1];
-    image.data[i * 4 + 2] = shade[2];
-    image.data[i * 4 + 3] = Math.round(255 * opacity * (isGlow ? glowAlpha : outer));
-  }
-  ctx.putImageData(image, 0, 0);
-  if (!isGlow || mode === 'outer' || atmosphere || energy) ctx.drawImage(source, 0, 0);
-  else if (mode === 'inner' || mode === 'both') {
-    ctx.globalCompositeOperation = 'destination-over';
-    ctx.drawImage(source, 0, 0);
-    ctx.globalCompositeOperation = 'source-over';
-  }
-  const sparks = isGlow ? effect.parameters?.sparks ?? 0 : 0;
-  if (sparks > 0) {
-    ctx.fillStyle = color;
-    for (let i = 0; i < Math.min(1000, Math.round(sparks * width * height / 35000)); i++) {
-      const x = Math.floor(noise(i, 41, 7) * width);
-      const y = Math.floor(noise(17, i, 71) * height);
-      if (image.data[(y * width + x) * 4 + 3] < 10) continue;
-      ctx.globalAlpha = Math.min(0.95, sparks / 110);
-      ctx.fillRect(x, y, i % 3 === 0 ? 2 : 1, i % 3 === 0 ? 2 : 1);
-    }
-    ctx.globalAlpha = 1;
-  }
-  return output;
-}
-
-/** Conservative auto-selection: require one dominant BORDER color cluster.
- * Never treat unrelated corners as four independent background colors, which
- * previously removed similarly-colored subjects touching the image edges. */
-function removeCornerBackground(source: HTMLCanvasElement, tolerance: number, effect?: Effect): HTMLCanvasElement {
-  const image = pixels(source);
-  const { width: w, height: h, data } = image;
-  if (!w || !h) return fromPixels(image);
-  const swatches = new Map<number, { count: number; r: number; g: number; b: number }>();
-  const step = Math.max(1, Math.floor(Math.min(w, h) / 80));
-  const consider = (x: number, y: number): void => {
-    const i = (y * w + x) * 4;
-    if (data[i + 3] < 220) return;
-    const r = data[i], g = data[i + 1], b = data[i + 2];
-    const key = (r >> 5) * 64 + (g >> 5) * 8 + (b >> 5);
-    const entry = swatches.get(key) ?? { count: 0, r: 0, g: 0, b: 0 };
-    entry.count++; entry.r += r; entry.g += g; entry.b += b;
-    swatches.set(key, entry);
-  };
-  for (let x = 0; x < w; x += step) { consider(x, 0); consider(x, h - 1); }
-  for (let y = 0; y < h; y += step) { consider(0, y); consider(w - 1, y); }
-  let total = 0;
-  let dominant: { count: number; r: number; g: number; b: number } | undefined;
-  for (const entry of swatches.values()) {
-    total += entry.count;
-    if (!dominant || dominant.count < entry.count) dominant = entry;
-  }
-  // Ambiguous borders (busy photos, subject across edges): do not guess and
-  // accidentally erase the subject. Keep/Remove brushes remain available.
-  const manualColor = effect?.parameters?.backgroundSampleColor;
-  const selected = manualColor && /^#[0-9a-f]{6}$/i.test(manualColor) ? colorFromHex(manualColor, '#ffffff') : null;
-  // Complex borders are not a safe indication of the subject's background.
-  // Always make a conservative attempt with a coherent border cluster. The old
-  // 52% rule caused busy illustrations to return the untouched source image.
-  if (!selected && (!dominant || dominant.count / Math.max(1, total) < .12)) return fromPixels(image);
-  const [r, g, b] = selected ?? [dominant!.r, dominant!.g, dominant!.b].map(v => v / dominant!.count);
-  // A generous RGB-distance threshold easily destroys white details in an illustration.
-  // Constrain automatic matching; manual Keep/Remove strokes handle the ambiguous areas.
-  const threshold = Math.max(4, Math.min(120, tolerance * .9));
-  const guard = Math.max(0, Math.min(100, effect?.parameters?.backgroundEdgeGuard ?? 24));
-  const similar = (index: number): boolean => {
-    const i = index * 4;
-    return data[i + 3] > 0 && Math.hypot(data[i] - r, data[i + 1] - g, data[i + 2] - b) <= threshold;
-  };
-  const isEdge = (index: number): boolean => {
-    if (!guard) return false;
-    const x = index % w, y = Math.floor(index / w), k = index * 4;
-    const near = [x > 0 ? k - 4 : -1, x + 1 < w ? k + 4 : -1,
-      y > 0 ? k - 4 * w : -1, y + 1 < h ? k + 4 * w : -1];
-    // Avoid a flood fill reaching a foreground contour through mixed edge pixels.
-    // The image remains source-of-truth for manual subject protection.
-    return near.some(n => n >= 0 && Math.abs(data[k] - data[n]) +
-      Math.abs(data[k + 1] - data[n + 1]) + Math.abs(data[k + 2] - data[n + 2]) > guard * 2.6 + 35);
-  };
-  // Keep marks protect the subject DURING region growing, not merely after.
-  // Otherwise a background flood can leak across a user-protected bridge.
-  const protectedPixels = new Uint8Array(w * h);
-  for (const mark of effect?.parameters?.maskStrokes ?? []) {
-    if (mark.mode !== 'keep') continue;
-    const cx = mark.x * w, cy = mark.y * h, radius = Math.max(1, mark.radius);
-    const left=Math.max(0,Math.floor(cx-radius)),right=Math.min(w-1,Math.ceil(cx+radius));
-    const top=Math.max(0,Math.floor(cy-radius)),bottom=Math.min(h-1,Math.ceil(cy+radius));
-    for(let yy=top;yy<=bottom;yy++) for(let xx=left;xx<=right;xx++) {
-      if ((xx-cx)**2+(yy-cy)**2<=radius*radius) protectedPixels[yy*w+xx]=1;
-    }
-  }
-  const visited = new Uint8Array(w * h);
-  const queue = new Int32Array(w * h);
-  let head = 0, tail = 0;
-  const enqueue = (index: number): void => {
-    if (visited[index] || protectedPixels[index] || !similar(index) || isEdge(index)) return;
-    visited[index] = 1; queue[tail++] = index;
-  };
-  if (effect?.parameters?.backgroundGlobal === 1) {
-    // Explicit user choice: pure color key, useful for white-backdrop artwork.
-    // Protected strokes still override the selection.
-    for (let i = 0; i < w*h; i++) if (!protectedPixels[i] && similar(i)) {
-      visited[i] = 1; queue[tail++] = i;
-    }
-  }
-  if (effect?.parameters?.backgroundGlobal !== 1) for (let x = 0; x < w; x++) { enqueue(x); enqueue((h - 1) * w + x); }
-  if (effect?.parameters?.backgroundGlobal !== 1) for (let y = 0; y < h; y++) { enqueue(y * w); enqueue(y * w + w - 1); }
-  while (effect?.parameters?.backgroundGlobal !== 1 && head < tail) {
-    const index = queue[head++], x = index % w;
-    if (index >= w) enqueue(index - w);
-    if (index + w < w * h) enqueue(index + w);
-    if (x > 0) enqueue(index - 1);
-    if (x + 1 < w) enqueue(index + 1);
-  }
-  // A completely uniform opaque image contains no detectable foreground, so
-  // do not erase the whole document. A small but contrasting subject is valid
-  // even when its background occupies more than 92% of the image.
-  if (tail >= w * h - 1) return fromPixels(image);
-  for (let i = 0; i < tail; i++) data[queue[i] * 4 + 3] = 0;
-  return fromPixels(image);
-}
-
-/** Retain one exact inferred matte per immutable source and parameter identity.
- * Feather and color-spill controls do not invalidate the geometric matte. */
-const smartMatteCache = new WeakMap<HTMLCanvasElement, { key: string; alpha: Uint8ClampedArray }>();
-
-/** Guided subject extraction using an edge-aware graph minimum cut. The
- * full-resolution input stays untouched; only alpha is changed. */
-function smartSubjectCutout(source: HTMLCanvasElement, effect: Effect): HTMLCanvasElement {
-  const params = effect.parameters;
-  const key = JSON.stringify([source.width, source.height, effect.amount,
-    params?.backgroundEdgeGuard, params?.backgroundSampleColor,
-    params?.segmentationQuality, params?.subjectBox, params?.maskStrokes]);
-  const image = pixels(source);
-  const old = smartMatteCache.get(source);
-  const matte = old?.key === key ? old.alpha : segmentSubject(image, {
-    strength: effect.amount,
-    edgeProtection: params?.backgroundEdgeGuard ?? 24,
-    backgroundColor: params?.backgroundSampleColor,
-    quality: params?.segmentationQuality ?? 152,
-    strokes: params?.maskStrokes ?? [],
-    subjectBox: params?.subjectBox,
-  });
-  if (!old || old.key !== key) smartMatteCache.set(source, {key, alpha: matte});
-  for (let i = 0; i < matte.length; i++) image.data[i * 4 + 3] = matte[i];
-  return fromPixels(image);
-}
-
-/** Editable mask strokes are evaluated after automatic selection and can
- * restore ORIGINAL source alpha as well as remove it. Stored in effect params,
- * so undo, save, replay, and export remain non-destructive. */
-function applyBackgroundMask(source: HTMLCanvasElement, removed: HTMLCanvasElement, effect: Effect): HTMLCanvasElement {
-  const strokes = effect.parameters?.maskStrokes ?? [];
-  if (!strokes.length) return removed;
-  const w = source.width, h = source.height;
-  const marks = surface(w, h), painter = context(marks);
-  for (const stroke of strokes) {
-    if (!Number.isFinite(stroke.x) || !Number.isFinite(stroke.y) || !Number.isFinite(stroke.radius)) continue;
-    painter.beginPath();
-    painter.fillStyle = stroke.mode === 'keep' ? '#ff0000' : '#0000ff';
-    painter.arc(clamp(stroke.x, 0, 1) * w, clamp(stroke.y, 0, 1) * h,
-      clamp(stroke.radius, 1, 500), 0, Math.PI * 2);
-    painter.fill();
-  }
-  const mark = pixels(marks).data, input = pixels(source).data, matte = pixels(removed);
-  for (let i = 0; i < mark.length; i += 4) {
-    if (!mark[i + 3]) continue;
-    matte.data[i + 3] = mark[i] > mark[i + 2] ? input[i + 3] : 0;
-    if (mark[i] > mark[i + 2]) {
-      for (let c = 0; c < 3; c++) matte.data[i + c] = input[i + c];
-    }
-  }
-  return fromPixels(matte);
-}
-
-function distort(source: HTMLCanvasElement, effect: Effect): HTMLCanvasElement {
-  const original = pixels(source);
-  const out = new ImageData(original.width, original.height);
-  const { width, height, data } = original;
-  const amplitude = effect.amount;
-  const cx = width * (effect.parameters?.centerX ?? 50) / 100;
-  const cy = height * (effect.parameters?.centerY ?? 50) / 100;
-  const limit = Math.max(width, height);
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      const dx = x - cx, dy = y - cy;
-      const radial = Math.hypot(dx, dy);
-      let sx = x, sy = y;
-      switch (effect.kind) {
-        case 'swirl': {
-          const angle = amplitude * Math.PI / 180 * Math.max(0, 1 - radial / limit);
-          sx = cx + dx * Math.cos(angle) - dy * Math.sin(angle);
-          sy = cy + dx * Math.sin(angle) + dy * Math.cos(angle);
-          break;
-        }
-        case 'ripple': {
-          const displacement = Math.sin(radial / Math.max(2, (effect.parameters?.frequency ?? 8) * 1.5)) * amplitude * 0.4;
-          sx = x + displacement * dx / Math.max(1, radial);
-          sy = y + displacement * dy / Math.max(1, radial);
-          break;
-        }
-        case 'wave': {
-          const angle = (effect.parameters?.angle ?? 0) * Math.PI / 180;
-          const along = x * Math.sin(angle) + y * Math.cos(angle);
-          sx = x + Math.cos(angle) * Math.sin(along / Math.max(1, (effect.parameters?.frequency ?? 50) / 6)) * amplitude * 0.5;
-          sy = y - Math.sin(angle) * Math.sin(along / Math.max(1, (effect.parameters?.frequency ?? 50) / 6)) * amplitude * 0.5;
-          break;
-        }
-        case 'glass': case 'frosted': {
-          sx = x + (noise(Math.floor(x / Math.max(1, effect.parameters?.grainSize ?? 4)), Math.floor(y / Math.max(1, effect.parameters?.grainSize ?? 4)), 91) - 0.5) * amplitude;
-          sy = y + (noise(Math.floor(x / Math.max(1, effect.parameters?.grainSize ?? 4)), Math.floor(y / Math.max(1, effect.parameters?.grainSize ?? 4)), 27) - 0.5) * amplitude;
-          break;
-        }
-        default: break;
-      }
-      // Edge-extend samples rather than manufacturing transparent pixels when
-      // refraction points slightly outside a fully opaque image. This prevents
-      // glass and frosted-glass artifacts from brightening over white layers.
-      const sampleX = Math.max(0,Math.min(width-1,Math.round(sx)));
-      const sampleY = Math.max(0,Math.min(height-1,Math.round(sy)));
-      const destination = (y * width + x) * 4;
-      const start = (sampleY * width + sampleX) * 4;
-      for (let channel = 0; channel < 4; channel++) out.data[destination + channel] = data[start + channel];
-    }
-  }
-  return fromPixels(out);
-}
-
-/** True channel separation. Sampling one source channel per destination channel avoids
- * screen-blended duplicate sprites and keeps source colors within their original
- * gamut. Transparent pixels retain their transparency (no illuminated ghosts). */
-function chromaticShift(source: HTMLCanvasElement, effect: Effect): HTMLCanvasElement {
-  const input = pixels(source), { width: w, height: h, data: src } = input;
-  const out = new ImageData(w, h);
-  if (effect.amount <= 0) return copyImage(source);
-  const shift = Math.min(w * 0.14, Math.max(0, effect.amount) * 0.32) *
-    clamp(effect.parameters?.colorMix ?? 65, 0, 100) / 100;
-  const angle = (effect.parameters?.angle ?? 0) * Math.PI / 180;
-  const dx = Math.round(shift * Math.cos(angle)), dy = Math.round(shift * Math.sin(angle) + (effect.parameters?.shiftY ?? 0));
-  const channel = (x: number, y: number, component: number, fallback: number): number =>
-    x < 0 || y < 0 || x >= w || y >= h ? fallback : src[(y * w + x) * 4 + component];
-  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-    const at = (y * w + x) * 4;
-    out.data[at] = channel(x - dx, y - dy, 0, src[at]);
-    out.data[at + 1] = src[at + 1];
-    out.data[at + 2] = channel(x + dx, y + dy, 2, src[at + 2]);
-    out.data[at + 3] = src[at + 3];
-  }
-  return fromPixels(out);
-}
-
-/** VHS moves complete scanline segments as an analog tape signal. It does not
- * layer tinted copies over the original or alter exposure behind the user's back. */
-function vhsTracking(source: HTMLCanvasElement, effect: Effect): HTMLCanvasElement {
-  const input = pixels(source), { width: w, height: h, data: src } = input;
-  const out = new ImageData(w, h);
-  if (effect.amount <= 0) return copyImage(source);
-  const strength = Math.max(0, effect.amount) / 100;
-  const seed = effect.parameters?.seed ?? 7;
-  const density = clamp(effect.parameters?.density ?? 50, 0, 100) / 100;
-  const scan = clamp(effect.parameters?.scanlines ?? 0, 0, 100) / 100;
-  const band = Math.max(2, Math.round(h / 46));
-  for (let y = 0; y < h; y++) {
-    const block = Math.floor(y / band);
-    const unstable = noise(3, block, seed) < density;
-    const tracking = unstable ? Math.round((noise(block, 71, seed) - 0.5) * 2 * strength * Math.min(w * .13, 44) * clamp(effect.parameters?.colorMix ?? 65, 0, 100) / 65) : 0;
-    const wobble = Math.round(Math.sin(y * .14 + seed) * strength * 2);
-    const scanDarken = y % 3 === 0 ? 1 - scan * .18 : 1;
-    for (let x = 0; x < w; x++) {
-      const sx = Math.max(0, Math.min(w - 1, x + tracking + wobble));
-      const i = (y * w + x) * 4, from = (y * w + sx) * 4;
-      out.data[i] = Math.round(src[from] * scanDarken);
-      out.data[i + 1] = Math.round(src[from + 1] * scanDarken);
-      out.data[i + 2] = Math.round(src[from + 2] * scanDarken);
-      out.data[i + 3] = src[from + 3];
-    }
-  }
-  return fromPixels(out);
-}
-
-/** Digital corruption moves coherent rectangular pixel blocks and their true
- * RGBA samples. It intentionally has no tape scanlines or fake RGB overlays. */
-function digitalGlitch(source: HTMLCanvasElement, effect: Effect): HTMLCanvasElement {
-  const input = pixels(source), { width: w, height: h, data: src } = input;
-  const out = new ImageData(w, h);
-  out.data.set(src);
-  if (effect.amount <= 0) return fromPixels(out);
-  const strength = Math.max(0, effect.amount) / 100;
-  const seed = effect.parameters?.seed ?? 21;
-  const density = clamp(effect.parameters?.density ?? 55, 0, 100) / 100;
-  const bw = Math.max(3, Math.round(8 + w / 32));
-  const bh = Math.max(2, Math.round(4 + h / 64));
-  for (let by = 0; by < h; by += bh) for (let bx = 0; bx < w; bx += bw) {
-    const cx = Math.floor(bx / bw), cy = Math.floor(by / bh);
-    if (noise(cx, cy, seed) > density * strength) continue;
-    const dx = Math.round((noise(cx + 30, cy, seed) - .5) * 2 * Math.min(w * .18, 70) * strength * clamp(effect.parameters?.colorMix ?? 65, 0, 100) / 65);
-    const dy = Math.round((noise(cx, cy + 31, seed) - .5) * 2 * Math.min(h * .04, 12) * strength + (effect.parameters?.shiftY ?? 0) * strength);
-    for (let y = by; y < Math.min(h, by + bh); y++) for (let x = bx; x < Math.min(w, bx + bw); x++) {
-      const sx = Math.max(0, Math.min(w - 1, x + dx));
-      const sy = Math.max(0, Math.min(h - 1, y + dy));
-      const dst = (y * w + x) * 4, from = (sy * w + sx) * 4;
-      for (let c = 0; c < 4; c++) out.data[dst + c] = src[from + c];
-    }
-  }
-  return fromPixels(out);
-}
-
-/** Render each shadow independently; inner/contact/long are real spatial variations. */
-function shadowEffect(source: HTMLCanvasElement, effect: Effect): HTMLCanvasElement {
-  const output = surface(source.width, source.height);
-  const target = context(output);
-  const entries = effect.parameters?.shadows;
-  const layers = entries?.length ? entries : [{
-    id: 'legacy', enabled: true, style: 'drop' as const,
-    offsetX: effect.parameters?.offsetX ?? 10, offsetY: effect.parameters?.offsetY ?? 10,
-    radius: effect.parameters?.blur ?? 20, spread: 0,
-    opacity: (effect.parameters?.opacity ?? 100) / 100, color: effect.color ?? '#172035',
-  }];
-  const innerShadows: typeof layers = [];
-  for (const entry of layers) {
-    if (!entry.enabled) continue;
-    const style = entry.style ?? 'drop';
-    if (style === 'inner') {
-      innerShadows.push(entry);
-      continue;
-    }
-    const mask = surface(source.width, source.height);
-    const maskCtx = context(mask);
-    const passes = Math.max(1, style === 'long' || style === 'perspective' ? 36 : Math.min(28, Math.ceil(entry.spread * 1.5)));
-    for (let i = 0; i < passes; i++) {
-      const angle = (i / passes) * 2 * Math.PI;
-      const offset = style === 'long' || style === 'perspective' ? i / Math.max(1, passes - 1) : entry.spread;
-      const dx = style === 'long' || style === 'perspective' ? entry.offsetX * offset : Math.cos(angle) * offset;
-      const dy = style === 'long' || style === 'perspective' ? entry.offsetY * offset : Math.sin(angle) * offset;
-      if (style === 'perspective') {
-        maskCtx.save();
-        maskCtx.translate(source.width / 2 + dx, source.height / 2 + dy);
-        maskCtx.transform(1 + offset * 0.08, 0, -offset * (entry.offsetX / Math.max(1, source.width)) * 0.6, Math.max(0.2, 1 - offset * 0.62), 0, 0);
-        maskCtx.drawImage(source, -source.width / 2, -source.height / 2);
-        maskCtx.restore();
-      } else maskCtx.drawImage(source, dx, dy);
-    }
-    maskCtx.globalCompositeOperation = 'source-in';
-    maskCtx.fillStyle = entry.color;
-    maskCtx.fillRect(0, 0, mask.width, mask.height);
-    target.save();
-    target.globalAlpha = clamp(entry.opacity * Math.max(0, effect.amount / 30), 0, 1);
-    target.filter = `blur(${clamp(style === 'contact' ? Math.min(entry.radius, 8) : entry.radius, 0, 120)}px)`;
-    target.drawImage(mask, style === 'long' || style === 'perspective' ? 0 : entry.offsetX, style === 'long' || style === 'perspective' ? 0 : entry.offsetY);
-    target.restore();
-  }
-  target.drawImage(source, 0, 0);
-  // Inner shadows are rendered on TOP of the source. Offset alpha subtraction
-  // reveals the occluded edge instead of covering the entire object.
-  for (const entry of innerShadows) {
-    const inner = surface(source.width, source.height);
-    const innerCtx = context(inner);
-    innerCtx.drawImage(source, 0, 0);
-    innerCtx.globalCompositeOperation = 'source-in';
-    innerCtx.fillStyle = entry.color;
-    innerCtx.fillRect(0, 0, inner.width, inner.height);
-    innerCtx.globalCompositeOperation = 'destination-out';
-    innerCtx.filter = `blur(${clamp(entry.radius, 0, 120)}px)`;
-    innerCtx.drawImage(source, entry.offsetX, entry.offsetY);
-    target.save();
-    target.globalAlpha = clamp(entry.opacity * Math.max(0, effect.amount / 30), 0, 1);
-    target.drawImage(inner, 0, 0);
-    target.restore();
-  }
-  return output;
-}
-
-function auroraEffect(source: HTMLCanvasElement, effect: Effect): HTMLCanvasElement {
-  const output = copyImage(source);
-  const { width, height } = output;
-  const image = pixels(output);
-  const strength = clamp(effect.amount / 100, 0, 1);
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      const theta = (effect.parameters?.angle ?? 15) * Math.PI / 180;
-      const cross = x * Math.cos(theta) + y * Math.sin(theta);
-      const wave = Math.sin(cross / 27 + Math.sin(y / 41) * 2.5) * 0.5 + 0.5;
-      const band = Math.pow(Math.max(0, Math.sin(y * (effect.parameters?.bands ?? 4) / 76 + x / 53)), 4);
-      const intensity = wave * band * strength;
-      const i = (y * width + x) * 4;
-      image.data[i] = clamp(image.data[i] + 88 * intensity);
-      image.data[i + 1] = clamp(image.data[i + 1] + 148 * intensity);
-      image.data[i + 2] = clamp(image.data[i + 2] + 204 * intensity);
-    }
-  }
-  return fromPixels(image);
-}
-
-function burstEffect(source: HTMLCanvasElement, effect: Effect): HTMLCanvasElement {
-  const output = copyImage(source);
-  const ctx = context(output);
-  const radius = Math.hypot(source.width, source.height) / 2;
-  const width = source.width;
-  const height = source.height;
-  const intensity = clamp(effect.amount / 100, 0, 1);
-  const seed = effect.parameters?.seed ?? 19;
-  ctx.save();
-  ctx.translate(width * (effect.parameters?.centerX ?? 50) / 100, height * (effect.parameters?.centerY ?? 50) / 100);
-  ctx.globalCompositeOperation = 'screen';
-  const rays = Math.max(4, Math.round(effect.parameters?.rays ?? 28));
-  for (let i = 0; i < rays; i++) {
-    const angle = i / rays * Math.PI * 2;
-    const scatter = noise(i, 17, seed);
-    const length = radius * (0.15 + scatter * 0.95);
-    const start = radius * (0.03 + scatter * 0.1);
-    ctx.globalAlpha = (0.1 + scatter * 0.45) * intensity;
-    ctx.strokeStyle = i % 3 === 0 ? '#f37cff' : i % 3 === 1 ? '#60d5ff' : '#ffda91';
-    ctx.lineWidth = 0.6 + scatter * 1.7;
-    ctx.beginPath();
-    ctx.moveTo(Math.cos(angle) * start, Math.sin(angle) * start);
-    ctx.lineTo(Math.cos(angle) * length, Math.sin(angle) * length);
-    ctx.stroke();
-  }
-  ctx.restore();
-  return output;
-}
-
-/** Backdrop is a layer behind the source, with independent positioning and gradient stops. */
-function backdropEffect(source: HTMLCanvasElement, effect: Effect): HTMLCanvasElement {
-  const output = surface(source.width, source.height);
-  const ctx = context(output);
-  const p = effect.parameters;
-  const x = p?.offsetX ?? 0;
-  const y = p?.offsetY ?? 0;
-  const scale = Math.max(0.1, (p?.scale ?? 100) / 100);
-  const angle = (p?.angle ?? 45) * Math.PI / 180;
-  const w = source.width, h = source.height;
-  ctx.save();
-  ctx.globalAlpha = clamp(p?.opacity ?? 65, 0, 100) / 100 * clamp(effect.amount / 100, 0, 1);
-  ctx.translate(w / 2 + x, h / 2 + y);
-  ctx.scale(scale, scale);
-  if ((p?.backdropMode === 'gradient' || p?.backdropMode === 'radial') && p.stops?.length && p.stops.length >= 2) {
-    const distance = Math.hypot(w, h) / 2;
-    const gradient = p.backdropMode === 'radial'
-      ? ctx.createRadialGradient(0, 0, 0, 0, 0, distance)
-      : ctx.createLinearGradient(-Math.cos(angle) * distance, -Math.sin(angle) * distance,
-        Math.cos(angle) * distance, Math.sin(angle) * distance);
-    for (const stop of [...p.stops].sort((a, b) => a.position - b.position)) {
-      const [r, g, b] = colorFromHex(stop.color, '#7853ed');
-      gradient.addColorStop(clamp(stop.position, 0, 1), `rgba(${r},${g},${b},${clamp(stop.opacity, 0, 1)})`);
-    }
-    ctx.fillStyle = gradient;
-  } else ctx.fillStyle = effect.color ?? '#694dca';
-  const blur = Math.min(100, p?.blur ?? 0);
-  if (blur > 0) ctx.filter = `blur(${blur}px)`;
-  ctx.fillRect(-w / 2, -h / 2, w, h);
-  ctx.restore();
-  ctx.drawImage(source, 0, 0);
-  return output;
-}
-
 /** Every catalog entry has a distinct, deterministically rendered image operation. */
 export function applyEffect(source: HTMLCanvasElement, effect: Effect): HTMLCanvasElement {
   const kind: EffectKind = effect.kind;
+  if (kind === 'sketch') return renderPencilSketch(source,effect);
+  if (kind === 'ink') return renderInkDrawing(source,effect);
+  if (kind === 'comicink') return renderComicInk(source,effect);
+  if (kind === 'cartoon') return renderCartoon(source,effect);
+  if (kind === 'swirl') return renderSwirl(source,effect);
+  if (kind === 'ripple') return renderRipple(source,effect);
+  if (kind === 'wave') return renderWave(source,effect);
+  if (kind === 'glass') return renderGlassRefraction(source,effect);
+  if (kind === 'chromatic') return renderChromaticSplit(source,effect);
+  if (kind === 'vhs') return renderVhs(source,effect);
+  if (kind === 'glitch') return renderDigitalGlitch(source,effect);
+  if (kind === 'crt') return renderCrtMonitor(source,effect);
+  if (kind === 'frosted') return renderFrostedGlass(source,effect);
+  if (kind === 'aurora') return renderAuroraIllumination(source,effect);
+  if (kind === 'burst') return renderRadialEnergyBurst(source,effect);
+  if (kind === 'oilpaint') return renderOilPainting(source,effect);
+  if (kind === 'watercolor') return renderWatercolor(source,effect);
+  if (kind === 'brightness') return renderBrightness(source,effect);
+  if (kind === 'contrast') return renderContrast(source,effect);
+  if (kind === 'saturate') return renderSaturation(source,effect);
+  if (kind === 'hue') return renderHueRotation(source,effect);
+  if (kind === 'grayscale') return renderGrayscale(source,effect);
+  if (kind === 'sepia') return renderSepia(source,effect);
+  if (kind === 'invert') return renderInvert(source,effect);
+  if (kind === 'blur') return renderGaussianBlur(source,effect);
+  if (kind === 'posterize') return renderPosterize(source,effect);
+  if (kind === 'neonedge') return renderNeonEdges(source,effect);
+  if (kind === 'mosaic') return renderMosaicTiles(source,effect);
+  if (kind === 'animecel') return renderAnimeCelStudio(source,effect);
+  if (kind === 'graphicnovel') return renderGraphicNovel(source,effect);
+  if (kind === 'foil') return renderHolographicFoil(source,effect);
+  if (kind === 'chromaticsilk') return renderChromaticSilk(source,effect);
+  if (kind === 'pixelposter') return renderPixelPoster(source,effect);
+  if (kind === 'inkwash') return renderInkWash(source,effect);
+  if (kind === 'retrodream') return renderRetroDreamscape(source,effect);
+  if (kind === 'sig_0') return renderSigHyperOutline(source,effect);
+  if (kind === 'sig_1') return renderSigNeonPulse(source,effect);
+  if (kind === 'sig_2') return renderSigShadowForge(source,effect);
+  if (kind === 'sig_3') return renderSigDreamBloom(source,effect);
+  if (kind === 'sig_4') return renderSigGlitchMatrix(source,effect);
+  if (kind === 'sig_5') return renderSigComicPop(source,effect);
+  if (kind === 'sig_6') return renderSigFrostbite(source,effect);
+  if (kind === 'sig_7') return renderSigEmberGlow(source,effect);
+  if (kind === 'sig_8') return renderSigPrismSplit(source,effect);
+  if (kind === 'sig_9') return renderSigGoldenHour(source,effect);
+  if (kind === 'sig_10') return renderSigAuroraFlow(source,effect);
+  if (kind === 'sig_11') return renderSigElectricEdge(source,effect);
+  if (kind === 'sig_12') return renderSigHolographic(source,effect);
+  if (kind === 'sig_13') return renderSigRetroVision(source,effect);
+  if (kind === 'sig_14') return renderSigSpectrumBurst(source,effect);
+  if (kind === 'sig_15') return renderSigPlasmaVeins(source,effect);
+  if (kind === 'sig_16') return renderSigNebulaBloom(source,effect);
+  if (kind === 'sig_17') return renderSigSpectralRefraction(source,effect);
+  if (kind === 'sig_18') return renderSigRiftDistortion(source,effect);
+  if (kind === 'sig_19') return renderSigInfernoAura(source,effect);
+  if (kind === 'sig_20') return renderSigCrystalResonance(source,effect);
+  if (kind === 'sig_21') return renderSigLiquidLight(source,effect);
+  if (kind === 'cutout') return renderLayerCutout(source,effect);
+  if (kind === 'outline') return renderLayerOutline(source,effect);
+  if (kind === 'glow') return renderLayerSpectrumGlow(source,effect);
+  if (kind === 'shadow') return renderLayerShadow(source,effect);
+  if (kind === 'backdrop') return renderLayerBackdrop(source,effect);
+  if (kind === 'radiance') return renderLayerHolyRadiance(source,effect);
+  if (kind === 'miasma') return renderLayerMiasma(source,effect);
+  // Independently authored legacy processors take precedence over historical switch branches.
+  if (kind === 'exposure') return renderExposure(source,effect);
+  if (kind === 'highlights') return renderHighlights(source,effect);
+  if (kind === 'shadows') return renderShadows(source,effect);
+  if (kind === 'whites') return renderWhites(source,effect);
+  if (kind === 'blacks') return renderBlacks(source,effect);
+  if (kind === 'temperature') return renderTemperature(source,effect);
+  if (kind === 'tint') return renderTint(source,effect);
+  if (kind === 'vibrance') return renderVibrance(source,effect);
+  if (kind === 'gamma') return renderGamma(source,effect);
+  if (kind === 'solarize') return renderSolarize(source,effect);
+  if (kind === 'curves') return renderCurves(source,effect);
+  if (kind === 'levels') return renderLevels(source,effect);
+  if (kind === 'balance') return renderBalance(source,effect);
+  if (kind === 'selective') return renderSelective(source,effect);
+  if (kind === 'mixer') return renderMixer(source,effect);
+  if (kind === 'gradientmap') return renderGradientmap(source,effect);
+  if (kind === 'duotone') return renderDuotone(source,effect);
+  if (kind === 'highpass') return renderHighPass(source,effect);
+  if (kind === 'grain') return renderFilmGrain(source,effect);
+  if (kind === 'noise') return renderRgbNoise(source,effect);
+  if (kind === 'emboss') return renderEmboss(source,effect);
+  if (kind === 'edges') return renderEdgeDetection(source,effect);
+  if (kind === 'halftone') return renderHalftone(source,effect);
+  if (kind === 'dither') return renderDither(source,effect);
+  if (kind === 'vignette') return renderVignette(source,effect);
+  if (kind === 'pixelate') return renderPixelate(source,effect);
   if (AURORA_NEW_KINDS.has(kind)) return renderAuroraExpansion(source, effect);
-  if (DRAWING_STYLES.has(kind)) return drawStyle(source, effect);
   if (kind.startsWith('sig_')) return applySignatureFX(source, effect);
-  if (kind === 'radiance' || kind === 'miasma') return applyCreativeEffect(source, effect);
   if (RECONSTRUCTED_COLOR_KINDS.has(kind)) return reconstructColor(source, effect);
   if (EXPANSION_LOOKUP.has(kind)) return renderExpansion120(source,effect);
   // Legacy filters now dispatch to their own independently tested processors.
@@ -1197,89 +443,7 @@ export function applyEffect(source: HTMLCanvasElement, effect: Effect): HTMLCanv
   if (kind === 'lensblur') return spatialBlurStable(source,effect,'lens');
   if (kind === 'motionblur'||kind === 'radialblur') return spatialBlurStable(source,effect,kind==='motionblur'?'motion':'radial');
   switch (kind) {
-    case 'brightness': case 'contrast': case 'saturate': case 'hue':
-    case 'grayscale': case 'sepia': case 'invert': {
-      const name = kind === 'saturate' ? 'saturate' : kind === 'hue' ? 'hue-rotate' : kind;
-      return filtered(source, `${name}(${effect.amount}${kind === 'hue' ? 'deg' : '%'})`);
-    }
     // Motion and radial blur are handled by spatialBlurStable before this switch.
-    case 'blur': case 'highpass':
-    case 'emboss': case 'edges': case 'pixelate':
-    case 'ink': case 'comicink': case 'neonedge': case 'cartoon': case 'frosted':
-      return detailEffect(source, effect);
-    case 'gradientmap': case 'duotone': return applyGradientMap(source, effect);
-    case 'curves': case 'levels': case 'balance': case 'mixer': case 'selective':
-      return applyPrecisionColor(source, effect);
-    case 'oilpaint': case 'watercolor': return applyPainterly(source, effect);
-    case 'mosaic': return applyMosaic(source, effect);
-    case 'cutout': {
-      const removed = applyBackgroundMask(source,
-        effect.parameters?.backgroundAuto === 0 || effect.parameters?.segmentationMode === 'manual' ? copyImage(source) :
-        effect.parameters?.segmentationMode === 'smart' ? smartSubjectCutout(source, effect) :
-          removeCornerBackground(source, effect.amount, effect), effect);
-      const spill = clamp(effect.parameters?.decontaminate ?? 0, 0, 100) / 100;
-      if (spill > 0) {
-        const src = pixels(source);
-        const matte = pixels(removed);
-        const w = matte.width, h = matte.height;
-        for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-          const i = (y * w + x) * 4;
-          if (matte.data[i + 3] === 0) continue;
-          const edge = [i - 4, i + 4, i - w * 4, i + w * 4];
-          const nearRemoved = (x > 0 && matte.data[edge[0] + 3] === 0) ||
-            (x + 1 < w && matte.data[edge[1] + 3] === 0) ||
-            (y > 0 && matte.data[edge[2] + 3] === 0) ||
-            (y + 1 < h && matte.data[edge[3] + 3] === 0);
-          if (!nearRemoved) continue;
-          // Use the nearest interior pixel to neutralize fringe color without moving the edge.
-          const interior = edge.find((n, k) => n >= 0 && n + 3 < matte.data.length &&
-            (k !== 0 || x > 0) && (k !== 1 || x + 1 < w) &&
-            (k !== 2 || y > 0) && (k !== 3 || y + 1 < h) && matte.data[n + 3] > 0 &&
-            [n - 4, n + 4, n - w * 4, n + w * 4].every((m, z) =>
-              (z === 0 && n % (w * 4) === 0) || (z === 1 && n % (w * 4) === (w - 1) * 4) ||
-              m < 0 || m + 3 >= matte.data.length || matte.data[m + 3] > 0));
-          if (interior !== undefined) for (let c = 0; c < 3; c++) {
-            matte.data[i + c] = Math.round(src.data[i + c] * (1 - spill) + matte.data[interior + c] * spill);
-          }
-        }
-        context(removed).putImageData(matte, 0, 0);
-      }
-      const feather = effect.parameters?.feather ?? 0;
-      if (feather <= 0) return removed;
-      const output = pixels(removed);
-      const alpha = pixels(softened(removed, Math.min(feather, 80))).data;
-      const originalAlpha = pixels(source).data;
-      for (let i = 3; i < output.data.length; i += 4) {
-        output.data[i] = Math.min(originalAlpha[i], alpha[i]);
-      }
-      return fromPixels(output);
-    }
-    case 'outline': return effect.parameters?.outlineStyle && effect.parameters.outlineStyle !== 'classic'
-      ? renderSubjectOutline(source, effect) : silhouetteEffect(source, effect);
-    case 'glow': return silhouetteEffect(source, effect);
-    case 'shadow': return shadowEffect(source, effect);
-    case 'aurora': return auroraEffect(source, effect);
-    case 'burst': return burstEffect(source, effect);
-    case 'backdrop': return backdropEffect(source, effect);
-    case 'chromatic': return chromaticShift(source, effect);
-    case 'vhs': return vhsTracking(source, effect);
-    case 'glitch': return digitalGlitch(source, effect);
-    case 'swirl': case 'ripple': case 'wave': case 'glass': return distort(source, effect);
-    case 'vignette': {
-      const output = copyImage(source);
-      const ctx = context(output);
-      const radius = Math.hypot(source.width, source.height) * 0.5;
-      const x = source.width * (effect.parameters?.centerX ?? 50) / 100;
-      const y = source.height * (effect.parameters?.centerY ?? 50) / 100;
-      const inner = radius * (1 - (effect.parameters?.feather ?? 75) / 100) * 0.75;
-      const gradient = ctx.createRadialGradient(x, y, inner, x, y, radius);
-      gradient.addColorStop(0, '#00000000');
-      gradient.addColorStop(1, `rgba(0,0,0,${clamp(effect.amount / 100, 0, 1)})`);
-      ctx.globalCompositeOperation = 'source-atop';
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, source.width, source.height);
-      return output;
-    }
     default:
       return pixelEffect(source, effect);
   }

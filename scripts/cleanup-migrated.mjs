@@ -24,8 +24,17 @@ function scan(folder,files=[]) {
 // Do not treat the manifest itself as a code reference to every path it lists.
 const sources=scan('src').concat(scan('src-tauri/src'),scan('scripts'),scan('tests'))
   .filter(file => file !== 'scripts/obsolete-migration-files.json');
+// These are live integration points. They must never be deleted even if a
+// future migration incorrectly lists them in the obsolete-file manifest.
+const protectedEntrypoints = new Set([
+  'src/editor/effect-ops.ts',
+  'src/editor/effects-worker.ts',
+  'src/editor/effect-stack-cache.ts',
+  'src/editor/fx.ts',
+]);
 const removed=[];const skipped=[];
 for (const rel of manifest.obsolete) {
+  if (protectedEntrypoints.has(rel)) throw Error(`Refusing to delete active rendering entrypoint: ${rel}`);
   if(typeof rel!=='string' || !/^(src|src-tauri)\/[a-zA-Z0-9_./-]+$/.test(rel) || rel.split('/').includes('..')) throw Error('Unsafe manifest path');
   const absolute=resolve(root,rel);
   if(relative(root,absolute).startsWith('..') || !absolute.startsWith(root+sep))throw Error('Escaped project');
