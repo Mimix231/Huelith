@@ -2,6 +2,14 @@
 
 Huelith is the new name for the image editor previously released as Spectrum. The first public release was **0.1.0**; **0.2.0** begins with Phases T, U, and V. This changelog documents released source features, not a claim that every workflow is bug-free or that all native acceleration is complete.
 
+### 2026-10-31 — Animation Studio floating editor + resizable dock (release candidate fix)
+
+- Effect editor now floats above the animation timeline, with a scrollable settings section and accessible Apply/Cancel footer.
+- Animation timeline can be resized by dragging its top grip, via keyboard, and saves its preferred height locally.
+- Canvas defers expensive high-resolution repainting during timeline resizing, restoring an exact redraw on release.
+- See `docs/ANIMATION_DOCK_RELEASE_FIX_2026-10-31.md` for verification and remaining Windows/Tauri checks.
+
+
 ### Order 1 — Procedural Gradient Patterns (AM, October 2026)
 - **Gradient Atelier → Patterns**: one-click Black & White Burst and Comic Explosion presets, radial sunburst and anime speed-line generators.
 - Real non-blended palette modes: Hard stops, Bands, Alternating, Stepped, Pattern palette; original Smooth gradients unchanged.

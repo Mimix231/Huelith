@@ -1,0 +1,24 @@
+/* Isolate Studio from the inspector's stacking context and timeline z-index.
+   Transparent host leaves canvas and timeline fully interactive outside the card. */
+.fx-host.portal-fx-host {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  pointer-events: none;
+}
+.portal-fx-host .fx-overlay {
+  position: fixed;
+  right: auto;
+  bottom: auto;
+  top: 60px;
+  left: 8px;
+  width: 345px;
+  max-width: calc(100vw - 16px);
+  max-height: calc(100dvh - 76px);
+  pointer-events: auto;
+}
+/* Keep Apply / Cancel visible while the effect settings scroll independently. */
+.portal-fx-host .studio-editor-view { min-height: 0; overflow: hidden; }
+.portal-fx-host .studio-effect-scroll { min-height: 0; }
+.portal-fx-host .studio-editor-footer { flex: 0 0 auto; }

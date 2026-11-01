@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode, type MouseEvent as ReactMouseEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode, type MouseEvent as ReactMouseEvent } from 'react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import {
   Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton,
@@ -19,6 +19,7 @@ import { exportImage, exportSvg, importImage, openProject, saveProject } from '.
 import { getRecovery, storeRecovery } from './editor/recovery';
 import { handlePaste, pasteFromSystem, copySelected, insertImage } from './editor/clipboard';
 import FxStudio from './components/FxStudio';
+import FloatingFxPortal from './components/FloatingFxPortal';
 import CutoutWorkspace from './components/CutoutWorkspace';
 import './components/CutoutWorkspace.css';
 import FontPicker from './components/FontPicker';
@@ -669,6 +670,7 @@ function TextContentEditor({ shape, state }: { shape: import('./editor/types').V
 }
 
 function Inspector({ state }: { state: EditorStore }) {
+  const inspectorRef = useRef<HTMLElement>(null);
   const [panel, setPanel] = useState<InspectorPanel>('layers');
   const [renameId, setRenameId] = useState<string | null>(null);
   const [preview, setPreview] = useState(100);
@@ -739,7 +741,7 @@ function Inspector({ state }: { state: EditorStore }) {
   };
 
   return (
-    <aside className="inspector" aria-label="Document inspector" style={{ width: state.inspectorWidth }}>
+    <aside ref={inspectorRef} className="inspector" aria-label="Document inspector" style={{ width: state.inspectorWidth }}>
       <div className="inspector-resize" role="separator" aria-orientation="vertical"
         aria-label="Resize inspector" aria-valuenow={state.inspectorWidth} tabIndex={0}
         onKeyDown={event => {
@@ -1006,9 +1008,9 @@ function Inspector({ state }: { state: EditorStore }) {
         </div>
       )}
       {fxOpen && (
-        <div className={fxClosing ? 'fx-host closing' : 'fx-host'}>
+        <FloatingFxPortal anchorRef={inspectorRef} closing={fxClosing}>
           <FxStudio state={state} active={active} activeShape={activeShape} onClose={closeFx} />
-        </div>
+        </FloatingFxPortal>
       )}
     </aside>
   );

@@ -268,14 +268,31 @@ export default function Canvas({ onError }: CanvasProps) {
 
   useEffect(() => {
     if (!hostRef.current) return;
-    const observer = new ResizeObserver(entries => {
-      const bounds = entries[0]?.contentRect;
-      if (bounds) {
-        setSize({ width: Math.max(1, Math.floor(bounds.width)), height: Math.max(1, Math.floor(bounds.height)) });
-      }
-    });
+    let frame = 0;
+    const syncSize = () => {
+      frame = 0;
+      const bounds = hostRef.current?.getBoundingClientRect();
+      if (!bounds) return;
+      const width = Math.max(1, Math.floor(bounds.width));
+      const height = Math.max(1, Math.floor(bounds.height));
+      setSize(previous => previous.width === width && previous.height === height
+        ? previous : { width, height });
+    };
+    const schedule = () => {
+      // A timeline drag changes the canvas viewport every pointer frame. Keep
+      // the last bitmap visible while resizing; render once at the final size
+      // instead of paying for multiple heavyweight layer/FX compositions.
+      if (document.body.classList.contains('huelith-timeline-resizing')) return;
+      if (!frame) frame = requestAnimationFrame(syncSize);
+    };
+    const observer = new ResizeObserver(schedule);
     observer.observe(hostRef.current);
-    return () => observer.disconnect();
+    window.addEventListener('huelith-timeline-resize-end', schedule);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('huelith-timeline-resize-end', schedule);
+      if (frame) cancelAnimationFrame(frame);
+    };
   }, []);
 
   const position = useCallback((event: { clientX: number; clientY: number }): Point => {

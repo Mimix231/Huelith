@@ -6,6 +6,7 @@ import { timelineRegionAt, timelineRegionOffset } from '../editor/playback-clock
 import { setAnimationPlayback } from '../editor/fx';
 import { drawDocument, prepareImages } from '../editor/render';
 import type { Document, AnimationFrame } from '../editor/types';
+import { clampTimelineHeight, readTimelineHeight, saveTimelineHeight, timelineHeightBounds } from '../editor/timeline-layout';
 import '../styles/animation.css';
 
 const CELL = 80;
@@ -70,6 +71,50 @@ export default function AnimationTimeline() {
   clock.current = {frames: animation?.frames, rate: playbackRate, current: animation?.currentFrame ?? 0};
   const selectedCreativeId = useEditor(state => state.selectedCreativeId);
   const [expanded, setExpanded] = useState(true);
+  const [timelineHeight, setTimelineHeight] = useState(readTimelineHeight);
+  const panelRef = useRef<HTMLElement>(null);
+  const resizeDrag = useRef<{ pointerId: number; startY: number; startHeight: number } | null>(null);
+  const currentHeight = useRef(timelineHeight);
+
+  const editorHeight = (): number => panelRef.current?.parentElement?.clientHeight ?? window.innerHeight;
+  const drawHeight = (next: number): number => {
+    const height = clampTimelineHeight(next, editorHeight());
+    currentHeight.current = height;
+    // Keep the pointer path at one DOM style write per event. No React state
+    // updates or document renders while the user drags the separator.
+    if (panelRef.current) panelRef.current.style.height = `${height}px`;
+    return height;
+  };
+  const finishResize = (event: ReactPointerEvent<HTMLDivElement>): void => {
+    if (!resizeDrag.current || resizeDrag.current.pointerId !== event.pointerId) return;
+    resizeDrag.current = null;
+    document.body.classList.remove('huelith-timeline-resizing');
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+    const final = drawHeight(currentHeight.current);
+    setTimelineHeight(final);
+    saveTimelineHeight(final);
+    // The canvas skips costly high-resolution paints during the drag. Ask for
+    // one exact redraw when the dock reaches its final dimensions.
+    window.dispatchEvent(new Event('huelith-timeline-resize-end'));
+  };
+  useEffect(() => {
+    const editor = panelRef.current?.parentElement;
+    if (!editor || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(() => {
+      if (!resizeDrag.current && expanded) {
+        const clamped = clampTimelineHeight(currentHeight.current, editor.clientHeight);
+        if (clamped !== currentHeight.current) {
+          currentHeight.current = clamped;
+          setTimelineHeight(clamped);
+        }
+      }
+    });
+    observer.observe(editor);
+    return () => observer.disconnect();
+  }, [expanded]);
+  useEffect(() => () => {
+    document.body.classList.remove('huelith-timeline-resizing');
+  }, []);
   const [draggingPlayhead, setDraggingPlayhead] = useState(false);
   const trackRef = useRef<HTMLDivElement>(null);
   const lastDocument = useRef(doc.id);
@@ -188,7 +233,48 @@ export default function AnimationTimeline() {
   };
 
   return (
-    <section className={`animation-timeline ${expanded ? 'expanded' : 'collapsed'}`} aria-label="Animation frame timeline">
+    <section ref={panelRef} style={expanded ? { height: timelineHeight } : undefined}
+      className={`animation-timeline ${expanded ? 'expanded' : 'collapsed'} ${view === 'layers' ? 'layers-view' : 'frames-view'}`}
+      aria-label="Animation frame timeline">
+      {expanded && <div className="timeline-resize-handle" role="separator" tabIndex={0}
+        aria-label="Resize animation timeline" aria-orientation="horizontal"
+        aria-valuemin={timelineHeightBounds(editorHeight()).min}
+        aria-valuemax={timelineHeightBounds(editorHeight()).max}
+        aria-valuenow={timelineHeight}
+        title="Drag up or down to resize the timeline · Arrow keys resize by 16px"
+        onPointerDown={event => {
+          if (event.button !== 0) return;
+          resizeDrag.current = { pointerId: event.pointerId, startY: event.clientY, startHeight: currentHeight.current };
+          event.currentTarget.setPointerCapture(event.pointerId);
+          document.body.classList.add('huelith-timeline-resizing');
+          event.preventDefault();
+        }}
+        onPointerMove={event => {
+          const active = resizeDrag.current;
+          if (!active || active.pointerId !== event.pointerId) return;
+          const next = drawHeight(active.startHeight + active.startY - event.clientY);
+          event.currentTarget.setAttribute('aria-valuenow', String(Math.round(next)));
+        }}
+        onPointerUp={finishResize}
+        onPointerCancel={finishResize}
+        onLostPointerCapture={event => {
+          // Window focus loss or a canceled drag must not leave a resize cursor.
+          if (resizeDrag.current?.pointerId === event.pointerId) finishResize(event);
+        }}
+        onKeyDown={event => {
+          const jump = event.key === 'Home' ? timelineHeightBounds(editorHeight()).min
+            : event.key === 'End' ? timelineHeightBounds(editorHeight()).max
+              : event.key === 'ArrowUp' ? currentHeight.current + 16
+                : event.key === 'ArrowDown' ? currentHeight.current - 16 : null;
+          if (jump === null) return;
+          event.preventDefault();
+          const height = drawHeight(jump);
+          setTimelineHeight(height);
+          saveTimelineHeight(height);
+          window.dispatchEvent(new Event('huelith-timeline-resize-end'));
+        }}>
+        <span aria-hidden="true" />
+      </div>}
       <div className="timeline-header">
         <button type="button" className="timeline-name" onClick={() => setExpanded(!expanded)}
           aria-expanded={expanded} title={expanded ? 'Collapse timeline' : 'Expand timeline'}>

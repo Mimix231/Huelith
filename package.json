@@ -56,7 +56,8 @@
     "pretauri": "node scripts/cleanup-migrated.mjs --apply",
     "clean:migrated": "node scripts/cleanup-migrated.mjs --apply",
     "clean:migrated:dry": "node scripts/cleanup-migrated.mjs --dry-run",
-    "predesktop:dev": "node scripts/cleanup-migrated.mjs --apply"
+    "predesktop:dev": "node scripts/cleanup-migrated.mjs --apply",
+    "test:animation-dock": "node --test tests/animation-dock-release.test.cjs && python tests/animation-dock-geometry-browser.py && python tests/timeline-css.py"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
