@@ -3,6 +3,7 @@
 Starts the Vite server automatically. Unlike the renderer smoke suite, this drives React/MUI.
 """
 import os
+import socket
 import subprocess
 import time
 import urllib.request
@@ -11,14 +12,13 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parents[1]
-HOST = 'http://127.0.0.1:1420'
-
-
-def wait_for_vite(timeout=30):
+def wait_for_vite(process, host, timeout=30):
     start = time.monotonic()
     while time.monotonic() - start < timeout:
+        if process.poll() is not None:
+            raise RuntimeError(f'Vite exited before starting (exit code {process.returncode}).')
         try:
-            with urllib.request.urlopen(HOST, timeout=1) as response:
+            with urllib.request.urlopen(host, timeout=1) as response:
                 if response.status == 200:
                     return
         except Exception:
@@ -27,12 +27,17 @@ def wait_for_vite(timeout=30):
 
 
 def main():
+    with socket.socket() as listener:
+        listener.bind(('127.0.0.1', 0))
+        port = listener.getsockname()[1]
+    host = f'http://127.0.0.1:{port}'
     vite = subprocess.Popen(
-        ['npm', 'run', 'dev'], cwd=ROOT, stdout=subprocess.DEVNULL,
-        stderr=subprocess.PIPE, shell=os.name == 'nt',
+        ['node', str(ROOT / 'node_modules' / 'vite' / 'bin' / 'vite.js'),
+         '--host', '127.0.0.1', '--port', str(port)],
+        cwd=ROOT, stdout=subprocess.DEVNULL,
     )
     try:
-        wait_for_vite()
+        wait_for_vite(vite, host)
         with sync_playwright() as playwright:
             options = {'headless': True, 'args': ['--no-sandbox']}
             executable = os.environ.get('CHROMIUM_PATH')
@@ -43,21 +48,30 @@ def main():
             browser = playwright.chromium.launch(**options)
             try:
                 page = browser.new_page(viewport={'width': 1500, 'height': 940})
+                page.set_default_navigation_timeout(120000)
                 page.on('pageerror', lambda error: print(f'PAGE ERROR: {error}'))
-                page.goto(HOST)
+                page.goto(host)
+                page.get_by_role('button', name='Image Editor').click()
+                page.get_by_role('button', name='Create image project').click()
                 art = page.locator('canvas.artboard-canvas')
                 art.wait_for()
                 assert page.locator('.welcome-scrim').count() == 0
-                print('PASS: immediate workspace, no blocking welcome overlay')
+                print('PASS: Creative Hub opens an image workspace')
 
                 box = art.bounding_box()
                 x, y = box['x'] + box['width'] / 2, box['y'] + box['height'] / 2
-                page.get_by_role('button', name='Rectangle (R)').click()
+                page.get_by_role('button', name='Shapes — select a shape').click()
+                page.get_by_role('button', name='Rectangle', exact=True).click()
+                page.locator('.MuiPopover-root').wait_for(state='detached')
                 page.mouse.move(x - 70, y - 50)
                 page.mouse.down()
                 page.mouse.move(x + 35, y + 18, steps=8)
                 page.mouse.up()
-                assert page.locator('.layer-row').count() >= 2
+                assert page.locator('.layer-row').count() >= 2, (
+                    f'Shape did not create a vector layer: canvas={box}, '
+                    f'rows={page.locator(".layer-row").count()}, '
+                    f'target={page.evaluate("([x,y]) => document.elementFromPoint(x,y)?.outerHTML.slice(0,200)", [x,y])}'
+                )
                 assert page.get_by_role('button', name='Move & transform (V)').count() == 1
                 print('PASS: editable shape creation')
 
@@ -98,7 +112,7 @@ def main():
                 text.press('Control+End')
                 text.type(' edited')
                 text.press('Enter')
-                assert page.locator('textarea.focus-text-input').count() == 0
+                text.wait_for(state='detached')
                 print('PASS: text selects on single-click, drags, double-click edits')
 
                 page.get_by_role('button', name='File', exact=True).click()
@@ -133,14 +147,18 @@ def main():
                 page.locator('.fx-launcher').click()
                 studio = page.locator('#huelith-fx-studio')
                 assert studio.is_visible()
-                assert studio.get_by_role('tab', name='Filters').count() == 1
-                studio.locator('.fx-filter-card').filter(has_text='Spectrum glow').click()
-                assert studio.locator('.fx-effect').count() == 1
-                studio.get_by_role('tab', name='Customize').click()
+                studio.get_by_role('button', name='Open Layer Effects').click()
                 assert studio.get_by_label('Layer blending').is_visible()
-                studio.get_by_role('tab', name='FX', exact=True).click()
+                studio.locator('.fx-filter-card').filter(has_text='Spectrum glow').click()
+                assert studio.locator('.studio-editor-section').count() == 1
+                studio.get_by_role('button', name='Apply', exact=True).click()
+                studio.get_by_role('button', name='All apps').click()
+                studio.get_by_role('button', name='Open Signature FX').click()
                 studio.locator('.fx-preset-card').filter(has_text='Neon Pulse').click()
-                assert studio.locator('.fx-effect').count() == 4
+                assert studio.locator('.studio-editor-section').count() == 1
+                studio.get_by_role('button', name='Apply', exact=True).click()
+                studio.get_by_role('button', name='All apps').click()
+                assert studio.locator('.studio-applied-tile').count() == 2
                 print('PASS: FX overlay filters, customization, presets and editable effect stack')
                 studio.get_by_role('button', name='Close FX studio').click()
                 studio.wait_for(state='detached', timeout=3000)
@@ -166,9 +184,9 @@ def main():
                 page.mouse.move(bounds['x'] + 200, bounds['y'] + 7, steps=5)
                 page.mouse.up()
                 assert timeline.locator('.timeline-frame-card.selected').count() == 1
-                timeline.get_by_role('button', name='Toggle onion skin ghost frames').click()
+                timeline.locator('.timeline-onion').click()
                 assert timeline.locator('.timeline-onion').get_attribute('aria-pressed') == 'false'
-                timeline.get_by_role('button', name='Toggle onion skin ghost frames').click()
+                timeline.locator('.timeline-onion').click()
                 assert timeline.locator('.timeline-onion').get_attribute('aria-pressed') == 'true'
                 timeline.get_by_role('button', name='Delete frame').click()
                 assert timeline.locator('.timeline-frame-card').count() == 2

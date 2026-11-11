@@ -20,7 +20,7 @@ jobs:
 
   browser:
     name: Chromium pixel and theme regressions
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -34,7 +34,7 @@ jobs:
       - name: Install Chromium and Playwright
         run: |
           python -m pip install playwright
-          python -m playwright install --with-deps chromium
+          python -m playwright install chromium
       - name: Browser rendering and theme tests
         run: npm run test:browser
       - name: Spectrum Originals rendering and keyframe assertions

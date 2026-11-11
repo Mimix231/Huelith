@@ -221,7 +221,7 @@ pub async fn media_begin_export(mut config:StreamConfig,state:tauri::State<'_,Me
     let frame_bytes=config.width as usize*config.height as usize*4;
     let cancelled=Arc::new(AtomicBool::new(false));
     let finished=Arc::new(AtomicBool::new(false));
-    let (sender,receiver)=mpsc::sync_channel(2);let (ready_tx,ready_rx)=mpsc::channel();
+    let (sender,receiver)=mpsc::sync_channel(2);let (ready_tx,ready_rx)=mpsc::channel::<Result<(),String>>();
     {
         let mut sessions=state.0.lock().map_err(|_|"Export registry unavailable")?;
         sessions.retain(|_,session|!session.finished.load(Ordering::Relaxed));

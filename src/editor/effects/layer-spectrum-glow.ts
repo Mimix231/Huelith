@@ -3,7 +3,7 @@
  */
 import type {Effect} from '../types';
 import {createSurface} from '../canvas-surface';
-import {read,write,intensity} from './detail-core';
+import {read,write,intensity,hash} from './detail-core';
 import {hex} from './color-core';
 import {layerDistance} from './layer-distance';
 export function renderLayerSpectrumGlow(source:HTMLCanvasElement,effect:Effect):HTMLCanvasElement{
@@ -12,6 +12,28 @@ export function renderLayerSpectrumGlow(source:HTMLCanvasElement,effect:Effect):
  const w=source.width,h=source.height,image=read(source),d=image.data,mode=p?.glowMode??'outer';
  const tint=hex(effect.color,'#9b6bff'),softness=Math.max(.5,(p?.softness??24)*(.45+amount/35)),radius=amount,
  spread=Math.max(0,p?.spread??0)+radius*.16,falloff=.6+(p?.falloff??55)/100*3;
+ const addSparks=(out:HTMLCanvasElement):HTMLCanvasElement=>{
+  const density=Math.max(0,Math.min(1,(p?.sparks??0)/100));
+  if(!density)return out;
+  const ctx=out.getContext('2d');if(!ctx)throw new Error('Canvas unavailable');
+  const original=read(source).data,glow=read(out).data,size=Math.max(.5,Math.min(4,radius*.04)),seed=p?.seed??29;
+  let opaque=0;for(let i=3;i<original.length;i+=4)if(original[i]>250)opaque++;
+  const luminous=mode==='bloom'||opaque/Math.max(1,w*h)>.98;
+  const threshold=Math.max(0,Math.min(255,p?.threshold??(mode==='bloom'?150:35)));
+  ctx.save();ctx.globalCompositeOperation=luminous||mode==='inner'?'source-atop':'screen';
+  ctx.fillStyle=`rgb(${tint[0]},${tint[1]},${tint[2]})`;
+  for(let n=0;n<Math.ceil(512*density);n++){
+   const x=Math.min(w-1,Math.floor(hash(n,1,seed)*w)),y=Math.min(h-1,Math.floor(hash(n,2,seed)*h));
+   const i=(y*w+x)*4,alpha=original[i+3]/255;
+   const coverage=luminous?alpha*Math.max(0,(intensity(original[i],original[i+1],original[i+2])-threshold)/Math.max(1,255-threshold))
+    :mode==='inner'?alpha:Math.max(0,glow[i+3]/255-alpha);
+   if(coverage<.04)continue;
+   ctx.globalAlpha=Math.min(1,coverage*strength*(.5+hash(n,3,seed)*.5));
+   ctx.fillRect(x-size*1.5,y-size*.5,size*3,size);
+   ctx.fillRect(x-size*.5,y-size*1.5,size,size*3);
+  }
+  ctx.restore();return out;
+ };
  if(mode==='bloom'){
   const emitter=read(source),e=emitter.data,threshold=Math.max(0,Math.min(255,p?.threshold??150));
   for(let i=0;i<e.length;i+=4){const lum=intensity(e[i],e[i+1],e[i+2]);
@@ -19,7 +41,7 @@ export function renderLayerSpectrumGlow(source:HTMLCanvasElement,effect:Effect):
   const out=createSurface();out.width=w;out.height=h;const ctx=out.getContext('2d');
   if(!ctx)throw new Error('Canvas unavailable');ctx.drawImage(source,0,0);
   const layer=write(emitter);ctx.save();ctx.globalCompositeOperation='screen';ctx.globalAlpha=strength;
-  ctx.filter=`blur(${Math.min(160,softness+radius*.6)}px)`;ctx.drawImage(layer,0,0);ctx.restore();return out;
+  ctx.filter=`blur(${Math.min(160,softness+radius*.6)}px)`;ctx.drawImage(layer,0,0);ctx.restore();return addSparks(out);
  }
  let opaque=0;for(let i=3;i<d.length;i+=4)if(d[i]>250)opaque++;
  if(opaque/Math.max(1,w*h)>.98){
@@ -33,7 +55,7 @@ export function renderLayerSpectrumGlow(source:HTMLCanvasElement,effect:Effect):
    e[at]=tint[0];e[at+1]=tint[1];e[at+2]=tint[2];e[at+3]*=v;
   }
   const light=write(luminous);ctx.save();ctx.globalCompositeOperation='screen';ctx.globalAlpha=strength;
-  ctx.filter=`blur(${Math.min(150,softness+radius*.6)}px)`;ctx.drawImage(light,0,0);ctx.restore();return out;
+  ctx.filter=`blur(${Math.min(150,softness+radius*.6)}px)`;ctx.drawImage(light,0,0);ctx.restore();return addSparks(out);
  }
  const includeInside=mode==='inner'||mode==='both',field=layerDistance(source,includeInside);
  const stops=[...(p?.glowPalette==='spectrum'?p.stops??[]:[])].sort((a,b)=>a.position-b.position);
@@ -58,5 +80,5 @@ export function renderLayerSpectrumGlow(source:HTMLCanvasElement,effect:Effect):
   }
   d[at+3]=newAlpha*255;
  }
- return write(image);
+ return addSparks(write(image));
 }
