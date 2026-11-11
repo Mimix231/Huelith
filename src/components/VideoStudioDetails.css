@@ -8,7 +8,7 @@
 .hv-monitor-tools button,.hv-working-bar button{font-size:10px;min-height:23px;padding:2px 6px}
 .hv-working-bar span{font-size:10px;color:var(--muted)}
 .hv-timeline-span{position:absolute;top:28px;bottom:0;z-index:5;pointer-events:none;background:color-mix(in srgb,var(--accent) 13%,transparent);border:1px solid var(--accent-line)}
-.hv-timeline-span.is-loop{background:color-mix(in srgb,var(--accent) 5%,transparent);border-style:dashed}
+.hv-timeline-span:is(.is-loop,.is-marked){background:color-mix(in srgb,var(--accent) 5%,transparent);border-style:dashed}
 .hv-track-folder{position:sticky;left:0;width:100%;border-bottom:1px solid var(--hv-border);background:var(--title-bg);padding:2px 6px}
 .hv-track-folder button{background:none;border:0;color:var(--text);font:inherit;font-size:10px;font-weight:700}
 .hv-clip{border-left:3px solid var(--hv-clip-label,var(--hv-clip-edge,var(--hv-border)))}

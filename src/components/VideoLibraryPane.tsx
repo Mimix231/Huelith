@@ -90,7 +90,7 @@ const CatalogCard=memo(function CatalogCard({name,image,motion,description,disab
  const {pinned}=useContext(CatalogContext);
  const identity=card&&'id' in card&&['effect','filter','transition','text','sticker'].includes(card.kind)?card.kind+':'+card.id:undefined;
  const control=<button type="button" className={`hv-catalog-card${card?' hv-draggable-card':''}${applied?' is-applied':''}`} aria-disabled={disabled||undefined}
-   title={description??`Add ${name}`} aria-label={`Add ${name}`}
+   data-hint={description??`Add ${name}`} aria-label={`Add ${name}`}
    onPointerEnter={event=>{if(!event.buttons&&event.pointerType==='mouse'){if(motion)setShowMotion(true);audition();}}}
    onPointerLeave={()=>{setShowMotion(false);onAudition?.();}} onFocus={event=>{if(event.currentTarget.matches(':focus-visible')){if(motion)setShowMotion(true);audition();}}}
    onBlur={()=>{setShowMotion(false);onAudition?.();}} onPointerDown={event=>{onAudition?.();if(card)onDrag(event,card,name);}}
@@ -138,7 +138,7 @@ export default function VideoLibraryPane(props:Props){
  function selectTab(value:Tab){props.onAudition();setTab(value);setCategory('All');setQuery('');}
  return <CatalogContext.Provider value={catalog}><aside className="hv-library hv-card hv-studio-library" data-tab={tab} aria-label="Video asset library">
   <div className="hv-library-tabbar">
-   <nav className="hv-library-tabs hv-expanded-library-tabs" aria-label="Video library tabs">{primaryTabs.map(([id,label,Icon])=><button key={id} className={tab===id?'is-active':''} aria-pressed={tab===id} title={label} onClick={()=>selectTab(id)}><Icon/><span>{label}</span></button>)}</nav>
+   <nav className="hv-library-tabs hv-expanded-library-tabs" aria-label="Video library tabs">{primaryTabs.map(([id,label,Icon])=><button key={id} className={tab===id?'is-active':''} aria-pressed={tab===id} data-hint={label} onClick={()=>selectTab(id)}><Icon/><span>{label}</span></button>)}</nav>
   </div>
   <div className="hv-library-body">
    <section className="hv-library-content" aria-label={`${TABS.find(t=>t[0]===tab)?.[1]} library`}>
@@ -146,7 +146,7 @@ export default function VideoLibraryPane(props:Props){
      {tab==='text'&&<button className="hv-library-import" onClick={()=>props.onText()}><Add fontSize="small"/> Add text</button>}
      {!!categories.length?<label className="hv-library-search"><Search fontSize="small"/><input aria-label={`Search ${tab}`} placeholder={`Search ${tab}…`} type="search" value={query} onChange={e=>setQuery(e.target.value)}/></label>
        :<strong className="hv-library-tool-name">{TABS.find(item=>item[0]===tab)?.[1]}</strong>}
-     <button type="button" className="hv-library-options" title="Library options and tools" aria-label="Library options and tools"
+     <button type="button" className="hv-library-options" data-hint="Library options and tools" aria-label="Library options and tools"
        onClick={event=>setLibraryMenu(event.currentTarget)}><Tune fontSize="small"/></button>
     </div>
     <Menu anchorEl={libraryMenu} open={!!libraryMenu} onClose={()=>setLibraryMenu(null)}>
@@ -189,7 +189,7 @@ export default function VideoLibraryPane(props:Props){
         {used.has(asset.id)&&<span className="hv-media-used">Added</span>}</CatalogCard>
       <div className="hv-media-actions"><button aria-label={`${asset.favorite?'Unfavourite':'Favourite'} ${asset.name}`} aria-pressed={!!asset.favorite}
         onClick={()=>props.onTimeline({...props.timeline,assets:props.timeline.assets.map(item=>item.id===asset.id?{...item,favorite:!item.favorite}:item)})}>{asset.favorite?'★':'☆'}</button>
-       <button title={props.offline[asset.id]?'Offline source':'Open source viewer'} onClick={()=>setSourceId(asset.id)}>Source</button><button aria-label={`Relink ${asset.name}`} onClick={()=>props.onRelink(asset)}>Relink</button>
+       <button data-hint={props.offline[asset.id]?'Offline source':'Open source viewer'} onClick={()=>setSourceId(asset.id)}>Source</button><button aria-label={`Relink ${asset.name}`} onClick={()=>props.onRelink(asset)}>Relink</button>
        {!asset.libraryId&&!asset.path.startsWith('browser:')&&<button aria-label={`Keep ${asset.name} in Local Library`}
          aria-pressed={localMedia.some(item=>item.path===asset.path)} onClick={()=>{try{setLocalMedia(toggleLocalMedia(asset));}catch(error){props.onError(String(error));}}}>Keep</button>}
        <button aria-label={`Remove ${asset.name} from library`} onClick={()=>props.onRemoveAsset(asset)}>×</button></div>

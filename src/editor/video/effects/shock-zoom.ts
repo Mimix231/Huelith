@@ -1,9 +1,8 @@
 import {createSurface} from '../../canvas-surface';
 import type {Effect} from '../../types';
-/** Shock Zoom: a focal bulge with progressively increasing peripheral smear
- * and optional RGB spectral separation. Sample coordinates are in the
- * untouched document space; out-of-range samples clamp to source edges.
- * Dedicated implementation removes 15 inner-loop function calls per pixel. */
+/** Shock Zoom: dimensionless focal deformation and pixel-radius peripheral smear.
+ * Fractional taps interpolate and accumulate premultiplied color and coverage;
+ * out-of-range samples clamp to source edges. */
 export function renderShockZoom(source:HTMLCanvasElement,effect:Effect):HTMLCanvasElement{
  if(effect.amount<=0)return source;
  const {width:w,height:h}=source;
@@ -26,20 +25,29 @@ export function renderShockZoom(source:HTMLCanvasElement,effect:Effect):HTMLCanv
   const distortion=1+power*bulge*shock*.55;
   const sx=cx+dx/distortion,sy=cy+dy/distortion;
   const radialSoftness=power*soft*norm*norm*.4;
+  let red=0,green=0,blue=0,alpha=0;
   for(let channel=0;channel<3;channel++){
    const split=(channel-1)*fringe*power*norm*5;
    const offsetX=sx+dx*split/radius,offsetY=sy+dy*split/radius;
    let sum=0;
    for(let tap=-2;tap<=2;tap++){
-    const xx=Math.round(offsetX+tap*.5*radialSoftness);
-    const yy=Math.round(offsetY+tap*.5*radialSoftness*.3);
-    const px=xx<0?0:xx>wm1?wm1:xx,py=yy<0?0:yy>hm1?hm1:yy;
-    sum+=pixels[(py*w+px)*4+channel];
+    const xx=Math.max(0,Math.min(wm1,offsetX+tap*.5*radialSoftness));
+    const yy=Math.max(0,Math.min(hm1,offsetY+tap*.5*radialSoftness*.3));
+    const x0=Math.floor(xx),y0=Math.floor(yy),x1=Math.min(wm1,x0+1),y1=Math.min(hm1,y0+1);
+    const fx=xx-x0,fy=yy-y0;
+    const i0=(y0*w+x0)*4,k0=(1-fx)*(1-fy)*pixels[i0+3]/255;
+    const i1=(y0*w+x1)*4,k1=fx*(1-fy)*pixels[i1+3]/255;
+    const i2=(y1*w+x0)*4,k2=(1-fx)*fy*pixels[i2+3]/255;
+    const i3=(y1*w+x1)*4,k3=fx*fy*pixels[i3+3]/255;
+    sum+=pixels[i0+channel]*k0+pixels[i1+channel]*k1+pixels[i2+channel]*k2+pixels[i3+channel]*k3;
+    alpha+=k0+k1+k2+k3;
    }
-   dst[i+channel]=sum*.2;
+   if(channel===0)red=sum;else if(channel===1)green=sum;else blue=sum;
   }
-  const ax=Math.round(sx),ay=Math.round(sy);
-  dst[i+3]=pixels[((ay<0?0:ay>hm1?hm1:ay)*w+(ax<0?0:ax>wm1?wm1:ax))*4+3];
+  // Mean coverage of the spectral taps gives one alpha for the RGB result.
+  // With no separation, all three channels share exactly the same footprint.
+  const coverage=alpha/15,inv=coverage>0?.2/coverage:0;
+  dst[i]=red*inv;dst[i+1]=green*inv;dst[i+2]=blue*inv;dst[i+3]=coverage*255;
  }
  c.putImageData(frame,0,0);return out;
 }

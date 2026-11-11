@@ -1,152 +1,187 @@
-import { useEffect, useMemo, useRef,useState } from 'react';
-import type { VideoTimeline } from '../editor/video/timeline';
-import {audioGainAt,audioPanAt,audioPositionAt,audioVoiceMixAt,timelineAudioSources} from '../editor/video/audio-plan';
-import voiceDspUrl from '../editor/video/voice-dsp.js?url';
+import {useEffect,useMemo,useRef,useState} from 'react';
+import {
+  AUDIO_METER_STEP,AUDIO_RATE,AUDIO_WINDOW,audioBufferFor,PreviewAudioWindows,type AudioWindow,
+} from '../editor/video/preview-audio';
+import {isNativeMediaDesktop,type NativeAudioSource} from '../editor/video/native-media';
+import type {VideoPlaybackTransport} from '../editor/video/playback-transport';
 import VideoLevelMeter,{createVideoMeterBus,MASTER_AUDIO_BUS,type VideoMeterBus} from './VideoLevelMeter';
 
-type Voice = { element: HTMLAudioElement; path: string; gain?: GainNode; pan?:StereoPannerNode; source?: MediaElementAudioSourceNode;bus?:string;
-  dsp?:AudioWorkletNode;dspSettings?:string };
-type Props = { timeline: VideoTimeline; sources: Record<string, string>; time: number; playing: boolean;meters?:VideoMeterBus;muted?:boolean };
-type Channel={input:GainNode;split:ChannelSplitterNode;left:AnalyserNode;right:AnalyserNode;clippedAt:number};
+type Props={
+  plan:NativeAudioSource[];sources:Record<string,string>;time:number;playing:boolean;
+  transport:VideoPlaybackTransport;meters?:VideoMeterBus;muted?:boolean;onError:(message:string)=>void;
+};
+type Segment={first:number;offset:number;count:number;window:AudioWindow};
+const startLead=.055;
+const emptyUrls:Record<string,string>={};
+const firstSample=(sample:number)=>Math.floor(sample/AUDIO_WINDOW)*AUDIO_WINDOW;
 
-function channel(context:AudioContext,output:AudioNode):Channel{
-  const input=context.createGain(),split=context.createChannelSplitter(2);
-  const left=context.createAnalyser(),right=context.createAnalyser();
-  left.fftSize=right.fftSize=2048;
-  input.connect(output);input.connect(split);split.connect(left,0);split.connect(right,1);
-  return {input,split,left,right,clippedAt:-Infinity};
+function outputClock(context:AudioContext){
+  const stamp=context.getOutputTimestamp?.();
+  if(stamp?.contextTime&&stamp.performanceTime&&Math.abs(performance.now()-stamp.performanceTime)<500)
+    return Math.min(context.currentTime,stamp.contextTime+(performance.now()-stamp.performanceTime)/1000);
+  return Math.max(0,context.currentTime-context.baseLatency);
 }
 
-function closeChannel(bus:Channel){
-  bus.input.disconnect();bus.split.disconnect();bus.left.disconnect();bus.right.disconnect();
-}
+export default function VideoAudioPreview({plan,sources,time,playing,transport,meters:shared,muted=false,onError}:Props){
+  const signature=useMemo(()=>JSON.stringify(plan),[plan]);
+  const urls=isNativeMediaDesktop()&&plan.every(source=>!source.path.startsWith('browser:'))?emptyUrls:sources;
+  const local=useMemo(createVideoMeterBus,[]),meters=shared??local;
+  const cache=useRef<PreviewAudioWindows|undefined>(undefined);
+  const context=useRef<AudioContext|undefined>(undefined);
+  const volume=useRef<GainNode|undefined>(undefined);
+  const monitorMuted=useRef(muted);monitorMuted.current=muted;
+  const [buffering,setBuffering]=useState(false);
 
-function release(voice: Voice) {
-  voice.element.pause();
-  voice.element.removeAttribute('src');
-  voice.element.load();
-  voice.source?.disconnect();
-  voice.gain?.disconnect();
-  voice.pan?.disconnect();
-  voice.dsp?.disconnect();voice.dsp?.port.close();
-}
-
-export default function VideoAudioPreview({ timeline, sources, time, playing,meters:shared,muted=false }: Props) {
-  const local=useMemo(createVideoMeterBus,[]);
-  const meters=shared??local;
-  const voices = useRef(new Map<string, Voice>());
-  const audio = useRef<AudioContext | null>(null);
-  const master = useRef<Channel | null>(null);
-  const buses = useRef(new Map<string,Channel>());
-  const [dspReady,setDspReady]=useState(false);
-  const plan = useMemo(() => timelineAudioSources(timeline), [timeline]);
-
-  useEffect(() => () => {
-    for (const voice of voices.current.values()) release(voice);
-    voices.current.clear();
-    for(const bus of buses.current.values())closeChannel(bus);
-    buses.current.clear();
-    if(master.current)closeChannel(master.current);
-    master.current = null;
-    meters.publish({});
-    void audio.current?.close();
-    audio.current = null;
-  }, []);
-
-  useEffect(() => {
-    if (!playing) { meters.publish({}); return; }
-    if (!audio.current) {
-      const context = new AudioContext();
-      audio.current = context;
-      master.current=channel(context,context.destination);
-      void context.audioWorklet?.addModule(voiceDspUrl).then(()=>{if(audio.current===context)setDspReady(true);}).catch(()=>{});
-    }
-    void audio.current.resume().catch(() => {});
-    const samples = new Float32Array(2048);
-    const timer = setInterval(() => {
-      if(!master.current)return;
-      const now=performance.now(),levels:Record<string,{peak:number;clipped:boolean}>={};
-      for(const [id,bus] of [[MASTER_AUDIO_BUS,master.current] as const,...buses.current]){
-        let peak=0;
-        for(const analyser of [bus.left,bus.right]){
-          analyser.getFloatTimeDomainData(samples);
-          for(const value of samples)peak=Math.max(peak,Math.abs(value));
-        }
-        if(peak>=1)bus.clippedAt=now;
-        levels[id]={peak,clipped:now-bus.clippedAt<1500};
-      }
-      meters.publish(levels);
-    }, 50);
-    return () => clearInterval(timer);
-  }, [playing,meters]);
   useEffect(()=>{
-    if(audio.current&&master.current)master.current.input.gain.setTargetAtTime(muted?0:1,audio.current.currentTime,.008);
-  },[muted,playing]);
+    const next=new PreviewAudioWindows(JSON.parse(signature) as NativeAudioSource[],urls);
+    cache.current=next;
+    return()=>{next.close();if(cache.current===next)cache.current=undefined;};
+  },[signature,urls]);
+  useEffect(()=>()=>{void context.current?.close();context.current=undefined;volume.current=undefined;},[]);
+  useEffect(()=>{
+    if(volume.current&&context.current)volume.current.gain.setTargetAtTime(muted?0:1,context.current.currentTime,.009);
+  },[muted]);
+  useEffect(()=>{
+    if(playing||!plan.length||!cache.current)return;
+    const window=cache.current,first=firstSample(Math.round(time*AUDIO_RATE));
+    const timer=setTimeout(()=>{void window.get(first).catch(()=>{});},95);
+    return()=>clearTimeout(timer);
+  },[playing,plan.length,time,signature,urls]);
 
-  useEffect(() => {
-    const keep = new Set<string>();
-    const active = plan.filter(source => source.start < time + .5 && source.start + source.duration > time);
-    for (const source of active) {
-      const url = sources[source.assetId ?? ''];
-      if (!url || !source.id) continue;
-      keep.add(source.id);
-      let voice = voices.current.get(source.id);
-      if (voice?.path !== url) {
-        if (voice) release(voice);
-        const element = document.createElement('audio');
-        element.preload = 'auto';
-        element.crossOrigin = 'anonymous';
-        element.preservesPitch = false;
-        element.src = url;
-        voice = { element, path: url };
-        voices.current.set(source.id, voice);
-      }
-      const element = voice.element;
-      const context = audio.current;
-      if (context && master.current && !voice.gain) {
-        voice.source = context.createMediaElementSource(element);
-        voice.gain = context.createGain();
-        voice.pan=context.createStereoPanner();
-        voice.source.connect(voice.gain);
-        voice.gain.connect(voice.pan);
-      }
-      const busId=source.trackId??MASTER_AUDIO_BUS;
-      if(context&&master.current&&voice.pan&&voice.bus!==busId){
-        let bus=buses.current.get(busId);
-        if(!bus&&busId!==MASTER_AUDIO_BUS){bus=channel(context,master.current.input);buses.current.set(busId,bus);}
-        voice.pan.disconnect();voice.pan.connect((bus??master.current).input);voice.bus=busId;
-      }
-      const gain = audioGainAt(source, time);
-      const settings={channelMode:source.channelMode??'stereo',mode:source.voice?.mode};
-      if(context&&voice.gain&&voice.pan&&dspReady&&(source.voice||settings.channelMode!=='stereo'||voice.dsp)){
-        const key=JSON.stringify(settings);
-        if(!voice.dsp){
-          voice.dsp=new AudioWorkletNode(context,'huelith-voice',{outputChannelCount:[2],processorOptions:settings});
-          voice.source!.disconnect();voice.source!.connect(voice.dsp);voice.dsp.connect(voice.gain);
-          voice.dspSettings=key;
-        }else if(voice.dspSettings!==key){voice.dsp.port.postMessage(settings);voice.dspSettings=key;}
-        voice.dsp.parameters.get('mix')?.setTargetAtTime(audioVoiceMixAt(source,time),context.currentTime,.008);
-      }
-      if (voice.gain) voice.gain.gain.setTargetAtTime(gain, context!.currentTime, .008);
-      else element.volume = Math.min(1, gain);
-      voice.pan?.pan.setTargetAtTime(audioPanAt(source,time),context!.currentTime,.008);
-      const { sourceTime, rate } = audioPositionAt(source, time);
-      const audible = playing && time >= source.start;
-      if (element.playbackRate !== rate) element.playbackRate = Math.min(16, Math.max(.0625, rate));
-      if (!element.seeking && Math.abs(element.currentTime - sourceTime) > (audible && !element.paused ? .07 : .0001)) {
-        try { element.currentTime = sourceTime; } catch { /* Metadata is loading. */ }
-      }
-      if (audible) {
-        if (element.paused) void element.play().catch(() => {});
-      } else element.pause();
+  useEffect(()=>{
+    const windows=cache.current;
+    if(!playing||!plan.length||!windows){
+      if(playing)transport.continueWithoutAudio(transport.generation);
+      setBuffering(false);meters.publish({});
+      return;
     }
-    for (const [id, voice] of voices.current) if (!keep.has(id)) {
-      release(voice);
-      voices.current.delete(id);
-    }
-    const activeBuses=new Set([...voices.current.values()].map(voice=>voice.bus));
-    for(const [id,bus] of buses.current)if(!activeBuses.has(id)){closeChannel(bus);buses.current.delete(id);}
-  }, [plan, sources, time, playing,dspReady]);
+    const generation=transport.generation;
+    transport.holdForAudio(generation);
+    setBuffering(true);
+    const loop=transport.span(),start=loop?Math.round(loop.start*AUDIO_RATE):0;
+    const end=Math.round((loop?.end??transport.end)*AUDIO_RATE);
+    let cursor=Math.max(start,Math.round(transport.time()*AUDIO_RATE));
+    if(loop&&cursor>=end)cursor=start;
+    let cancelled=false,timer:ReturnType<typeof setTimeout>|undefined;
+    let bufferDeadline:ReturnType<typeof setTimeout>|undefined;
+    let nextAudioTime=0;
+    const scheduled=new Set<AudioBufferSourceNode>();
+    const levelWindows=new Map<number,AudioWindow>();
+    const clippedAt=new Map<string,number>();
+    let analyzer:AnalyserNode|undefined;
 
-  return <VideoLevelMeter bus={meters}/>;
+    async function nextSegment():Promise<Segment|undefined>{
+      if(cursor>=end){if(!loop||end<=start)return;cursor=start;}
+      const first=firstSample(cursor),offset=cursor-first,count=Math.min(AUDIO_WINDOW-offset,end-cursor);
+      const window=await windows!.get(first);
+      if(cancelled)return;
+      cursor+=count;
+      return {first,offset,count,window};
+    }
+
+    function schedule(audio:AudioContext,segment:Segment){
+      const node=audio.createBufferSource();
+      node.buffer=audioBufferFor(audio,segment.window);
+      node.connect(volume.current!);
+      scheduled.add(node);
+      node.onended=()=>{scheduled.delete(node);node.disconnect();};
+      node.start(nextAudioTime,segment.offset/AUDIO_RATE,segment.count/AUDIO_RATE);
+      nextAudioTime+=segment.count/AUDIO_RATE;
+      levelWindows.set(segment.first,segment.window);
+      while(levelWindows.size>7)levelWindows.delete(levelWindows.keys().next().value!);
+    }
+
+    function publishLevels(audio:AudioContext,samples:Float32Array){
+      if(!analyzer)return;
+      const sample=Math.round(transport.time()*AUDIO_RATE),first=firstSample(sample);
+      const peaks={...levelWindows.get(first)?.levels[Math.floor((sample-first)/AUDIO_METER_STEP)]};
+      analyzer.getFloatTimeDomainData(samples as Float32Array<ArrayBuffer>);
+      let master=0;
+      for(const value of samples)master=Math.max(master,Math.abs(value));
+      peaks[MASTER_AUDIO_BUS]=master;
+      const now=audio.currentTime;
+      meters.publish(Object.fromEntries(Object.entries(peaks).map(([id,peak])=>{
+        if(peak>=.999)clippedAt.set(id,now);
+        return [id,{peak,clipped:now-(clippedAt.get(id)??-Infinity)<1.5}];
+      })));
+    }
+
+    async function run(){
+      const audio=context.current??=new AudioContext({latencyHint:'playback'});
+      if(!volume.current){
+        const gain=audio.createGain();
+        gain.connect(audio.destination);
+        volume.current=gain;
+      }
+      volume.current.gain.value=monitorMuted.current?0:1;
+      analyzer=audio.createAnalyser();
+      analyzer.fftSize=1024;
+      volume.current.connect(analyzer);
+      const samples=new Float32Array(1024);
+      const resume=audio.resume();
+      const initial:Segment[]=[];
+      let prepared=0;
+      while(prepared<AUDIO_RATE*.55){
+        const segment=await nextSegment();
+        if(!segment)break;
+        initial.push(segment);prepared+=segment.count;
+      }
+      await resume;
+      if(!await transport.awaitFirstFrame(generation))return;
+      if(cancelled)return;
+      if(!initial.length){transport.continueWithoutAudio(generation);setBuffering(false);return;}
+      const startAt=initial[0].first+initial[0].offset;
+      nextAudioTime=audio.currentTime+startLead;
+      if(!transport.useAudioClock(generation,startAt/AUDIO_RATE,nextAudioTime,()=>outputClock(audio)))return;
+      for(const segment of initial)schedule(audio,segment);
+      setBuffering(false);
+      async function refill(){
+        if(cancelled)return;
+        publishLevels(audio,samples);
+        while(!cancelled&&nextAudioTime-audio.currentTime<2.25){
+          if(!loop&&cursor>=end)break;
+          const missingAt=cursor>=end?start:cursor;
+          bufferDeadline=setTimeout(()=>{
+            if(!cancelled){
+              transport.holdForAudio(generation,missingAt/AUDIO_RATE);
+              setBuffering(true);
+            }
+          },Math.max(0,(nextAudioTime-outputClock(audio))*1000));
+          const segment=await nextSegment();
+          clearTimeout(bufferDeadline);
+          if(cancelled||!segment)break;
+          if(transport.waiting||nextAudioTime<audio.currentTime+.004){
+            nextAudioTime=audio.currentTime+startLead;
+            transport.useAudioClock(generation,(segment.first+segment.offset)/AUDIO_RATE,nextAudioTime,()=>outputClock(audio));
+            setBuffering(false);
+          }
+          schedule(audio,segment);
+        }
+        if(!cancelled)timer=setTimeout(()=>{void refill().catch(fail);},45);
+      }
+      await refill();
+    }
+
+    function fail(error:unknown){
+      if(cancelled)return;
+      clearTimeout(bufferDeadline);
+      transport.continueWithoutAudio(generation);
+      setBuffering(false);
+      onError('Audio preview could not start. '+String(error));
+    }
+    void run().catch(fail);
+    return()=>{
+      cancelled=true;
+      clearTimeout(timer);
+      clearTimeout(bufferDeadline);
+      for(const node of scheduled){node.onended=null;node.stop();node.disconnect();}
+      if(analyzer){volume.current?.disconnect(analyzer);analyzer.disconnect();}
+      meters.publish({});
+    };
+  },[playing,plan.length>0,signature,urls,transport,meters,onError]);
+
+  return <>
+    <VideoLevelMeter bus={meters}/>
+    {buffering&&<span className="hv-audio-buffering" role="status">Preparing audio</span>}
+  </>;
 }

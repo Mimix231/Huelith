@@ -5,6 +5,7 @@ import type {Effect} from '../../types';
 import {createSurface} from '../../canvas-surface';
 const make=(w:number,h:number)=>{const s=createSurface();s.width=w;s.height=h;return s;};
 export function renderLayerShadow(source:HTMLCanvasElement,effect:Effect):HTMLCanvasElement {
+ if(effect.amount<=0)return source;
  const w=source.width,h=source.height,out=make(w,h),target=out.getContext('2d');
  if(!target)throw new Error('Canvas unavailable');
  const entries=effect.parameters?.shadows;
@@ -27,7 +28,7 @@ export function renderLayerShadow(source:HTMLCanvasElement,effect:Effect):HTMLCa
    }else ctx.drawImage(source,dx,dy);
   }
   ctx.globalCompositeOperation='source-in';ctx.fillStyle=entry.color;ctx.fillRect(0,0,w,h);
-  target.save();target.globalAlpha=Math.max(0,Math.min(1,entry.opacity*Math.max(0,effect.amount/30)));
+  target.save();target.globalAlpha=Math.max(0,Math.min(1,entry.opacity*Math.max(0,effect.amount/100)));
   target.filter=`blur(${Math.max(0,Math.min(120,style==='contact'?Math.min(entry.radius,8):entry.radius))}px)`;
   target.drawImage(mask,style==='long'||style==='perspective'?0:entry.offsetX,style==='long'||style==='perspective'?0:entry.offsetY);
   target.restore();
@@ -38,7 +39,7 @@ export function renderLayerShadow(source:HTMLCanvasElement,effect:Effect):HTMLCa
   ctx.drawImage(source,0,0);ctx.globalCompositeOperation='source-in';ctx.fillStyle=entry.color;ctx.fillRect(0,0,w,h);
   ctx.globalCompositeOperation='destination-out';ctx.filter=`blur(${Math.max(0,Math.min(120,entry.radius))}px)`;
   ctx.drawImage(source,entry.offsetX,entry.offsetY);target.save();
-  target.globalAlpha=Math.max(0,Math.min(1,entry.opacity*Math.max(0,effect.amount/30)));
+  target.globalAlpha=Math.max(0,Math.min(1,entry.opacity*Math.max(0,effect.amount/100)));
   target.drawImage(mask,0,0);target.restore();
  }
  return out;

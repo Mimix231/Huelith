@@ -51,6 +51,7 @@ async fn list_system_fonts() -> Vec<String> {
 pub fn run() {
     tauri::Builder::default()
         .manage(media::MediaExportSessions::default())
+        .manage(media::PreviewAudioSessions::default())
         .manage(video_captions::CaptionJobs::default())
         .manage(media::recording_tools::RecordingJobs::default())
         .manage(aurora::CpuImageRegistry::default())
@@ -77,6 +78,9 @@ pub fn run() {
             media::media_capabilities,
             media::media_probe_file,
             media::media_analyze_audio,
+            media::media_open_preview_audio,
+            media::media_read_preview_audio,
+            media::media_close_preview_audio,
             media::media_decode_preview,
             media::media_export_test_pattern,
             media::media_transcode_file,

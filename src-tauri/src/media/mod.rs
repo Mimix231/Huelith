@@ -5,7 +5,9 @@
 
 #[cfg(windows)] mod windows_mf;
 mod stream;
+mod preview_audio;
 pub use stream::*;
+pub use preview_audio::*;
 pub(crate) mod recording_tools;
 #[cfg(windows)] mod delivery;
 

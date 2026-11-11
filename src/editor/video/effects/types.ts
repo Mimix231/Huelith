@@ -30,6 +30,7 @@ export interface VideoFrameContext {
   fps: number;
   referenceWidth?:number;
   signal?: AbortSignal;
+  lane?:string;
   /** Decoder/geometry identity for caching deterministic historical frames. */
   historyKey?: string;
   grade?: VideoGrade;

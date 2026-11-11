@@ -861,7 +861,7 @@
 }
 .app.is-video-studio .hv-track[data-primary=true] { --lane-height: 66px; }
 .app.is-video-studio .hv-track[data-kind=audio] { --lane-height: 54px; }
-.app.is-video-studio .hv-track-lane { height: var(--lane-height); min-height: var(--lane-height); }
+.app.is-video-studio .hv-track-lane { height: var(--lane-height); min-height: var(--lane-height); isolation: isolate; }
 .app.is-video-studio .hv-track-name { background: #1f202a; }
 .app.is-video-studio .hv-track-name {
   gap: 10px;
@@ -910,12 +910,22 @@
   padding: 4px 7px;
 }
 .app.is-video-studio .hv-clip-waveform {
-  left: min(35%,175px);
-  width: calc(100% - min(35%,175px) - 5px);
-  height: calc(100% - 10px);
-  top: 5px;
-  opacity: .62;
+  inset: auto;
+  top: 12%;
+  height: 76%;
+  opacity: .82;
   color: #86c7a9;
+  fill: currentColor;
+}
+.app.is-video-studio .hv-clip-video .hv-clip-waveform { top: 70%; height: 26%; color: #a8d6c3; }
+.app.is-video-studio .hv-clip-waveform.is-muted { opacity: .25; }
+.app.is-video-studio .hv-clip-audio .hv-clip-content {
+  align-self: flex-start;
+  flex: 0 1 auto;
+  margin: 3px 0 0 3px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  background: #173b32de;
 }
 .app.is-video-studio .hv-statusbar {
   display: flex;
@@ -1189,4 +1199,228 @@
   border-radius: 3px;
   font-style: normal;
   font-size: 11px;
+}
+
+/* UI motion only: never transition layout, playback surfaces or drag positions. */
+.app.is-video-studio .hv-shell {
+  --hv-motion-fast: 120ms;
+  --hv-motion-ui: 180ms;
+  --hv-motion-ease: cubic-bezier(.2,.7,.2,1);
+}
+.app.is-video-studio .hv-shell :is(
+  .hv-library-tabs button, .hv-category-rail button,
+  .hv-inspector-tabs button, .hv-inspector-subtabs > button,
+  .hv-animation-grid > button, .hv-library-options, .hv-library-import,
+  .hv-catalog-pin, .hv-auto-key, .hv-key-buttons button,
+  .hv-effect-toolbar button, .hv-effect-keyframe button, .hv-inspector-actions button,
+  .hv-player-bar button, .hv-timeline-primary button, .hv-timeline-actions button,
+  .hv-track-controls button, .hv-track-secondary button,
+  .hv-overview-search, .hv-overview-results button,
+  .hv-sequence-bar button, .hv-working-bar button, .hv-enable-switch, .hv-switch
+) {
+  transition: color var(--hv-motion-ui) var(--hv-motion-ease),
+    background-color var(--hv-motion-ui) var(--hv-motion-ease),
+    border-color var(--hv-motion-ui) var(--hv-motion-ease),
+    box-shadow var(--hv-motion-ui) var(--hv-motion-ease),
+    opacity var(--hv-motion-fast) var(--hv-motion-ease),
+    transform var(--hv-motion-fast) var(--hv-motion-ease);
+}
+.app.is-video-studio .hv-shell .hv-library-tabs button svg {
+  transition: color var(--hv-motion-ui) var(--hv-motion-ease);
+}
+.app.is-video-studio .hv-shell :is(
+  .hv-library-tabs button, .hv-category-rail button,
+  .hv-inspector-tabs button, .hv-inspector-subtabs > button,
+  .hv-animation-grid > button, .hv-library-options, .hv-library-import,
+  .hv-catalog-pin, .hv-auto-key, .hv-key-buttons button,
+  .hv-effect-toolbar button, .hv-effect-keyframe button, .hv-inspector-actions button,
+  .hv-player-bar button, .hv-timeline-primary button, .hv-timeline-actions button,
+  .hv-track-controls button, .hv-track-secondary button, .hv-overview-search,
+  .hv-overview-results button, .hv-sequence-bar button, .hv-working-bar button
+):enabled:not([aria-disabled=true]):active {
+  transform: translateY(1px);
+}
+.app.is-video-studio .hv-shell :is(button, input, select, summary):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.app.is-video-studio .hv-shell :is(.hv-library-search, .hv-value-number) {
+  transition: border-color var(--hv-motion-ui) var(--hv-motion-ease);
+}
+.app.is-video-studio .hv-shell :is(.hv-library-search, .hv-value-number):focus-within {
+  border-color: var(--accent);
+}
+
+/* Animate artwork inside its clipping frame, not the pointer/drag hit target. */
+.app.is-video-studio .hv-shell .hv-card-image {
+  transition: outline-color var(--hv-motion-ui) var(--hv-motion-ease);
+}
+.app.is-video-studio .hv-shell .hv-catalog-card:enabled:not([aria-disabled=true]):is(:hover,:focus-visible) .hv-card-image {
+  outline-color: var(--accent);
+}
+.app.is-video-studio .hv-shell :is(.hv-card-image > img, .hv-animation-grid button img) {
+  transition: transform var(--hv-motion-ui) var(--hv-motion-ease);
+}
+.app.is-video-studio .hv-shell .hv-card-add {
+  transform: translateY(2px) scale(.94);
+  transition: opacity var(--hv-motion-fast) var(--hv-motion-ease),
+    transform var(--hv-motion-ui) var(--hv-motion-ease);
+}
+.app.is-video-studio .hv-shell .hv-catalog-card:enabled:not([aria-disabled=true]):is(:hover,:focus-visible) .hv-card-add {
+  opacity: 1;
+  transform: none;
+}
+.app.is-video-studio .hv-shell :is(.hv-card-context, .hv-track-secondary) {
+  transition: opacity var(--hv-motion-fast) var(--hv-motion-ease);
+}
+.app.is-video-studio .hv-shell .hv-catalog-pinnable:focus-within .hv-catalog-pin {
+  opacity: 1;
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .app.is-video-studio .hv-shell .hv-catalog-card:enabled:not([aria-disabled=true]):not(:active):not(.is-dragging):hover .hv-card-image > img,
+  .app.is-video-studio .hv-shell .hv-animation-grid > button:enabled:not(:active):hover img {
+    transform: scale(1.025);
+  }
+  .app.is-video-studio .hv-shell .hv-animation-grid > button:enabled:hover {
+    box-shadow: inset 0 0 0 1px var(--accent-line);
+  }
+}
+
+/* Replace the switch's left-position jump with a compositor-only thumb slide. */
+.app.is-video-studio .hv-shell :is(.hv-enable-switch, .hv-switch)::after {
+  left: 2px;
+  transform: translateX(0);
+  transition: transform var(--hv-motion-ui) var(--hv-motion-ease);
+}
+.app.is-video-studio .hv-shell .hv-enable-switch[aria-checked=true]::after,
+.app.is-video-studio .hv-shell button[aria-pressed=true] > .hv-switch::after {
+  left: 2px;
+  transform: translateX(15px);
+}
+.app.is-video-studio .hv-shell :is(.hv-effect, .hv-inspector-section) > summary {
+  transition: color var(--hv-motion-ui) var(--hv-motion-ease),
+    background-color var(--hv-motion-ui) var(--hv-motion-ease);
+}
+.app.is-video-studio .hv-shell .hv-compact-effect > summary > svg {
+  transition: transform var(--hv-motion-ui) var(--hv-motion-ease);
+}
+
+/* Clip selection/trim feedback only; left, width and playhead transforms stay immediate. */
+.app.is-video-studio .hv-shell .hv-clip {
+  transition: border-color var(--hv-motion-fast) var(--hv-motion-ease),
+    outline-color var(--hv-motion-fast) var(--hv-motion-ease),
+    background-color var(--hv-motion-fast) var(--hv-motion-ease),
+    box-shadow var(--hv-motion-fast) var(--hv-motion-ease);
+}
+.app.is-video-studio .hv-shell .hv-grip {
+  transition: background-color var(--hv-motion-fast) var(--hv-motion-ease);
+}
+
+/* Mount/open fades, without moving panels or animating details height. */
+@keyframes hv-studio-panel-enter {
+  from { opacity: .94; }
+  to { opacity: 1; }
+}
+.app.is-video-studio .hv-shell .hv-library-scroll > .hv-catalog-grid,
+.app.is-video-studio .hv-shell .hv-inspector-scroll > fieldset,
+.app.is-video-studio .hv-shell .hv-compact-effect[open] > .hv-compact-effect-body,
+.app.is-video-studio .hv-shell :is(.hv-monitor-options, .hv-timeline-tools-popup, .hv-overview-results) {
+  animation: hv-studio-panel-enter var(--hv-motion-ui) var(--hv-motion-ease);
+}
+@media (prefers-reduced-motion: reduce) {
+  .app.is-video-studio .hv-shell {
+    --hv-motion-fast: 0ms;
+    --hv-motion-ui: 0ms;
+  }
+  .app.is-video-studio .hv-shell :is(
+    .hv-library-tabs button, .hv-category-rail button,
+    .hv-inspector-tabs button, .hv-inspector-subtabs > button,
+    .hv-animation-grid > button, .hv-library-options, .hv-library-import,
+    .hv-catalog-pin, .hv-auto-key, .hv-key-buttons button,
+    .hv-effect-toolbar button, .hv-effect-keyframe button, .hv-inspector-actions button,
+    .hv-player-bar button, .hv-timeline-primary button, .hv-timeline-actions button,
+    .hv-track-controls button, .hv-track-secondary button, .hv-overview-search,
+    .hv-overview-results button, .hv-sequence-bar button, .hv-working-bar button
+  ):enabled:not([aria-disabled=true]):active,
+  .app.is-video-studio .hv-shell .hv-card-add,
+  .app.is-video-studio .hv-shell :is(.hv-card-image > img, .hv-animation-grid button img) {
+    transform: none;
+  }
+  .app.is-video-studio .hv-shell .hv-library-scroll > .hv-catalog-grid,
+  .app.is-video-studio .hv-shell .hv-inspector-scroll > fieldset,
+  .app.is-video-studio .hv-shell .hv-compact-effect[open] > .hv-compact-effect-body,
+  .app.is-video-studio .hv-shell :is(.hv-monitor-options, .hv-timeline-tools-popup, .hv-overview-results) {
+    animation: none;
+  }
+}
+
+.app.is-video-studio .hv-shell { user-select: none; }
+.app.is-video-studio .hv-shell :is(input:not([type=range]),textarea,[contenteditable=true]) { user-select: text; }
+.app.is-video-studio .hv-shell input[type=number] { appearance: textfield; }
+.app.is-video-studio .hv-shell input[type=number]::-webkit-inner-spin-button,
+.app.is-video-studio .hv-shell input[type=number]::-webkit-outer-spin-button { appearance: none; margin: 0; }
+.app.is-video-studio .hv-shell img { -webkit-user-drag: none; }
+.hv-studio-hint {
+  position: fixed;
+  z-index: 1600;
+  pointer-events: none;
+  max-width: 280px;
+  padding: 5px 8px;
+  transform: translateX(-50%);
+  background: #211d2df5;
+  border: 1px solid #67557d;
+  border-radius: 6px;
+  box-shadow: 0 5px 18px #0008;
+  color: #eee4f9;
+  font-size: 11px;
+  line-height: 1.35;
+  white-space: normal;
+}
+.hv-studio-hint.is-above { transform: translate(-50%,-100%); }
+.hv-audio-buffering {
+  position: absolute;
+  left: 12px;
+  bottom: 15px;
+  z-index: 2;
+  padding: 4px 7px;
+  border-radius: 5px;
+  background: #1c1729e8;
+  color: #ecd9ff;
+  font-size: 11px;
+  pointer-events: none;
+}
+.hv-source-transport {
+  display: grid;
+  min-width: 0;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 7px;
+  background: #13131c;
+  color: #eeebf8;
+}
+.hv-source-transport video { width: 100%; max-height: 45vh; object-fit: contain; background: #000; }
+.hv-source-transport-bar { display: flex; align-items: center; gap: 7px; padding: 5px 8px; font-size: 11px; }
+.hv-source-transport-bar button { display: grid; place-items: center; background: transparent; color: inherit; border: 0; }
+.hv-source-transport-bar input { flex: 1; min-width: 30px; accent-color: var(--accent,#be94ef); }
+.hv-source-transport-bar svg { font-size: 18px; }
+.app.is-video-studio .hv-monitor { background: #000; }
+.app.is-video-studio .hv-shell .hv-catalog-card:is(:hover,:focus-visible) .hv-card-image {
+  box-shadow: inset 0 0 0 1px #b995e5a0,0 2px 14px #9870c324;
+  transition: box-shadow var(--hv-motion-ui,150ms) var(--hv-motion-ease,ease);
+}
+.app.is-video-studio .hv-shell .hv-transition-strip.is-preview {
+  box-shadow: inset 0 0 0 1px #e3bcff,0 0 12px #b67aff63;
+  background: linear-gradient(120deg,#9d62d790,#5c39868a);
+}
+@keyframes hv-studio-feedback {
+  from { opacity: .55; transform: translateY(3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .app.is-video-studio .hv-shell .hv-catalog-card:active .hv-card-image > img { transform: scale(.985); }
+  .hv-studio-hint,.hv-audio-buffering { animation: hv-studio-panel-enter 160ms ease-out; }
+  .app.is-video-studio .hv-shell .hv-library-drag-ghost .hv-drag-art,
+  .app.is-video-studio .hv-shell .hv-transition-strip.is-preview > svg {
+    animation: hv-studio-feedback 160ms var(--hv-motion-ease,ease-out);
+  }
 }

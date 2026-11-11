@@ -12,5 +12,5 @@ export function renderSigComicPop(source:HTMLCanvasElement,effect:Effect):HTMLCa
   return [Math.min(255,Math.round(r/step)*step*1.17)*factor,
     Math.min(255,Math.round(g/step)*step*1.17)*factor,
     Math.min(255,Math.round(b/step)*step*1.17)*factor];
- },true);
+ });
 }

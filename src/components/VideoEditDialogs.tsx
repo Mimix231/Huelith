@@ -1,9 +1,12 @@
-import {useEffect,useMemo,useState} from 'react';
+import {useLayoutEffect,useMemo,useState} from 'react';
 import {Button,Dialog,DialogActions,DialogContent,DialogTitle} from '@mui/material';
 import type {VideoAsset,VideoClip,VideoTimeline} from '../editor/video/timeline';
 import {ATTRIBUTE_OPTIONS,replacementPatch,type ClipAttribute,type StarterLayout} from '../editor/video/working-edit';
 import VideoAudioPreview from './VideoAudioPreview';
 import VideoMediaThumbnail from './VideoMediaThumbnail';
+import VideoSourceTransport from './VideoSourceTransport';
+import {timelineAudioSources} from '../editor/video/audio-plan';
+import {VideoPlaybackTransport} from '../editor/video/playback-transport';
 
 type PickMediaProps={assets:VideoAsset[];sources:Record<string,string>;onClose:()=>void};
 export function StartFromFootage({assets,sources,onClose,onImport,onStart}:{onImport:()=>void;onStart:(asset:VideoAsset,layout:StarterLayout)=>void}&PickMediaProps){
@@ -36,8 +39,8 @@ export function ReplaceFootage({assets,sources,clip,onClose,onApply}:{clip:Video
       <label className="hv-field">Replacement<select value={id} onChange={event=>setId(event.target.value)}>
         {!assets.length&&<option value="">Import another compatible source first</option>}
         {assets.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-      {asset&&<div className="hv-dialog-media">{asset.kind==='video'?<video key={id} src={sources[id]} controls preload="metadata"/>:
-        asset.kind==='audio'?<audio key={id} src={sources[id]} controls preload="metadata"/>:<VideoMediaThumbnail asset={asset} url={sources[id]}/>}</div>}
+      {asset&&<div className="hv-dialog-media">{asset.kind==='image'||!sources[id]?<VideoMediaThumbnail asset={asset} url={sources[id]}/>:
+        <VideoSourceTransport key={id} asset={asset} url={sources[id]}/>}</div>}
       {result&&('error' in result?<p role="alert">{result.error}</p>:<p>The cut stays {clip.duration.toFixed(2)} seconds.
         {result.rate!==undefined?' The replacement plays at '+result.rate.toFixed(2)+'× to fit.':''}</p>)}
     </DialogContent><DialogActions><Button onClick={onClose}>Cancel</Button>
@@ -61,18 +64,20 @@ export function PasteClipSettings({source,count,onClose,onPaste}:{source:string;
 export function AuditionSoundtrack({timeline,sources,start,end,count,onClose,onApply}:{timeline:VideoTimeline;sources:Record<string,string>;
   start:number;end:number;count:number;onClose:()=>void;onApply:()=>void}){
   const [playing,setPlaying]=useState(false),[head,setHead]=useState(start);
-  useEffect(()=>{
+  const [error,setError]=useState('');
+  const [transport]=useState(()=>new VideoPlaybackTransport());
+  const plan=useMemo(()=>timelineAudioSources(timeline),[timeline]);
+  useLayoutEffect(()=>{
     if(!playing)return;
-    let first:number|undefined;
+    transport.start(start,end,1,undefined,!!plan.length);
     let frame=requestAnimationFrame(tick);
-    function tick(stamp:number){
-      first??=stamp;
-      const time=start+(stamp-first)/1000;
+    function tick(){
+      const time=transport.time();
       setHead(Math.min(time,end));
       if(time>=end)setPlaying(false);else frame=requestAnimationFrame(tick);
     }
-    return()=>cancelAnimationFrame(frame);
-  },[playing,start,end]);
+    return()=>{cancelAnimationFrame(frame);transport.pause();};
+  },[playing,start,end,transport,plan.length]);
   function toggle(){
     if(playing){setPlaying(false);return;}
     setHead(start);setPlaying(true);
@@ -80,7 +85,8 @@ export function AuditionSoundtrack({timeline,sources,start,end,count,onClose,onA
   // The isolated audio preview follows the proposed source cuts.
   return <Dialog open maxWidth="xs" fullWidth onClose={onClose}><DialogTitle>Fit music to range</DialogTitle>
     <DialogContent><p>{count} editable {count===1?'section':'sections'} across {(end-start).toFixed(2)} seconds, with short edge fades.</p>
-      <VideoAudioPreview timeline={timeline} sources={sources} time={head} playing={playing}/>
+      <VideoAudioPreview plan={plan} sources={sources} time={head} playing={playing} transport={transport} onError={setError}/>
+      {error&&<p role="alert">{error}</p>}
       <div className="hv-inline-actions"><button onClick={toggle}>{playing?'Stop preview':'Play music preview'}</button>
         <span>{(head-start).toFixed(1)} / {(end-start).toFixed(1)} s</span></div>
     </DialogContent><DialogActions><Button onClick={onClose}>Cancel</Button><Button variant="contained" onClick={onApply}>Use these cuts</Button></DialogActions>

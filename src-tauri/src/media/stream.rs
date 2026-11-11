@@ -10,6 +10,7 @@ pub struct AudioSource {
     pub volume:f64, pub fade_in:f64, pub fade_out:f64,
     #[serde(default)] pub pan:f64,
     #[serde(default)] pub required:bool,
+    #[serde(default)] pub track_id:Option<String>,
     #[serde(default)] pub source_map:Vec<SourceKey>,
     #[serde(default)] pub gain_layers:Vec<GainLayer>,
     #[serde(default)] pub channel_mode:ChannelMode,
@@ -188,12 +189,15 @@ pub(super) fn validate_stream(config:&mut StreamConfig)->Result<(),String>{
         return Err("Export duration must be greater than zero and at most six hours".into());
     }
     if config.bitrate.is_some_and(|n|!(500_000..=100_000_000).contains(&n)) {return Err("Video bitrate must be 0.5..100 Mbps".into());}
-    if config.audio.len()>4096 {return Err("At most 4096 audible clips can be exported at once".into());}
-    for source in &mut config.audio {
+    validate_audio_sources(&mut config.audio)
+}
+pub(super) fn validate_audio_sources(audio:&mut [AudioSource])->Result<(),String>{
+    if audio.len()>4096 {return Err("At most 4096 audible clips can be mixed at once".into());}
+    for source in audio {
         if ![source.start,source.source_in,source.duration,source.volume,source.fade_in,source.fade_out].iter().all(|n|n.is_finite())
             ||source.start<0.||source.source_in<0.||source.duration<=0.||source.duration>21600.||!(0.0..=2.0).contains(&source.volume)
             ||source.fade_in<0.||source.fade_out<0.||source.fade_in>source.duration||source.fade_out>source.duration||!(-1. ..=1.).contains(&source.pan)
-            ||!source.valid_automation() {
+            ||source.track_id.as_ref().is_some_and(|id|id.len()>128)||!source.valid_automation() {
             return Err("Invalid audio clip timing, volume or fades".into());
         }
         source.path=validate_source_file(&source.path)?.to_string_lossy().into_owned();

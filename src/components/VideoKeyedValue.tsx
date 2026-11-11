@@ -11,12 +11,12 @@ export function VideoKeyButtons({label,clock,keys,onToggle,disabled}:ButtonsProp
   const current=keys.some(key=>keyFrame(key.time,clock.fps)===frame);
   const next=keys.find(key=>keyFrame(key.time,clock.fps)>frame&&key.time<=(clock.duration??Infinity)+1e-7);
   return <span className="hv-key-buttons">
-    <button type="button" aria-label={`Previous ${label} keyframe`} title={`Previous ${label} keyframe`} disabled={!previous}
+    <button type="button" aria-label={`Previous ${label} keyframe`} data-hint={`Previous ${label} keyframe`} disabled={!previous}
       onClick={()=>previous&&clock.onSeek(previous.time)}><ChevronLeft/></button>
     <button type="button" className={current?'is-keyed':''} aria-pressed={current} disabled={disabled||!clock.active}
-      aria-label={`${current?'Remove':'Add'} ${label} keyframe`} title={`${current?'Remove':'Add'} ${label} keyframe at playhead`}
+      aria-label={`${current?'Remove':'Add'} ${label} keyframe`} data-hint={`${current?'Remove':'Add'} ${label} keyframe at playhead`}
       onClick={onToggle}>{current?<Diamond/>:<DiamondOutlined/>}</button>
-    <button type="button" aria-label={`Next ${label} keyframe`} title={`Next ${label} keyframe`} disabled={!next}
+    <button type="button" aria-label={`Next ${label} keyframe`} data-hint={`Next ${label} keyframe`} disabled={!next}
       onClick={()=>next&&clock.onSeek(next.time)}><ChevronRight/></button>
   </span>;
 }

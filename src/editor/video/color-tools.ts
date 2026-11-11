@@ -1,6 +1,7 @@
 import { createSurface } from '../canvas-surface';
 import { isImmutableEffectSource, markImmutableEffectSource } from '../immutable-effect-sources';
-import {maskAt,maskPath,rebaseMask} from './clip-layout';
+import {compositeThroughMask,maskAt,maskPath,rebaseMask} from './clip-layout';
+import {renderGpuLut} from './lut-gpu';
 import {keysFromOffset,mapParameterKeys,parameterAt,validParameterLanes,type ParameterKeys} from './parameter-keys';
 import {MASK_PARAMETERS,validCrop,type ClipMask} from './studio-types';
 
@@ -256,6 +257,14 @@ export function applyVideoGrade(source:HTMLCanvasElement,authored?:VideoGrade,ti
   }
   const cached = cacheFrame?entry.frames.get(source):undefined;
   if (cached) return cached;
+  if(!sharpen&&!grain&&!vignette){
+    const accelerated=renderGpuLut(source,entry.cube,grid);
+    if(accelerated){
+      const result=grade.mask?compositeThroughMask(source,accelerated,grade.mask,time):accelerated;
+      if(cacheFrame&&isImmutableEffectSource(source))entry.frames.set(source,result);
+      return result;
+    }
+  }
   const result = createSurface();
   result.width = source.width; result.height = source.height;
   const ctx = result.getContext('2d', { willReadFrequently: true })!;

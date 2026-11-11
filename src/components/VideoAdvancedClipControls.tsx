@@ -105,7 +105,7 @@ function SpeedControls({clip,asset,time,fps,visual,onChange,onError,onPreservePi
       })}>Add speed point</button><button onClick={()=>apply(curve)}>Apply curve</button></div>
     </>}
     {page==='Velocity'&&<div className="hv-velocity-presets">{VELOCITIES.map(([name,rates])=><button key={name}
-      title={rates.map(rate=>`${rate}×`).join(' → ')} onClick={()=>apply(rates.map((rate,index)=>({at:index/(rates.length-1),rate})))}>{name}</button>)}</div>}
+      data-hint={rates.map(rate=>`${rate}×`).join(' → ')} onClick={()=>apply(rates.map((rate,index)=>({at:index/(rates.length-1),rate})))}>{name}</button>)}</div>}
     <output className="hv-duration-readout">Clip duration {clip.duration.toFixed(3)} s</output>
     {visual&&<label className="hv-source-favorite"><input type="checkbox" checked={reverse} onChange={event=>{
       setReverse(event.target.checked);apply(page==='Curve'?curve:clip.speedCurve??constant(),event.target.checked);

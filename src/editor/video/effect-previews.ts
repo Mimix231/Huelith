@@ -3,7 +3,7 @@ import type {VideoEffect} from './effects/types';
 export const FEATURED_VIDEO_EFFECTS=['sig_11','video-motion-trail','chromatic','sig_3','inkwash','video-temporal-echo'] as const;
 export const VIDEO_LIBRARY_EFFECT_NAMES:Partial<Record<VideoEffect['kind'],string>>={chromatic:'Chromatic Split',inkwash:'Paper Ink'};
 /** Card settings are also applied on click, so the illustrated look is real. */
-export const VIDEO_PREVIEW_ALPHA_KINDS=new Set(['outline','glow','shadow','backdrop','radiance','miasma','foil','chromaticsilk','sig_2','sig_6','sig_11']);
+export const VIDEO_PREVIEW_ALPHA_KINDS=new Set(['outline','glow','shadow','backdrop','radiance','miasma','foil','chromaticsilk','sig_2','sig_6']);
 export const VIDEO_PREVIEW_BRIGHT_KINDS=new Set(['highlights','whites','atelier_0_2','atelier_0_7','atelier_0_9','atelier_1_10']);
 export const VIDEO_EFFECT_DESIGN_WIDTH=960;
 export function createLibraryVideoEffect(kind:VideoEffect['kind']):VideoEffect{
@@ -32,7 +32,7 @@ export function createLibraryVideoEffect(kind:VideoEffect['kind']):VideoEffect{
  if(kind==='sig_7')effect.color='#ff762d';
  if(kind==='sig_11'){
   effect.color='#b879ff';
-  effect.parameters={...effect.parameters,opacity:60};
+  effect.parameters={...effect.parameters,opacity:78,radius:17,branching:38};
  }
  if(kind==='inkwash')effect.parameters={...effect.parameters,colorMix:85,paper:70};
  if(kind==='atelier_1_4')effect.parameters={...effect.parameters,threshold:64,centerX:91,centerY:15};

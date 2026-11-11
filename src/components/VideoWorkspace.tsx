@@ -1,8 +1,8 @@
-import { Fragment, memo, useCallback, useEffect, useMemo, useRef, useState, type PointerEvent, type ChangeEvent, type CSSProperties } from 'react';
+import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent, type ChangeEvent, type CSSProperties } from 'react';
 import {Button,Dialog,DialogActions,DialogContent,DialogTitle,Menu,MenuItem} from '@mui/material';
 import {invoke} from '@tauri-apps/api/core';
 import {
-  Add, Audiotrack, ContentCut, DeleteOutline, LockOutlined,
+  Add, Audiotrack, Close, ContentCut, DeleteOutline, LockOutlined,
   LockOpenOutlined, MovieOutlined, Pause, PlayArrow, SkipPrevious, TextFields,
   VolumeOff, VolumeUp, VisibilityOutlined, VisibilityOffOutlined, ZoomIn, SkipNext, FastRewind, FastForward,
   Fullscreen, MonitorOutlined, ExpandMore, PanToolOutlined, NearMeOutlined, Loop, Tune,
@@ -16,9 +16,10 @@ import {
 } from '../editor/video/timeline';
 import { classifyMedia, mediaMetadata, mediaUrl, registerBrowserFile, clearMediaUrls, forgetMediaUrl } from '../editor/video/media-assets';
 import { findCachedProxies, isNativeMediaDesktop, nativeMediaCapabilities, prepareRecording, probeNativeMedia, recordingTimecode,type MediaCapabilities, type NativeExportReport } from '../editor/video/native-media';
-import { timelineAudioSources } from '../editor/video/export-timeline';
 import VideoPreviewCanvas from './VideoPreviewCanvas';
 import VideoAudioPreview from './VideoAudioPreview';
+import { VideoPlaybackTransport } from '../editor/video/playback-transport';
+import { timelineAudioSources } from '../editor/video/audio-plan';
 import VideoEffectInspector from './VideoEffectInspector';
 import VideoExportDialog,{type VideoExportSettings} from './VideoExportDialog';
 import {planDelivery} from '../editor/video/delivery';
@@ -38,7 +39,9 @@ import VideoSequenceBar from './VideoSequenceBar';
 import VideoFootageTools from './VideoFootageTools';
 import {addSequence,MAIN_SEQUENCE,makeCompound,replaceScene,sceneAt,sceneUsesAsset,switchSequence,syncVariantCuts} from '../editor/video/sequences';
 import {pitchTiming,playbackRateAt,sourceBounds} from '../editor/video/clip-timing';
-import {analyzeAudio,sourceBeatToTimeline,waveformPath} from '../editor/video/audio-analysis';
+import {analyzeAudio,sourceBeatToTimeline} from '../editor/video/audio-analysis';
+import VideoClipWaveform from './VideoClipWaveform';
+import VideoStudioHints from './VideoStudioHints';
 import VideoAudioControls from './VideoAudioControls';
 import VideoGradePanel from './VideoGradePanel';
 import {VideoTextControls,VideoMotionControls} from './VideoClipControls';
@@ -127,12 +130,6 @@ function requiredSourceDuration(project:VideoProject, assetId:string) {
   return Math.max(project.timeline?visit(project.timeline):0,...(project.sequences??[]).map(sequence=>visit(sequence.scene)));
 }
 
-const ClipWaveform=memo(function ClipWaveform({asset,clip}:{asset:VideoAsset;clip:VideoClip}) {
-  return <svg className="hv-clip-waveform" viewBox="0 0 144 24" preserveAspectRatio="none" aria-hidden="true">
-    <path d={waveformPath(asset,clip)} fill="currentColor"/>
-  </svg>;
-});
-
 type Drag = { id:string;edge:'left'|'right'|'move'; initialX:number; start:number; length:number;guide?:number;
   trackId:string; targetTrackId:string; delta:number; pointerId:number; ids:string[]; scrollLeft:number };
 export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryChange}:Props){
@@ -141,6 +138,7 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
   const [compoundPath,setCompoundPath]=useState<string[]>([]);
   const scenePath=useRef(compoundPath);scenePath.current=compoundPath;
   const timeline=useMemo(()=>sceneAt(rootTimeline,compoundPath),[rootTimeline,compoundPath]);
+  const audioPlan=useMemo(()=>timelineAudioSources(timeline),[timeline]);
   const [previewQuality,setPreviewQuality]=useState(0);
   const [monitorMuted,setMonitorMuted]=useState(false),[monitorTools,setMonitorTools]=useState(false);
   const [timelineTools,setTimelineTools]=useState(false),[panTimeline,setPanTimeline]=useState(false);
@@ -169,6 +167,7 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
   const [analysisTick,setAnalysisTick]=useState(0);
   const setSelected = (id: string | null) => setSelection(id ? [id] : []);
   const [head,setHead]=useState(0);
+  const [transport]=useState(()=>new VideoPlaybackTransport());
   const [tailPreview,setTailPreview]=useState<{head:number;time:number}>();
   const [clockDraft,setClockDraft]=useState<string>();
   const [playing,setPlaying]=useState(false);
@@ -212,6 +211,7 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
   const [rangeMode,setRangeMode]=useState<'box'|'range'>(),[range,setRange]=useState<TimeSpan>();
   const rangeGesture=useRef<SelectionGesture|null>(null);
   const [loop,setLoop]=useState<TimeSpan>(),looping=useRef(loop);looping.current=loop;
+  const timelineSpan=range??loop,markedRange=!!range&&!rangeMode;
   const [skim,setSkim]=useState<number>(),[filmstrip,setFilmstrip]=useState(true);
   const [original,setOriginal]=useState(false),[compare,setCompare]=useState(false),[divider,setDivider]=useState(50);
   const [titleEdit,setTitleEdit]=useState<{id:string;text:string}>(),[guide,setGuide]=useState(false);
@@ -250,7 +250,7 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
   });
   const activeInspector=inspectorPages.includes(inspectorPage)?inspectorPage:inspectorPages[0];
   const credits=useMemo(()=>{
-    const audible=new Set(timelineAudioSources(timeline).map(source=>source.assetId));
+    const audible=new Set(audioPlan.map(source=>source.assetId));
     return recordingCredits(timeline.assets.flatMap(asset=>asset.credit&&audible.has(asset.id)?[asset.credit]:[]));
   },[timeline]);
   const total = useMemo(() => durationOf(timeline), [timeline]);
@@ -538,44 +538,42 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
     const x=head*zoom,width=scroll.clientWidth-TRACK_HEADER_WIDTH;
     if(x<scroll.scrollLeft||x>scroll.scrollLeft+width-10)scroll.scrollLeft=Math.max(0,x-width*.2);
   },[head,zoom,followHead,navigation.scrubbing]);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!playing) return;
-    const start = cap(head, 0, total);
-    let firstFrame: number | undefined;
-
+    transport.start(cap(head, 0, total),total,direction,()=>looping.current,audioPlan.length>0,true);
+    let publishedAt = -Infinity;
     function tick(timestamp: number) {
-      // Use the frame clock for both timestamps so the first delta is zero.
-      firstFrame ??= timestamp;
-      const elapsed=(timestamp-firstFrame)/1000;
-      const activeLoop=looping.current;
-      let time = start + direction * elapsed;
-      if(activeLoop&&activeLoop.end<=total&&direction===1){
-        const span=activeLoop.end-activeLoop.start;
-        time=activeLoop.start+((Math.max(0,start-activeLoop.start)+elapsed)%span);
-      }
+      const time = transport.time();
       const ended = direction === 1 ? time >= total : time <= 0;
-      setHead(cap(time, 0, total));
+      if (ended || timestamp - publishedAt >= 1000 / 30) {
+        publishedAt = timestamp;
+        setHead(time);
+      }
       if (ended) setPlaying(false);
       else frame = requestAnimationFrame(tick);
     }
 
     let frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
+    return () => { cancelAnimationFrame(frame); transport.pause(); };
     // Sample the playhead once when this run begins.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playing, total, direction]);
   useEffect(()=>{
     function key(e:KeyboardEvent){const target=e.target as HTMLElement;
       const space=e.code==='Space'||e.key===' '||e.key==='Spacebar';
-      const timelineRange=target instanceof HTMLInputElement&&target.type==='range'&&(space||e.ctrlKey||e.metaKey);
+      const unmodified=!e.ctrlKey&&!e.metaKey&&!e.altKey&&!e.shiftKey;
+      const letter=e.key.toLowerCase(),mark=unmodified?(letter==='i'?'start':letter==='o'?'end':undefined):undefined;
+      const timelineRange=target instanceof HTMLInputElement&&target.type==='range'&&
+        (space||e.ctrlKey||e.metaKey||e.key==='Escape'||!!mark&&!!target.closest('.hv-timeline'));
       if((!timelineRange&&['INPUT','TEXTAREA','SELECT','VIDEO','AUDIO'].includes(target.tagName))
         ||target.isContentEditable||document.querySelector('[role="dialog"][aria-modal="true"]')||e.defaultPrevented)return;
       if(e.altKey&&e.code==='KeyB'&&selectedClip){e.preventDefault();setOriginal(true);return;}
-      if(e.key==='Escape'){setContextMenu(undefined);setRangeMode(undefined);setRange(undefined);setSkim(undefined);setMonitorTools(false);setTimelineTools(false);}
+      if(e.key==='Escape'){setContextMenu(undefined);clearTimelineRange();setSkim(undefined);setMonitorTools(false);setTimelineTools(false);return;}
       if((e.ctrlKey||e.metaKey)&&!e.altKey&&e.code==='KeyK'){e.preventDefault();setPreferencesOpen('commands');return;}
-      if(!e.ctrlKey&&!e.metaKey&&!e.altKey&&!e.shiftKey){
+      if(unmodified){
         const command=VIDEO_COMMANDS.find(([id])=>preferences.keys[id]===e.code);
         if(command){e.preventDefault();if(!e.repeat||command[0]==='previous'||command[0]==='next')runCommand(command[0]);return;}
+        if(mark){e.preventDefault();if(!e.repeat)markTimelineRange(mark);return;}
       }
       if(e.altKey&&(e.code==='BracketLeft'||e.code==='BracketRight')){
         e.preventDefault();jumpKey(e.code==='BracketLeft'?-1:1);return;
@@ -1204,7 +1202,7 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
 
   function togglePlayback() {
     if (!total) return;
-    if (playing){setPlaying(false);return;}
+    if (playing){setHead(transport.time());setPlaying(false);return;}
     setTailPreview(undefined);
     if (loop&&(head<loop.start||head>=loop.end))setHead(loop.start);
     else if (head >= total) setHead(0);
@@ -1212,7 +1210,7 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
     setPlaying(true);
   }
   function runCommand(command:StudioCommand){
-    if(command==='pause'){setPlaying(false);return;}
+    if(command==='pause'){if(playing)setHead(transport.time());setPlaying(false);return;}
     if(command==='forward'||command==='reverse'){
       if(!total)return;
       setTailPreview(undefined);
@@ -1260,6 +1258,22 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
     const next=loopSpan(timeline,selection,range,project.fps);
     if(!next)return;
     setLoop(next);setHead(next.start);setDirection(1);setPlaying(false);
+  }
+  function markTimelineRange(edge:'start'|'end'){
+    if(!total)return;
+    const time=cap(frameTime(playing?transport.time():head,project.fps),0,total);
+    setRangeMode(undefined);
+    setRange(current=>edge==='start'
+      ?{start:time,end:current&&current.end>time?Math.min(total,current.end):total}
+      :{start:current&&current.start<time?current.start:0,end:time});
+  }
+  function clearTimelineRange(){
+    rangeGesture.current=null;
+    setRangeMode(undefined);setRange(undefined);
+    if(loop){
+      if(playing)setHead(transport.time());
+      setPlaying(false);setLoop(undefined);
+    }
   }
   function selectionStart(event:PointerEvent<HTMLElement>,trackId:string){
     if(!rangeMode||event.button!==0)return false;
@@ -1536,7 +1550,8 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
   return <main ref={shell} className={`hv-shell${fileDrop.over?' is-file-drop':''}`} style={{'--hv-track-header':TRACK_HEADER_WIDTH+'px'} as CSSProperties}
     aria-label="Video Editor workspace" onClickCapture={libraryDrag.onClickCapture}
     {...fileDrop.handlers}
-    onDragStart={event=>event.preventDefault()}>
+    onDragStart={event=>event.preventDefault()} onContextMenu={event=>event.preventDefault()}>
+    <VideoStudioHints workspace={shell}/>
     {fileDrop.over&&<div className="hv-file-drop-notice" role="status">
       {fileDrop.over==='timeline'?'Release files to place clips at this point':'Release files or folders to import into Media'}
     </div>}
@@ -1584,12 +1599,12 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
         </div>}
         <div className="hv-stage-flex"><div className="hv-monitor" style={{aspectRatio:`${project.width} / ${project.height}`,'--hv-ratio':project.width/project.height} as CSSProperties}>
           <VideoPreviewCanvas key={`${project.id}:${project.sequence?.id??'main'}:${compoundPath.join('/')}`} timeline={original?originalTimeline:displayTimeline}
-            width={project.width} height={project.height} quality={previewQuality} fps={project.fps} time={displayHead} playing={monitorClock.playing}
+            width={project.width} height={project.height} quality={previewQuality} fps={project.fps} time={displayHead} playing={monitorClock.playing} transport={transport} synchronizeStart
             interactive={monitorClock.interactive} cacheRequest={cacheRequest} onError={setError}/>
           {auditionResult&&activeAudition&&<span className="hv-audition-badge">Clip preview · {activeAudition.name}</span>}
           {compare&&!original&&selectedClip&&<div className="hv-compare-image" style={{clipPath:`inset(0 ${100-divider}% 0 0)`}}>
             <VideoPreviewCanvas timeline={originalTimeline} width={project.width} height={project.height} fps={project.fps} time={displayHead}
-              quality={.5} playing={monitorClock.playing} interactive={monitorClock.interactive} onError={setError}/>
+              quality={.5} playing={monitorClock.playing} transport={transport} interactive={monitorClock.interactive} onError={setError}/>
             <span className="hv-compare-label">Original</span>
           </div>}
           {compare&&!original&&selectedClip&&<div className="hv-compare-rule" style={{left:divider+'%'}} role="slider"
@@ -1629,7 +1644,8 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
               onChange={event=>setTitleEdit({...titleEdit,text:event.target.value})} onBlur={finishTitle}
               onKeyDown={event=>{if(event.key==='Escape'){event.stopPropagation();setTitleEdit(undefined);}if(event.key==='Enter'&&(event.ctrlKey||event.metaKey)){event.preventDefault();finishTitle();}}}/>
             <small>Ctrl+Enter to apply · Escape to cancel</small></div>}
-          <VideoAudioPreview timeline={timeline} sources={sources} time={head} playing={monitorClock.playing} meters={meters} muted={monitorMuted}/>
+          <VideoAudioPreview plan={audioPlan} sources={sources} time={head} playing={monitorClock.playing} transport={transport}
+            meters={meters} muted={monitorMuted} onError={setError}/>
           {!displayClips.some(c=>timeline.tracks.find(t=>t.id===c.trackId)?.kind!=='audio')&&
             <div className="hv-monitor-empty"><MovieOutlined sx={{fontSize:40}}/><span>{timeline.clips.length?'No visual clip at this time':'Your story starts here'}</span>
               <small>{timeline.clips.length?'Move the playhead to a video, image or title clip.':'Drop a recording here or choose a first clip.'}</small>
@@ -1637,7 +1653,7 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
         </div></div>
         <div className="hv-player-bar">
           <span className="hv-clock">
-            {clockDraft===undefined?<button type="button" className="hv-timecode-button" aria-label="Go to timecode" title="Go to timecode"
+            {clockDraft===undefined?<button type="button" className="hv-timecode-button" aria-label="Go to timecode" data-hint="Go to timecode"
               onClick={()=>setClockDraft(timecode(head,project.fps))}>{timecode(head,project.fps)}</button>
               :<input autoFocus className="hv-timecode-input" aria-label="Playhead timecode" value={clockDraft} onFocus={event=>event.currentTarget.select()}
                 onChange={event=>setClockDraft(event.target.value)} onBlur={finishClock} onKeyDown={event=>{
@@ -1646,20 +1662,21 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
                 }}/>} <small>/ {timecode(total,project.fps)}</small>
           </span>
           <div className="hv-player-transport">
-            <button title="Jump to start" onClick={()=>seekTo(0)}><SkipPrevious/></button>
-            <button title="Previous frame (Left)" onClick={()=>stepFrame(-1)}><FastRewind/></button>
-            <button className="hv-play" title={playing?'Pause':'Play'} disabled={total===0} onClick={togglePlayback}>{playing?<Pause/>:<PlayArrow/>}</button>
-            <button title="Next frame (Right)" onClick={()=>stepFrame(1)}><FastForward/></button>
-            <button title="Jump to end" onClick={()=>seekTo(total)}><SkipNext/></button>
+            <button aria-label="Jump to start" data-hint="Jump to start" onClick={()=>seekTo(0)}><SkipPrevious/></button>
+            <button aria-label="Previous frame (Left)" data-hint="Previous frame · Left arrow" onClick={()=>stepFrame(-1)}><FastRewind/></button>
+            <button className="hv-play" aria-label={playing?'Pause':'Play'} data-hint={playing?'Pause · Space':'Play · Space'}
+              disabled={total===0} onClick={togglePlayback}>{playing?<Pause/>:<PlayArrow/>}</button>
+            <button aria-label="Next frame (Right)" data-hint="Next frame · Right arrow" onClick={()=>stepFrame(1)}><FastForward/></button>
+            <button aria-label="Jump to end" data-hint="Jump to end" onClick={()=>seekTo(total)}><SkipNext/></button>
           </div>
           <div className="hv-player-display">
-            <button aria-expanded={monitorTools} title="Monitor settings" onClick={()=>setMonitorTools(value=>!value)}>
+            <button aria-expanded={monitorTools} aria-label="Monitor settings" data-hint="Monitor settings" onClick={()=>setMonitorTools(value=>!value)}>
               <MonitorOutlined/>{aspectLabel(project.width,project.height)}<ExpandMore fontSize="inherit"/>
             </button>
-            <button aria-pressed={monitorMuted} title={monitorMuted?'Unmute preview':'Mute preview'} onClick={()=>setMonitorMuted(value=>!value)}>
+            <button aria-pressed={monitorMuted} aria-label={monitorMuted?'Unmute preview':'Mute preview'} data-hint={monitorMuted?'Unmute preview':'Mute preview'} onClick={()=>setMonitorMuted(value=>!value)}>
               {monitorMuted?<VolumeOff/>:<VolumeUp/>}
             </button>
-            <button title="Toggle fullscreen preview" onClick={()=>{
+            <button aria-label="Toggle fullscreen preview" data-hint="Fullscreen preview" onClick={()=>{
               const action=document.fullscreenElement?document.exitFullscreen():monitorStage.current?.requestFullscreen();
               void action?.catch(error=>setError(String(error)));
             }}><Fullscreen/></button>
@@ -1675,9 +1692,9 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
             <option value={0}>Auto</option><option value={1}>Full</option><option value={.5}>½ preview</option><option value={.25}>¼ preview</option>
           </select></label>
         <div className="hv-monitor-tools hv-inline-actions">
-          <button disabled={playing||!total||head>=total} title="Cache upcoming frames at the preview resolution"
+          <button disabled={playing||!total||head>=total} data-hint="Cache upcoming frames at the preview resolution"
             onClick={()=>setCacheRequest(value=>value+1)}>Cache frames</button>
-          <button disabled={!selectedClip} title="Alt+B" onPointerDown={event=>{if(event.button===0){event.currentTarget.setPointerCapture(event.pointerId);setOriginal(true);}}}
+          <button disabled={!selectedClip} data-hint="Alt+B" onPointerDown={event=>{if(event.button===0){event.currentTarget.setPointerCapture(event.pointerId);setOriginal(true);}}}
             onPointerUp={()=>setOriginal(false)} onLostPointerCapture={()=>setOriginal(false)}
             onKeyDown={event=>{if(event.key===' '){event.preventDefault();setOriginal(true);}}} onKeyUp={event=>{if(event.key===' ')setOriginal(false);}}>Hold original</button>
           <button disabled={!selectedClip} aria-pressed={compare} onClick={()=>setCompare(!compare)}>Compare</button>
@@ -1694,7 +1711,7 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
       </section>
       <aside className="hv-inspector hv-card"><div className="hv-heading"><h3>Inspector</h3>
         {selectedClip&&<button type="button" className="hv-auto-key" aria-pressed={autoKey}
-          title="Automatically add a key when changing an animatable value" onClick={()=>setAutoKey(!autoKey)}><DiamondOutlined/> Auto Key</button>}
+          data-hint="Automatically add a key when changing an animatable value" onClick={()=>setAutoKey(!autoKey)}><DiamondOutlined/> Auto Key</button>}
       </div>
         {selectedClip&&<nav className="hv-inspector-tabs hv-clip-inspector-tabs" aria-label="Inspector sections">
           {inspectorPages.map(page=><button type="button" key={page} aria-pressed={page===activeInspector}
@@ -1871,34 +1888,36 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
     <section ref={timelineSection} className="hv-timeline" aria-label="Video timeline" style={{flexBasis:timelineHeight===DEFAULT_STUDIO_LAYOUT.timeline?'clamp(270px, 35.2vh, 465px)':timelineHeight}}>
       <div className="hv-timeline-top">
         <div className="hv-timeline-primary" aria-label="Timeline editing controls">
-          <button aria-label="Select clips" aria-pressed={!panTimeline} title="Select clips" onClick={()=>setPanTimeline(false)}><NearMeOutlined/></button>
-          <button aria-label="Pan timeline" aria-pressed={panTimeline} title="Pan timeline" onClick={()=>setPanTimeline(true)}><PanToolOutlined/></button>
+          <button aria-label="Select clips" aria-pressed={!panTimeline} data-hint="Select clips" onClick={()=>setPanTimeline(false)}><NearMeOutlined/></button>
+          <button aria-label="Pan timeline" aria-pressed={panTimeline} data-hint="Pan timeline" onClick={()=>setPanTimeline(true)}><PanToolOutlined/></button>
           <span className="hv-tb-sep"/>
-          <button title="Split clip at playhead (Ctrl+B)" onClick={split}><ContentCut/> Split</button>
+          <button data-hint="Split clip at playhead (Ctrl+B)" onClick={split}><ContentCut/> Split</button>
           <span className="hv-tb-sep"/>
-          <button aria-pressed={snap} title="Snap to clip starts, ends, cuts, keyframes and markers. Hold Alt to bypass the magnet."
+          <button aria-pressed={snap} data-hint="Snap to clip starts, ends, cuts, keyframes and markers. Hold Alt to bypass the magnet."
             onClick={()=>changePreferences({...preferences,magnet:!snap})}><SnapGlyph/> Snap <span className="hv-switch" aria-hidden="true"/></button>
-          <button aria-pressed={!!loop} title="Loop the selected clip or range" disabled={!total} onClick={toggleLoop}><Loop/> Loop</button>
+          <button aria-pressed={!!loop} data-hint="Loop the selected clip or range" disabled={!total} onClick={toggleLoop}><Loop/> Loop</button>
+          {timelineSpan&&<button type="button" aria-keyshortcuts="Escape" data-hint="Clear the timeline range (Esc)"
+            onClick={clearTimelineRange}><Close/>{markedRange?'Clear In/Out':'Clear range'}</button>}
           <span className="hv-tb-sep"/>
-          <button title="Previous keyframe (Alt+[)" aria-label="Previous keyframe" onClick={()=>jumpKey(-1)}><FirstPage/></button>
-          <button title="Show selected clip keyframes" aria-label="Keyframe lanes" aria-pressed={keyLanesOpen}
+          <button data-hint="Previous keyframe (Alt+[)" aria-label="Previous keyframe" onClick={()=>jumpKey(-1)}><FirstPage/></button>
+          <button data-hint="Show selected clip keyframes" aria-label="Keyframe lanes" aria-pressed={keyLanesOpen}
             disabled={!selectedClip} onClick={()=>setKeyLanesOpen(value=>!value)}><DiamondOutlined/></button>
-          <button title="Next keyframe (Alt+])" aria-label="Next keyframe" onClick={()=>jumpKey(1)}><LastPage/></button>
-          <button title={selectedClip?.linkId?'Unlink selected clips':'Link selected clips'} aria-label={selectedClip?.linkId?'Unlink selected clips':'Link selected clips'}
+          <button data-hint="Next keyframe (Alt+])" aria-label="Next keyframe" onClick={()=>jumpKey(1)}><LastPage/></button>
+          <button data-hint={selectedClip?.linkId?'Unlink selected clips':'Link selected clips'} aria-label={selectedClip?.linkId?'Unlink selected clips':'Link selected clips'}
             disabled={!selectedClip?.linkId&&selection.length<2} onClick={()=>{
               try{commit(linkClips(timeline,selection,!!selectedClip?.linkId));}catch(error){setError(String(error));}
             }}>{selectedClip?.linkId?<LinkOff/>:<Link/>}</button>
-          <button title="Add marker at playhead" aria-label="Add marker" onClick={()=>addMarker('marker')}><BookmarkAddOutlined/></button>
-          <button title="Record voiceover" aria-label="Record voiceover" aria-pressed={voiceover} onClick={()=>setVoiceover(value=>!value)}><MicNone/></button>
+          <button data-hint="Add marker at playhead" aria-label="Add marker" onClick={()=>addMarker('marker')}><BookmarkAddOutlined/></button>
+          <button data-hint="Record voiceover" aria-label="Record voiceover" aria-pressed={voiceover} onClick={()=>setVoiceover(value=>!value)}><MicNone/></button>
           <span className="hv-tb-sep"/>
-          <span className="hv-zoom-title" title="Ctrl+wheel or Ctrl+middle drag to zoom around the pointer"><ZoomIn/> Zoom</span>
-          <button title="Zoom out" onClick={()=>changeZoom(zoomTimeline(zoom,-1,project.fps))}>−</button>
-          <input className="hv-studio-range" aria-label="Timeline zoom" title={Math.round(zoom/60*100)+'%'} type="range" min={0} max={100} step={1}
+          <span className="hv-zoom-title" data-hint="Ctrl+wheel or Ctrl+middle drag to zoom around the pointer"><ZoomIn/> Zoom</span>
+          <button aria-label="Zoom out" data-hint="Zoom out" onClick={()=>changeZoom(zoomTimeline(zoom,-1,project.fps))}>−</button>
+          <input className="hv-studio-range" aria-label="Timeline zoom" aria-valuetext={Math.round(zoom/60*100)+'%'} data-hint={Math.round(zoom/60*100)+'%'} type="range" min={0} max={100} step={1}
             style={{'--hv-range-fill':Math.log(zoom/.04)/Math.log(zoomMax/.04)*100+'%'} as CSSProperties}
             value={Math.round(Math.log(zoom/.04)/Math.log(zoomMax/.04)*100)}
             onChange={event=>changeZoom(.04*(zoomMax/.04)**(event.target.valueAsNumber/100))}/>
-          <button title="Zoom in" onClick={()=>changeZoom(zoomTimeline(zoom,1,project.fps))}>+</button>
-          <button title="Fit selection" aria-label="Fit selection" disabled={!selection.length} onClick={fitSelection}><FitScreen/></button>
+          <button aria-label="Zoom in" data-hint="Zoom in" onClick={()=>changeZoom(zoomTimeline(zoom,1,project.fps))}>+</button>
+          <button data-hint="Fit selection" aria-label="Fit selection" disabled={!selection.length} onClick={fitSelection}><FitScreen/></button>
         </div>
         <VideoTimelineOverview timeline={timeline} head={head} duration={Math.max(total,1/project.fps)} fps={project.fps} onScrub={setSliderScrubbing}
           viewStart={navigation.viewport.x/PX} viewDuration={navigation.viewport.width/PX}
@@ -1911,25 +1930,25 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
       {timelineTools&&<div className="hv-timeline-tools-popup" aria-label="Timeline tools">
         <div className="hv-timeline-actions">
           <button onClick={()=>{setTimelineTools(false);setPlaying(false);setEditorialOpen(true);}}>Editing tools</button>
-          <button onClick={()=>setPreferencesOpen('commands')} title="Find commands and edit shortcuts (Ctrl+K)">Commands</button>
+          <button onClick={()=>setPreferencesOpen('commands')} data-hint="Find commands and edit shortcuts (Ctrl+K)">Commands</button>
           <button onClick={()=>setPreferencesOpen('layout')}>Workspace</button>
           <button disabled={!selectedClip} onClick={()=>runCommand('trimIn')}>Trim start to playhead</button>
           <button disabled={!selectedClip} onClick={()=>runCommand('trimOut')}>Trim end to playhead</button>
-          <button title="Add title" onClick={insertTitle}><TextFields fontSize="small"/> Text</button>
-          <button title="Add video track" disabled={timeline.tracks.length>=24} onClick={()=>commit(newTrack(timeline,'video'))}><Add fontSize="small"/> Video</button>
-          <button title="Add audio track" disabled={timeline.tracks.length>=24} onClick={()=>commit(newTrack(timeline,'audio'))}><Add fontSize="small"/> Audio</button>
-          <button title="Add an adjustment layer above the visual tracks" onClick={insertAdjustment}>Adjustment layer</button>
+          <button data-hint="Add title" onClick={insertTitle}><TextFields fontSize="small"/> Text</button>
+          <button data-hint="Add video track" disabled={timeline.tracks.length>=24} onClick={()=>commit(newTrack(timeline,'video'))}><Add fontSize="small"/> Video</button>
+          <button data-hint="Add audio track" disabled={timeline.tracks.length>=24} onClick={()=>commit(newTrack(timeline,'audio'))}><Add fontSize="small"/> Audio</button>
+          <button data-hint="Add an adjustment layer above the visual tracks" onClick={insertAdjustment}>Adjustment layer</button>
           <span className="hv-tb-sep"/>
-          <button title="Copy selected clips (Ctrl+C)" disabled={!selection.length} onClick={copySelection}>Copy</button>
-          <button title="Paste at playhead (Ctrl+V)" disabled={!canPaste} onClick={()=>pasteSelection()}>Paste</button>
-          <button title="Duplicate selected clips (Ctrl+D)" disabled={!selection.length} onClick={duplicateSelection}>Duplicate</button>
+          <button data-hint="Copy selected clips (Ctrl+C)" disabled={!selection.length} onClick={copySelection}>Copy</button>
+          <button data-hint="Paste at playhead (Ctrl+V)" disabled={!canPaste} onClick={()=>pasteSelection()}>Paste</button>
+          <button data-hint="Duplicate selected clips (Ctrl+D)" disabled={!selection.length} onClick={duplicateSelection}>Duplicate</button>
           <button disabled={selection.length<2} onClick={()=>{try{commit(linkClips(timeline,selection));}catch(error){setError(String(error));}}}>Link clips</button>
           <button disabled={!selectedClip?.linkId} onClick={()=>{try{commit(linkClips(timeline,selection,true));}catch(error){setError(String(error));}}}>Unlink</button>
-          <button aria-pressed={rippleTrims} title="Close or extend the gap after a trimmed clip" onClick={()=>setRippleTrims(value=>!value)}>Ripple trim</button>
-          <button title="Ripple delete on selected tracks (Shift+Delete)" disabled={!selection.length} onClick={()=>deleteSelected(true)}>Ripple delete</button>
+          <button aria-pressed={rippleTrims} data-hint="Close or extend the gap after a trimmed clip" onClick={()=>setRippleTrims(value=>!value)}>Ripple trim</button>
+          <button data-hint="Ripple delete on selected tracks (Shift+Delete)" disabled={!selection.length} onClick={()=>deleteSelected(true)}>Ripple delete</button>
           <button aria-pressed={followHead} onClick={()=>setFollowHead(value=>!value)}>Follow playhead</button>
           <button aria-pressed={showPacing} onClick={()=>setShowPacing(value=>!value)}>Pacing</button>
-          <button title="Fit the full timeline" onClick={()=>changeZoom((navigation.viewport.width-24)/Math.max(1/project.fps,total),true)}>Fit</button>
+          <button data-hint="Fit the full timeline" onClick={()=>changeZoom((navigation.viewport.width-24)/Math.max(1/project.fps,total),true)}>Fit</button>
         </div>
       <div className="hv-timeline-meta">
         <VideoSequenceBar project={project} path={compoundPath} selectedCount={selection.length}
@@ -1940,6 +1959,8 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
       <div className="hv-working-bar hv-inline-actions" aria-label="Timeline tools">
         <button aria-pressed={rangeMode==='box'} onClick={()=>{setRangeMode(rangeMode==='box'?undefined:'box');setRange(undefined);}}>Box select</button>
         <button aria-pressed={rangeMode==='range'} onClick={()=>{setRangeMode(rangeMode==='range'?undefined:'range');setRange(undefined);}}>Time range</button>
+        <button disabled={!total} data-hint="Set the start of the timeline range (I)" onClick={()=>markTimelineRange('start')}>Mark In</button>
+        <button disabled={!total} data-hint="Set the end of the timeline range (O)" onClick={()=>markTimelineRange('end')}>Mark Out</button>
         <button aria-pressed={filmstrip} onClick={()=>{setFilmstrip(!filmstrip);setSkim(undefined);}}>Filmstrips</button>
         <button onClick={()=>setShelf('markers')}>Chapters</button>
         <button onClick={()=>setShelf('checkpoints')}>Checkpoints</button>
@@ -2002,7 +2023,7 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
             tabIndex={-1} {...navigation.pointerHandlers} onPointerDown={event=>navigation.start(event)}>
             {ticks.map(time=><span key={time} style={{left:time*PX}}>{timecode(time,project.fps)}</span>)}
             {visibleMarkers.map(marker=><button key={marker.id} className={`hv-time-marker is-${marker.kind}`}
-              title={`${marker.label??(marker.automatic?'Detected ':'')+marker.kind} · ${marker.time.toFixed(3)} s`} aria-label={`Jump to ${marker.label??marker.kind} at ${marker.time.toFixed(3)} seconds`}
+              data-hint={`${marker.label??(marker.automatic?'Detected ':'')+marker.kind} · ${marker.time.toFixed(3)} s`} aria-label={`Jump to ${marker.label??marker.kind} at ${marker.time.toFixed(3)} seconds`}
               style={{left:marker.time*PX,...marker.color?{'--hv-marker-color':marker.color}:{} } as CSSProperties}
               onPointerDown={event=>event.stopPropagation()} onClick={()=>seekTo(marker.time)} />)}
             <button type="button" className="hv-head-handle" role="slider" aria-label="Timeline playhead"
@@ -2024,11 +2045,12 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
             data-kind={track.kind} data-primary={track.id===primaryVideo||undefined}>
           <div className="hv-track-name" onContextMenu={event=>openContext(event,track)}>
             <div className="hv-track-controls">
-              <button title={track.kind==='audio'?(track.muted?'Unmute track':'Mute track'):(track.muted?'Show track':'Hide track')}
+              <button data-hint={track.kind==='audio'?(track.muted?'Unmute track':'Mute track'):(track.muted?'Show track':'Hide track')}
+                aria-label={`${track.kind==='audio'?(track.muted?'Unmute':'Mute'):(track.muted?'Show':'Hide')} ${track.name} track`}
                 onClick={()=>commit({...timeline,tracks:timeline.tracks.map(t=>t.id===track.id?{...t,muted:!t.muted}:t)})}>
                 {track.kind==='audio'?(track.muted?<VolumeOff/>:<VolumeUp/>):(track.muted?<VisibilityOffOutlined/>:<VisibilityOutlined/>)}
               </button>
-              <button title={track.locked?'Unlock track':'Lock track'} onClick={()=>commit({...timeline,tracks:timeline.tracks.map(t=>t.id===track.id?{...t,locked:!t.locked}:t)})}>
+              <button aria-label={`${track.locked?'Unlock':'Lock'} ${track.name} track`} data-hint={track.locked?'Unlock track':'Lock track'} onClick={()=>commit({...timeline,tracks:timeline.tracks.map(t=>t.id===track.id?{...t,locked:!t.locked}:t)})}>
                 {track.locked?<LockOutlined/>:<LockOpenOutlined/>}
               </button>
             </div>
@@ -2038,7 +2060,7 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
                 event.currentTarget.value=name;
                 if(name!==track.name)commit({...timeline,tracks:timeline.tracks.map(item=>item.id===track.id?{...item,name}:item)});
               }} onKeyDown={event=>{if(event.key==='Enter')event.currentTarget.blur();}}/>
-            <div className="hv-track-secondary"><button title={track.syncLock?'Turn sync lock off':'Sync this track to ripple edits'} aria-pressed={!!track.syncLock}
+            <div className="hv-track-secondary"><button aria-label={`Sync lock for ${track.name} track`} data-hint={track.syncLock?'Turn sync lock off':'Sync this track to ripple edits'} aria-pressed={!!track.syncLock}
               onClick={()=>commit({...timeline,tracks:timeline.tracks.map(t=>t.id===track.id?{...t,syncLock:!t.syncLock}:t)})}>↔</button>
               <select className="hv-track-order" aria-label={`Reorder ${track.name} track`} disabled={track.locked} value="" onChange={event=>{
                 const tracks=[...timeline.tracks],index=tracks.indexOf(track),target=index+Number(event.target.value);
@@ -2046,7 +2068,7 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
                 [tracks[index],tracks[target]]=[tracks[target],tracks[index]];
                 commit({...timeline,tracks});
               }}><option value="">↕</option><option value="-1" disabled={timeline.tracks[0]===track}>Move up</option><option value="1" disabled={timeline.tracks.at(-1)===track}>Move down</option></select>
-              {!track.locked&&!timeline.clips.some(c=>c.trackId===track.id)&&<button title={`Remove empty ${track.name} track`} onClick={()=>commit({...timeline,tracks:timeline.tracks.filter(t=>t.id!==track.id)})}><DeleteOutline fontSize="inherit"/></button>}</div></div>
+              {!track.locked&&!timeline.clips.some(c=>c.trackId===track.id)&&<button aria-label={`Remove empty ${track.name} track`} data-hint={`Remove empty ${track.name} track`} onClick={()=>commit({...timeline,tracks:timeline.tracks.filter(t=>t.id!==track.id)})}><DeleteOutline fontSize="inherit"/></button>}</div></div>
           <div data-lane-id={track.id} className={`hv-track-lane${(drag?.edge==='move'&&drag.targetTrackId===track.id&&!track.locked)||libraryDrag.hover?.target?.kind==='insert'&&libraryDrag.hover.target.trackId===track.id?' is-drop-target':''}`} style={{width:viewportWidth,backgroundSize:`${interval*PX}px 100%`,backgroundImage:"linear-gradient(90deg,transparent calc(100% - 1px),color-mix(in srgb,var(--text,#fff) 8%,transparent))"}}
             tabIndex={-1} onContextMenu={event=>openContext(event,track)} {...navigation.pointerHandlers} onPointerDown={event=>{
               if(selectionStart(event,track.id))return;
@@ -2056,6 +2078,7 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
             onPointerCancel={event=>{if(!selectionEnd(event))navigation.pointerHandlers.onPointerCancel(event);}}
             onLostPointerCapture={event=>{if(!selectionEnd(event))navigation.pointerHandlers.onLostPointerCapture(event);}}>
             {(clipsByTrack.get(track.id)??[]).filter(c=>drag?.ids.includes(c.id)||c.start+c.duration>=visibleStart&&c.start<=visibleEnd).map(clip=>{
+              const asset=assetOf(clip);
               const active=drag&&(drag.edge==='move'?drag.ids.includes(clip.id):drag.id===clip.id);
               const offset=active?(drag.edge==='move'?drag.delta:drag.edge==='left'?drag.delta:0):0;
               const length=active?(drag.edge==='left'?clip.duration-drag.delta:drag.edge==='right'?clip.duration+drag.delta:clip.duration):clip.duration;
@@ -2065,7 +2088,7 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
                   if(event.key==='ContextMenu'||event.key==='F10'&&event.shiftKey)openContext({clientX:0,clientY:0,currentTarget:event.currentTarget,preventDefault:()=>event.preventDefault(),stopPropagation:()=>event.stopPropagation()},track,clip);
                 }} onContextMenu={event=>openContext(event,track,clip)} className={`hv-clip hv-clip-${track.kind}${selectedIds.has(clip.id)?' is-selected':''}${track.locked?' is-locked':''}${libraryDrag.hover?.target?.kind==='apply'&&libraryDrag.hover.target.clipId===clip.id?' is-card-drop-target':''}`}
                 style={{left:Math.max(0,(clip.start+offset)*PX),width:Math.max(10,length*PX),...clip.labelColor?{'--hv-clip-label':clip.labelColor}:{} } as CSSProperties}
-                title={`${clip.title??assetOf(clip)?.name??'Clip'} · ${sec(clip.duration)} · drag to move, edges to trim`}
+                data-hint={`${clip.title??asset?.name??'Clip'} · ${sec(clip.duration)} · drag to move, edges to trim`}
                 onPointerDown={(event:PointerEvent<HTMLDivElement>)=>{setSkim(undefined);if(!selectionStart(event,track.id))pointDown(event,clip,'move');}}
                 onPointerMove={event=>{
                   if(selectionMove(event))return;
@@ -2082,7 +2105,9 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
                     visibleLeft={(visibleStart-clip.start-offset)*PX} visibleRight={(visibleEnd-clip.start-offset)*PX}
                     fps={assetOf(clip)?.frameRate??project.fps}/>}
                 {assetOf(clip)?.kind==='image'&&sources[clip.assetId??'']&&!assetOf(clip)?.crop&&!/\.tga$/i.test(assetOf(clip)?.name??'')&&<span className="hv-timeline-clip-thumb" style={{backgroundImage:`url("${sources[clip.assetId??'']}")`}}/>}
-                {!!assetOf(clip)?.waveform?.length&&!clip.audioMuted&&<ClipWaveform asset={assetOf(clip)!} clip={clip}/>}
+                {!!asset?.waveform?.length&&<VideoClipWaveform asset={asset} clip={clip} url={sources[asset.id]}
+                  zoom={PX} visibleStart={visibleStart} visibleEnd={visibleEnd} duration={length} offset={offset}
+                  trim={active&&drag.edge==='left'?offset:0} playing={playing}/>}
                 {!!(clip.keyframes?.length||clip.volumeKeys?.length)&&<span className="hv-timeline-keys" aria-hidden="true">
                   {[...new Set([...(clip.keyframes??[]),...(clip.volumeKeys??[])].map(key=>key.time))].filter(time=>time<=clip.duration).slice(0,300)
                     .map(time=><i key={time} style={{left:`${time/clip.duration*100}%`}}/>)}
@@ -2112,20 +2137,20 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
         {navigation.stop&&<i aria-hidden="true" className="hv-magnet-guide hv-playhead-snap"
           style={{left:TRACK_HEADER_WIDTH+navigation.stop.frame/project.fps*PX}}><span>{navigation.stop.label}</span></i>}
         {transitionGuide!==undefined&&<i aria-hidden="true" className="hv-transition-guide" style={{left:TRACK_HEADER_WIDTH+transitionGuide*PX}}/>}
-        {(range||loop)&&<div className={`hv-timeline-span${loop&&!range?' is-loop':''}`} aria-hidden="true"
-          style={{left:TRACK_HEADER_WIDTH+(range??loop)!.start*PX,width:((range??loop)!.end-(range??loop)!.start)*PX}}/>}
+        {timelineSpan&&<div className={`hv-timeline-span${markedRange?' is-marked':loop&&!range?' is-loop':''}`} aria-hidden="true"
+          style={{left:TRACK_HEADER_WIDTH+timelineSpan.start*PX,width:Math.max(1,(timelineSpan.end-timelineSpan.start)*PX)}}/>}
         <div className="hv-head-marker" style={{left:TRACK_HEADER_WIDTH+head*PX,visibility:head*PX<navigation.viewport.x-1&&!navigation.scrubbing?'hidden':undefined}} aria-hidden="true"
           {...navigation.pointerHandlers} onPointerDown={event=>navigation.start(event,head)} />
         </div></div>
     </section>
     <div className="hv-statusbar">
-      <span className="hv-status-format" title={`${project.width} × ${project.height} · ${capabilities?.backend??'Checking media'}`}>
+      <span className="hv-status-format" data-hint={`${project.width} × ${project.height} · ${capabilities?.backend??'Checking media'}`}>
         <MonitorOutlined/> {project.height}p · {project.fps} fps
       </span>
       <button type="button" className="hv-status-preview" disabled={!total} onClick={togglePlayback}>{playing?<Pause/>:<PlayArrow/>}{playing?'Pause':'Preview'}</button>
-      <span className="hv-status-message" title={error||progress||notice}>{error?<b className="hv-error" role="alert">{error}</b>:progress||notice||
+      <span className="hv-status-message" data-hint={error||progress||notice}>{error?<b className="hv-error" role="alert">{error}</b>:progress||notice||
         (lastExport?`Exported ${lastExport.framesWritten} frames`:'')}</span>
-      <button type="button" title="More timeline tools" aria-expanded={timelineTools} onClick={()=>setTimelineTools(value=>!value)}><Tune/> Timeline tools</button>
+      <button type="button" data-hint="More timeline tools" aria-expanded={timelineTools} onClick={()=>setTimelineTools(value=>!value)}><Tune/> Timeline tools</button>
     </div>
     {editorialOpen&&<VideoEditorialTools timeline={timeline} selected={selectedClip} head={head} fps={project.fps} width={project.width} height={project.height}
       onSeek={seekTo} onChange={commit} onClose={()=>setEditorialOpen(false)} onHighlights={makeHighlights} onOtio={isNativeMediaDesktop()?interchange:undefined}
@@ -2210,7 +2235,7 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
     </Dialog>}
     {relinkReview&&<Dialog open maxWidth="sm" fullWidth onClose={()=>setRelinkReview(undefined)}><DialogTitle>Review relink matches</DialogTitle>
       <DialogContent><p>{relinkReview.length} source matches. Unmatched files stay on the offline list.</p>
-        {relinkReview.map(item=><p key={item.asset.id} title={item.replacement.path}>{item.asset.name} → {item.replacement.path}</p>)}</DialogContent>
+        {relinkReview.map(item=><p key={item.asset.id} data-hint={item.replacement.path}>{item.asset.name} → {item.replacement.path}</p>)}</DialogContent>
       <DialogActions><Button onClick={()=>setRelinkReview(undefined)}>Cancel</Button><Button variant="contained" onClick={()=>{
         const current=latestModel.current.timeline;
         const matches=new Map(relinkReview.map(item=>[item.asset.id,item]));

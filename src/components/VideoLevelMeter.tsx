@@ -19,7 +19,7 @@ export default function VideoLevelMeter({bus,id=MASTER_AUDIO_BUS,name='Master mi
   const level=useSyncExternalStore(bus.subscribe,()=>bus.read(id));
   const db=20*Math.log10(Math.max(.001,level.peak));
   const label=level.peak?db.toFixed(1)+' dBFS':'Silent';
-  return <span className="hv-level-meter" title={name+' · '+label+(level.clipped?' · Clipping':'')}>
+  return <span className="hv-level-meter" data-hint={name+' · '+label+(level.clipped?' · Clipping':'')}>
     <meter className="hv-audio-meter" min={0} max={1} value={Math.max(0,Math.min(1,1+db/60))}
       aria-label={name+' peak level'} aria-valuetext={label}/>
     <i className={level.clipped?'is-clipping':undefined} aria-label={level.clipped?'Clipping':undefined}/>

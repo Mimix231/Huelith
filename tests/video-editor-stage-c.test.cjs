@@ -89,7 +89,7 @@ test('video playback advances from both endpoints even when the first animation 
   const filename='src/components/VideoWorkspace.tsx';
   const source=ts.createSourceFile(filename,file(filename),ts.ScriptTarget.ES2022,true,ts.ScriptKind.TSX);
   function findPlaybackEffect(node){
-    if(ts.isCallExpression(node)&&node.expression.getText(source)==='useEffect'
+    if(ts.isCallExpression(node)&&node.expression.getText(source)==='useLayoutEffect'
       &&node.arguments[1]?.getText(source).replace(/\s/g,'')==='[playing,total,direction]')return node.arguments[0];
     return ts.forEachChild(node,findPlaybackEffect);
   }
@@ -103,9 +103,11 @@ test('video playback advances from both endpoints even when the first animation 
   for(const direction of [1,-1]){
     for(const firstFrame of [995,1000]){
       const start=direction===1?0:total;
-      let head=start,playing=true,nextFrame=0;
+      let head=start,playing=true,nextFrame=0,now=1000;
+      const {VideoPlaybackTransport}=require('./helpers/load-typescript.cjs').loadTypeScript(path.join(root,'src/editor/video/playback-transport.ts'));
+      const transport=new VideoPlaybackTransport(()=>now);
       const frames=new Map();
-      const stop=clock.runInNewContext({head,playing,total,direction,looping:{current:undefined},performance:{now:()=>1000},
+      const stop=clock.runInNewContext({head,playing,total,direction,transport,audioPlan:[],looping:{current:undefined},performance:{now:()=>now},
         cap:(value,min,max)=>Math.max(min,Math.min(max,value)),
         requestAnimationFrame:callback=>{frames.set(++nextFrame,callback);return nextFrame;},
         cancelAnimationFrame:id=>frames.delete(id),
@@ -115,19 +117,79 @@ test('video playback advances from both endpoints even when the first animation 
         assert.equal(frames.size,1,'Playback should have one frame scheduled');
         const [[id,callback]]=frames;
         frames.delete(id);
+        now=time;
         callback(time);
       }
       frame(firstFrame);
       assert.equal(playing,true,'The first frame at the starting endpoint must not stop playback');
       assert.equal(head,start);
       frame(firstFrame+100);
-      assert.equal(head,start+direction*.1);
+      assert.equal(head,start+direction*(firstFrame+100-1000)/1000);
       frame(firstFrame+2100);
       assert.equal(head,direction===1?total:0);
       assert.equal(playing,false);
       assert.equal(frames.size,0);
       stop();
     }
+  }
+});
+
+test('forward playback holds a seek until the frame and audio are ready and follows the output clock',async()=>{
+  const {VideoPlaybackTransport}=require('./helpers/load-typescript.cjs').loadTypeScript(path.join(root,'src/editor/video/playback-transport.ts'));
+  let system=1000,audio=20;
+  const transport=new VideoPlaybackTransport(()=>system);
+  transport.start(7.5,30,1,()=>undefined,true,true);
+  const generation=transport.generation;
+  let ready=false;
+  const firstFrame=transport.awaitFirstFrame(generation).then(value=>{ready=value;});
+  system+=2300;
+  await Promise.resolve();
+  assert.equal(transport.time(),7.5);
+  assert.equal(transport.waiting,true);
+  assert.equal(ready,false);
+  transport.firstFrameReady(generation);
+  await firstFrame;
+  assert.equal(ready,true);
+  assert.ok(transport.useAudioClock(generation,7.5,20.1,()=>audio));
+  assert.equal(transport.advancing,false);
+  audio=20.6;
+  assert.equal(transport.time(),8);
+  assert.equal(transport.pause(),8);
+  transport.start(10,30,1,()=>undefined,true,true);
+  assert.equal(transport.useAudioClock(generation,7.5,20.1,()=>audio),false);
+  assert.equal(transport.time(),10);
+  const cancelled=transport.awaitFirstFrame(transport.generation);
+  transport.pause();
+  assert.equal(await cancelled,false);
+});
+test('video transport stays continuous through delayed UI updates, loops and pause',()=>{
+  const {VideoPlaybackTransport}=require('./helpers/load-typescript.cjs').loadTypeScript(path.join(root,'src/editor/video/playback-transport.ts'));
+  let now=1000;
+  const transport=new VideoPlaybackTransport(()=>now);
+  transport.start(1,10);
+  now+=16.6666667;
+  assert.ok(Math.abs(transport.time()-1-1/60)<1e-8);
+  now+=2000;
+  assert.ok(Math.abs(transport.time()-3-1/60)<1e-8);
+  const stopped=transport.pause();
+  now+=4000;
+  assert.equal(transport.time(),stopped);
+  transport.start(2,10,1,()=>({start:2,end:3}));
+  now+=3250;
+  assert.ok(Math.abs(transport.time()-2.25)<1e-10);
+  transport.start(1,10,-1);
+  now+=1250;
+  assert.equal(transport.time(),0);
+});
+test('small audio/video drift changes speed gently without restarting a decoder',()=>{
+  const {needsPlaybackSeek,synchronizedPlaybackRate}=require('./helpers/load-typescript.cjs').loadTypeScript(path.join(root,'src/editor/video/playback-transport.ts'));
+  for(const rate of [.5,1,2,4]){
+    assert.equal(needsPlaybackSeek(1,1.08,rate),false);
+    assert.equal(needsPlaybackSeek(1,4,rate),true);
+    assert.equal(synchronizedPlaybackRate(1,1.01,rate),rate);
+    assert.ok(synchronizedPlaybackRate(1,1.1,rate)>rate);
+    assert.ok(synchronizedPlaybackRate(1.1,1,rate)<rate);
+    assert.ok(synchronizedPlaybackRate(1,4,rate)<=rate*1.03);
   }
 });
 test('all Stage C modified TypeScript/TSX files parse without syntax errors',()=>{

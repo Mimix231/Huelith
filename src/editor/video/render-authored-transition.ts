@@ -41,7 +41,7 @@ function revealMask(source:HTMLCanvasElement,kind:RevealMask,progress:number){
   const feather=kind==='luma'||kind==='inverse-luma'?.16:kind==='paper'?.046:.035;
   for(let y=0;y<height;y++)for(let x=0;x<width;x++){
     const i=(y*width+x)*4,luma=(data[i]*.2126+data[i+1]*.7152+data[i+2]*.0722)/255;
-    const threshold=maskThreshold(kind,(x+.5)/width,(y+.5)/height,luma);
+    const threshold=feather*.5+cap(maskThreshold(kind,(x+.5)/width,(y+.5)/height,luma))*(1-feather);
     data[i]=data[i+1]=data[i+2]=255;
     data[i+3]=255*cap((progress-threshold)/feather+.5);
   }
@@ -50,15 +50,19 @@ function revealMask(source:HTMLCanvasElement,kind:RevealMask,progress:number){
 }
 
 type Process=(source:HTMLCanvasElement,effects:readonly VideoEffect[],context:VideoFrameContext)=>Promise<HTMLCanvasElement>;
+const transitionEffects=new WeakMap<Reveal,VideoEffect>();
 async function treatment(source:HTMLCanvasElement,reveal:Reveal,visibility:number,exit:boolean,context:VideoFrameContext,process:Process){
   if(!reveal.motion&&!reveal.tint&&!reveal.fx)return source;
   const w=source.width,h=source.height,distance=1-visibility,phase=Math.sin(Math.PI*visibility);
   let input=source;
   if(reveal.fx&&distance>.001){
-    const effect=createVideoEffect(reveal.fx.kind);
+    let effect=transitionEffects.get(reveal);
+    if(!effect){
+      effect={...createVideoEffect(reveal.fx.kind),id:`transition:${reveal.id}`,referenceWidth:960};
+      transitionEffects.set(reveal,effect);
+    }
     const neutral=reveal.fx.kind==='pixelate'?1:0;
-    input=await process(source,[{...effect,id:`transition:${reveal.id}`,amount:neutral+(reveal.fx.amount-neutral)*distance,
-      referenceWidth:960}],context);
+    input=await process(source,[{...effect,amount:neutral+(reveal.fx.amount-neutral)*distance}],context);
   }
   const layer=canvas(w,h),ctx=layer.getContext('2d')!,motion=reveal.motion;
   if(motion){
@@ -94,13 +98,19 @@ export async function renderAuthoredTransition(from:HTMLCanvasElement,to:HTMLCan
   const p=recipe.reveal.linear?raw:smooth(raw);
   const source=recipe.group==='Fade Out'?from:to;
   const exit=recipe.group==='Fade Out',visibility=exit?1-p:p;
-  const incoming=await treatment(source,recipe.reveal,visibility,exit,context,process);
+  const result=await Promise.allSettled([
+    treatment(source,recipe.reveal,visibility,exit,context,process),
+    recipe.leave?treatment(from,recipe.leave,1-p,true,context,process):Promise.resolve(from),
+  ]);
+  const [incomingResult,outgoingResult]=result;
+  if(incomingResult.status==='rejected')throw incomingResult.reason;
+  if(outgoingResult.status==='rejected')throw outgoingResult.reason;
+  const incoming=incomingResult.value,outgoing=outgoingResult.value;
   const mask=recipe.reveal.mask?revealMask(source,recipe.reveal.mask,visibility):undefined;
   if(recipe.group!=='Combo'){
     if(mask)return masked(incoming,mask);
     return exit?crossDissolve(incoming,to,p):crossDissolve(from,incoming,p);
   }
-  const outgoing=recipe.leave?await treatment(from,recipe.leave,1-p,true,context,process):from;
   if(!mask)return crossDissolve(outgoing,incoming,p);
   const output=masked(outgoing,mask,true),ctx=output.getContext('2d')!;
   ctx.globalCompositeOperation='lighter';ctx.drawImage(masked(incoming,mask),0,0);

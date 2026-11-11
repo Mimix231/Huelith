@@ -3,10 +3,11 @@ import { TimelineCompositor, VideoDecoderPool } from '../editor/video/compositor
 import { activeClips, durationOf, type VideoTimeline } from '../editor/video/timeline';
 import { evaluateVideoEffect } from '../editor/video/effects/types';
 import { VideoEffectsWorkerClient } from '../editor/video/effects-worker-client';
+import type { VideoPlaybackTransport } from '../editor/video/playback-transport';
 
 type Props = {
   timeline: VideoTimeline; width: number; height: number; fps: number; time: number;
-  playing: boolean; interactive?: boolean; quality?: number; cacheRequest?:number;transparent?:boolean;onError: (message: string) => void;
+  playing: boolean; transport?: VideoPlaybackTransport; synchronizeStart?:boolean; interactive?: boolean; quality?: number; cacheRequest?:number;transparent?:boolean;onError: (message: string) => void;
 };
 
 function scene(request: Props) {
@@ -19,6 +20,8 @@ function scene(request: Props) {
 export default function VideoPreviewCanvas(props: Props) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const latest = useRef(props);
+  const clockSample=useRef({time:props.time,at:performance.now()});
+  if(clockSample.current.time!==props.time)clockSample.current={time:props.time,at:performance.now()};
   const pending = useRef(false), working = useRef(false), scheduled = useRef(0);
   const pool = useRef(new Map<number, TimelineCompositor>());
   const effectWorker = useRef<VideoEffectsWorkerClient | undefined>(undefined);
@@ -29,6 +32,8 @@ export default function VideoPreviewCanvas(props: Props) {
   const suggested = useRef(.5), fastFrames = useRef(0), metricAt = useRef(0);
   const requestedAt=useRef(0), requestVersion=useRef(0);
   const latencies=useRef<number[]>([]);
+  const presentationTimes=useRef<number[]>([]);
+  const lastFrame=useRef<{frame:number;generation:number;timeline:VideoTimeline;scale:number;playing:boolean}|undefined>(undefined);
   const [metric, setMetric] = useState('');
   latest.current = props;
 
@@ -82,11 +87,19 @@ export default function VideoPreviewCanvas(props: Props) {
           continue;
         }
         pending.current = false;
-        const request = latest.current, controller = lifetime.current;
-        const received=requestedAt.current,version=requestVersion.current;
+        const snapshot = latest.current, controller = lifetime.current;
+        const transport=snapshot.transport,generation=transport?.generation??0;
+        const clock=snapshot.playing?(transport?.time()??clockSample.current.time+(performance.now()-clockSample.current.at)/1000):snapshot.time;
+        const frameIndex=Math.floor((clock+1e-7)*snapshot.fps);
+        const playing=snapshot.playing&&(!transport||transport.advancing);
+        const request={...snapshot,time:frameIndex/snapshot.fps,playing};
+        const received=request.playing?performance.now():requestedAt.current,version=requestVersion.current;
         const auto = request.quality === 0;
         const moving = request.playing || !!request.interactive;
         const scale = auto ? moving ? suggested.current : 1 : request.quality ?? 1;
+        const last=lastFrame.current;
+        if(snapshot.playing&&last?.frame===frameIndex&&last.generation===generation&&last.timeline===request.timeline
+          &&last.scale===scale&&last.playing===playing)break;
         const renderer = rendererFor(request, scale);
         decoders.current?.setPlayback(request.playing);
         for (const item of pool.current.values()) item.setPlayback(item === renderer && request.playing);
@@ -96,7 +109,7 @@ export default function VideoPreviewCanvas(props: Props) {
           if (controller.signal.aborted) continue;
           const current = latest.current;
           const elapsed = performance.now() - started;
-          const budget = Math.max(18, 1000 / request.fps);
+          const budget = 1000 / request.fps;
           if (auto && elapsed > budget * 1.5) {
             let next = scale;
             while (next > .25 && elapsed * (next / scale) ** 2 > budget * .9) next /= 2;
@@ -108,8 +121,9 @@ export default function VideoPreviewCanvas(props: Props) {
           } else if (elapsed >= budget * .45) fastFrames.current = 0;
           // A matching draft frame can paint while the full-resolution frame
           // is queued after release. Discard frames with older edits or times.
-          if (scene(current) !== scene(request) || current.quality !== request.quality
-            || (!current.playing && !current.interactive && (current.timeline !== request.timeline || current.time !== request.time))) {
+          if(current.playing!==snapshot.playing||current.quality!==request.quality||generation!==(current.transport?.generation??0)
+            ||(snapshot.playing?current.timeline!==snapshot.timeline:scene(current)!==scene(request))
+            ||(!snapshot.playing&&!current.interactive&&(current.timeline!==snapshot.timeline||current.time!==snapshot.time))){
             pending.current = true;
             continue;
           }
@@ -121,7 +135,12 @@ export default function VideoPreviewCanvas(props: Props) {
           if (!target || !ctx) break;
           ctx.clearRect(0, 0, target.width, target.height);
           ctx.drawImage(frame, 0, 0, target.width, target.height);
+          if(snapshot.playing&&snapshot.synchronizeStart)transport?.firstFrameReady(generation);
           const latency=performance.now()-received;
+          lastFrame.current={frame:frameIndex,generation,timeline:request.timeline,scale,playing};
+          const now=performance.now(),presentations=presentationTimes.current;
+          if(playing){presentations.push(now);while(presentations.length>1&&presentations[0]<now-1000)presentations.shift();}
+          const presentationFps=presentations.length>1?(presentations.length-1)*1000/(now-presentations[0]):0;
           if(moving){
             latencies.current.push(latency);
             if(latencies.current.length>60)latencies.current.shift();
@@ -130,17 +149,19 @@ export default function VideoPreviewCanvas(props: Props) {
             metricAt.current = performance.now();
             const samples=latencies.current;
             const p95=samples.length>=5?[...samples].sort((a,b)=>a-b)[Math.ceil(samples.length*.95)-1]:undefined;
-            setMetric(`${latency.toFixed(1)} ms${p95!==undefined?` · P95 ${p95.toFixed(1)} ms`:''}${scale < 1 ? ` · ${Math.round(scale * 100)}% preview` : ''}`);
+            setMetric(`${request.playing?`${presentationFps.toFixed(1)} / ${request.fps} fps · `:''}${latency.toFixed(1)} ms${p95!==undefined?` · P95 ${p95.toFixed(1)} ms`:''}${scale < 1 ? ` · ${Math.round(scale * 100)}% preview` : ''}`);
           }
           window.dispatchEvent(new CustomEvent('huelith-video-frame', { detail: {
             timestamp: request.time, processingMs: elapsed, latencyMs:latency, pendingVersions:requestVersion.current-version,
-            width: target.width, height: target.height, playing: request.playing,
+            width: target.width, height: target.height, playing: request.playing, presentationFps, projectFps:request.fps,
             previewScale: scale, effects: activeClips(request.timeline, request.time).flatMap(clip => (clip.effects ?? []).map(effect => ({
               clip: clip.id, id: effect.id, kind: effect.kind, amount: evaluateVideoEffect(effect, Math.max(0, request.time - clip.start)).amount,
             }))),
           } }));
+          if(snapshot.playing)break;
         } catch (error) {
           if (controller.signal.aborted) continue;
+          if(snapshot.playing&&snapshot.synchronizeStart)transport?.firstFrameReady(generation);
           latest.current.onError(String(error));
           break;
         }
@@ -192,9 +213,25 @@ export default function VideoPreviewCanvas(props: Props) {
     warm.current=undefined;
     requestedAt.current=performance.now();
     requestVersion.current++;
+    lastFrame.current=undefined;
     pending.current = true;
     schedule(props.playing||!!props.interactive);
-  }, [props.timeline, props.time, props.playing, props.interactive, props.quality, props.width, props.height, props.fps,props.transparent]);
+  }, [props.timeline, props.playing?0:props.time, props.playing, props.interactive, props.quality, props.width, props.height, props.fps,props.transparent]);
+
+  useEffect(()=>{
+    presentationTimes.current=[];
+    lastFrame.current=undefined;
+    clockSample.current={time:props.time,at:performance.now()};
+    decoders.current?.setPlayback(props.playing);
+    if(!props.playing){for(const item of pool.current.values())item.setPlayback(false);return;}
+    let frame=0;
+    const tick=()=>{
+      if(!working.current){pending.current=true;schedule(true);}
+      frame=requestAnimationFrame(tick);
+    };
+    frame=requestAnimationFrame(tick);
+    return()=>cancelAnimationFrame(frame);
+  },[props.playing,props.width,props.height,props.fps]);
 
   useEffect(()=>{
     if(!props.cacheRequest||props.cacheRequest===warmed.current||props.playing||props.interactive)return;

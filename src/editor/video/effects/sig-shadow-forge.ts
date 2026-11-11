@@ -2,9 +2,10 @@
  * atmospheric tails. The silhouette is derived from the real layer alpha.
  */
 import type {Effect} from '../../types';
-import {createSurface,canvasWithSource,coloredStencil,strength,hash,visibleBounds,read,write,intensity} from './signature-core';
+import {createSurface,coloredStencil,strength,hash,visibleBounds,read,write,intensity,hasSignatureSilhouette} from './signature-core';
 export function renderSigShadowForge(source:HTMLCanvasElement,effect:Effect):HTMLCanvasElement {
- const s=strength(effect),bounds=visibleBounds(source);if(s===0||!bounds)return canvasWithSource(source);
+ const s=strength(effect);if(s===0)return source;
+ const bounds=visibleBounds(source);if(!bounds)return source;
  const out=createSurface();out.width=source.width;out.height=source.height;const ctx=out.getContext('2d');
  if(!ctx)throw new Error('Canvas unavailable');
  const radius=Math.max(0,effect.parameters?.radius??35),
@@ -12,8 +13,7 @@ export function renderSigShadowForge(source:HTMLCanvasElement,effect:Effect):HTM
  turbulence=Math.max(0,Math.min(1,(effect.parameters?.turbulence??62)/100)),
  opacity=Math.max(0,Math.min(1,(effect.parameters?.opacity??75)/100));
  const matte=read(source),pixels=matte.data;
- let silhouette=false;
- for(let i=3;i<pixels.length;i+=4)if(pixels[i]<55){silhouette=true;break;}
+ const silhouette=hasSignatureSilhouette(matte);
  if(!silhouette){
   // Project a soft shadow from the scene's darker shapes on opaque footage.
   for(let i=0;i<pixels.length;i+=4){
@@ -23,10 +23,10 @@ export function renderSigShadowForge(source:HTMLCanvasElement,effect:Effect):HTM
   ctx.drawImage(source,0,0);
  }
  const dark=coloredStencil(silhouette?source:write(matte),effect.color??'#17112c');
- ctx.save();ctx.globalAlpha=opacity*s;ctx.filter=`blur(${Math.min(100,radius)}px)`;
+ ctx.save();ctx.globalCompositeOperation=silhouette?'source-over':'source-atop';ctx.globalAlpha=opacity*s;ctx.filter=`blur(${Math.min(100,radius)}px)`;
  ctx.drawImage(dark,dx,dy);ctx.restore();
  if(silhouette)ctx.drawImage(source,0,0);
- ctx.save();ctx.globalCompositeOperation='screen';ctx.strokeStyle='#a364d9';ctx.lineWidth=2;
+ ctx.save();ctx.globalCompositeOperation=silhouette?'screen':'source-atop';ctx.strokeStyle='#a364d9';ctx.lineWidth=2;
  for(let i=0;i<16;i++){
   const x=bounds.left+hash(i,2,seed)*(bounds.right-bounds.left+1),
    y=bounds.top+(.35+.55*hash(i,3,seed))*(bounds.bottom-bounds.top+1);

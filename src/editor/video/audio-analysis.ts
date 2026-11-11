@@ -37,17 +37,33 @@ export async function analyzeAudio(asset: VideoAsset, url: string | undefined, s
   return { hasAudio: to > from, waveform: peaks, beats };
 }
 
-export function waveformPath(asset: VideoAsset, clip: VideoClip): string {
-  const peaks = asset.waveform;
-  if (!peaks?.length || asset.duration <= 0) return '';
-  const points = Math.min(768, Math.max(48, peaks.length));
+export type WaveformRegion={start:number;end:number;peaks:readonly number[]};
+export function waveformPath(asset: VideoAsset, clip: VideoClip, options?:{
+  start:number;end:number;points:number;detail?:WaveformRegion;
+}): string {
+  if (!asset.waveform?.length || asset.duration <= 0) return '';
+  const start=options?.start??0,end=options?.end??clip.duration;
+  const points=Math.max(2,Math.min(1400,options?.points??Math.max(48,asset.waveform.length)));
+  const overview:WaveformRegion={start:0,end:asset.duration,peaks:asset.waveform};
+  const detail=options?.detail;
+  function peakAt(from:number,to:number){
+    const region=detail&&from>=detail.start&&to<=detail.end?detail:overview;
+    const {peaks}=region,scale=peaks.length/(region.end-region.start);
+    const a=(from-region.start)*scale,b=(to-region.start)*scale;
+    if(a>=peaks.length||b<0)return 0;
+    if(b-a<1){
+      const center=Math.max(0,Math.min(peaks.length-1,(a+b)/2-.5)),left=Math.floor(center),mix=center-left;
+      return peaks[left]*(1-mix)+(peaks[left+1]??peaks[left])*mix;
+    }
+    let peak=0;
+    for(let bin=Math.max(0,Math.floor(a));bin<Math.min(peaks.length,Math.ceil(b));bin++)peak=Math.max(peak,peaks[bin]);
+    return peak;
+  }
   const upper: string[] = [], lower: string[] = [];
   for (let i = 0; i < points; i++) {
-    const a = sourceTimeAt(clip, clip.duration * i / points), b = sourceTimeAt(clip, clip.duration * (i + 1) / points);
-    const lo = Math.max(0, Math.floor(Math.min(a, b) / asset.duration * peaks.length));
-    const hi = Math.min(peaks.length - 1, Math.max(lo, Math.ceil(Math.max(a, b) / asset.duration * peaks.length) - 1));
-    let peak = 0;
-    for (let bin = lo; bin <= hi; bin++) peak = Math.max(peak, peaks[bin]);
+    const half=(end-start)/(2*(points-1)),time=start+(end-start)*i/(points-1);
+    const a=sourceTimeAt(clip,Math.max(start,time-half)),b=sourceTimeAt(clip,Math.min(end,time+half));
+    const peak=peakAt(Math.min(a,b),Math.max(a,b));
     const x = (144 * i / (points - 1)).toFixed(2);
     const h = 11 * Math.max(.02, peak);
     upper.push(`${x} ${(12 - h).toFixed(1)}`);

@@ -435,6 +435,9 @@ struct AudioReader {
 }
 impl AudioReader {
     fn new(source:&super::stream::AudioSource)->Result<Option<Self>,String>{
+        Self::at_position(source,source.source_in)
+    }
+    fn at_position(source:&super::stream::AudioSource,position:f64)->Result<Option<Self>,String>{
         let reader=open_reader(Path::new(&source.path))?;
         unsafe{
             if let Err(error)=reader.GetNativeMediaType(MF_SOURCE_READER_FIRST_AUDIO_STREAM.0 as u32,0){
@@ -454,8 +457,8 @@ impl AudioReader {
             let channels=actual.GetUINT32(&MF_MT_AUDIO_NUM_CHANNELS).map_err(|e|e.to_string())? as usize;
             let bits=actual.GetUINT32(&MF_MT_AUDIO_BITS_PER_SAMPLE).map_err(|e|e.to_string())?;
             if rate<8000||rate>384000||channels==0||channels>8||bits!=16{return Err("Unsupported decoded PCM format".into());}
-            if source.source_in>0. {
-                let position=PROPVARIANT::from((source.source_in*10_000_000.) as i64);
+            if position>0. {
+                let position=PROPVARIANT::from((position*10_000_000.) as i64);
                 reader.SetCurrentPosition(&GUID::zeroed(),&position).map_err(|e|media_error("Cannot seek the source audio",e))?;
             }
             Ok(Some(Self{reader,rate,channels,buffer:vec![],start:0.,ended:false}))
@@ -619,7 +622,11 @@ impl AudioMixer {
             voice_states:vec![VoiceState::default();clips.len()]}
     }
     fn block(&mut self,first:u64,last:u64)->Result<Vec<u8>,String>{
+        self.render_block(first,last,false).map(|(pcm,_)|pcm)
+    }
+    fn render_block(&mut self,first:u64,last:u64,meter:bool)->Result<(Vec<u8>,std::collections::HashMap<String,f32>),String>{
         let mut mixed=vec![[0f32;2];(last-first) as usize];
+        let mut tracks=std::collections::HashMap::<&str,Vec<[f32;2]>>::new();
         let start=first as f64/48000.;
         let end=last as f64/48000.;
         self.active.retain(|&index|{
@@ -636,25 +643,77 @@ impl AudioMixer {
         for &index in &self.active {
             let clip=&self.clips[index];
             if self.readers[index].is_none(){
-                self.readers[index]=AudioReader::new(clip)?;if self.readers[index].is_none(){self.absent[index]=true;continue;}
+                let local=(start-clip.start).max(0.);
+                self.readers[index]=AudioReader::at_position(clip,clip.position_at(local))?;
+                if self.readers[index].is_none(){self.absent[index]=true;continue;}
+                self.voice_states[index].phase=(local*42.).fract() as f32*std::f32::consts::TAU;
             }
             let reader=self.readers[index].as_mut().unwrap();
-            for (offset,stereo) in mixed.iter_mut().enumerate(){
+            let track=clip.track_id.as_deref().filter(|_|meter);
+            let mut track_mix=track.map(|id|tracks.entry(id).or_insert_with(||vec![[0.;2];mixed.len()]));
+            let offset_start=((clip.start*48000.).ceil() as u64).saturating_sub(first) as usize;
+            let offset_end=(((clip.start+clip.duration)*48000.).ceil() as u64).saturating_sub(first).min(last-first) as usize;
+            for (offset,stereo) in mixed.iter_mut().enumerate().take(offset_end).skip(offset_start){
                 let t=(first+offset as u64) as f64/48000.;let local=t-clip.start;
-                if local<0.||local>=clip.duration{continue;}
                 let gain=clip.gain_at(local) as f32;
                 let mut sample=self.voice_states[index].sample(clip,reader.at(clip.position_at(local))?,local);
                 let pan=clip.pan_at(local) as f32;
-                let angle=(if pan<0.{pan+1.}else{pan})*std::f32::consts::FRAC_PI_2;
-                let (sin,cos)=angle.sin_cos();
-                if pan<0.{sample=[sample[0]+sample[1]*cos,sample[1]*sin];}
-                if pan>0.{sample=[sample[0]*cos,sample[1]+sample[0]*sin];}
-                stereo[0]+=sample[0]*gain;stereo[1]+=sample[1]*gain;
+                if pan!=0. {
+                    let angle=(if pan<0.{pan+1.}else{pan})*std::f32::consts::FRAC_PI_2;
+                    let (sin,cos)=angle.sin_cos();
+                    if pan<0.{sample=[sample[0]+sample[1]*cos,sample[1]*sin];}
+                    else{sample=[sample[0]*cos,sample[1]+sample[0]*sin];}
+                }
+                for channel in 0..2 {
+                    let value=sample[channel]*gain;
+                    stereo[channel]+=value;
+                    if let Some(ref mut track)=track_mix {track[offset][channel]+=value;}
+                }
             }
         }
         let mut bytes=Vec::with_capacity(mixed.len()*4);
         for frame in mixed{for value in frame{bytes.extend_from_slice(&((value.clamp(-1.,1.)*32767.).round() as i16).to_le_bytes());}}
-        Ok(bytes)
+        let peaks=tracks.into_iter().map(|(id,frames)|(id.to_owned(),frames.iter().flatten().fold(0f32,|peak,value|peak.max(value.abs())))).collect();
+        Ok((bytes,peaks))
+    }
+}
+
+pub(super) struct PreviewMixer {
+    mixer:AudioMixer,
+    next:Option<u64>,
+    _runtime:MfRuntime,
+}
+impl PreviewMixer {
+    pub(super) fn new(sources:&[super::AudioSource])->Result<Self,String>{
+        let runtime=MfRuntime::new()?;
+        Ok(Self{mixer:AudioMixer::new(sources),next:None,_runtime:runtime})
+    }
+    pub(super) fn read(&mut self,first:u64,count:u32)->Result<Vec<u8>,String>{
+        if self.next.take()!=Some(first) {
+            self.mixer=AudioMixer::new(&self.mixer.clips);
+            let warm=first.saturating_sub(4800);
+            if warm<first {self.mixer.block(warm,first)?;}
+        }
+        let last=first+u64::from(count);
+        let mut samples=Vec::with_capacity(count as usize*4);
+        let mut peaks=Vec::new();
+        let mut at=first;
+        while at<last{
+            let end=(at+2400).min(last);
+            let (pcm,levels)=self.mixer.render_block(at,end,true)?;
+            samples.extend(pcm);
+            peaks.push(levels);
+            at=end;
+        }
+        self.next=Some(last);
+        let header=serde_json::to_vec(&peaks).map_err(|error|error.to_string())?;
+        let padding=(4-header.len()%4)%4;
+        let mut result=Vec::with_capacity(4+header.len()+padding+samples.len());
+        result.extend_from_slice(&(header.len() as u32).to_le_bytes());
+        result.extend(header);
+        result.resize(result.len()+padding,0);
+        result.extend(samples);
+        Ok(result)
     }
 }
 
@@ -836,6 +895,34 @@ mod runtime_tests {
         bytes.extend_from_slice(b"data");bytes.extend_from_slice(&(count*2).to_le_bytes());
         for n in 0..count {let t=n as f64/rate as f64;let sample=if (1.0..1.5).contains(&t){(t*440.*std::f64::consts::TAU).sin()*0.4}else{0.};bytes.extend_from_slice(&((sample*32767.) as i16).to_le_bytes());}
         std::fs::write(path,bytes).unwrap();
+    }
+    #[test]
+    fn preview_audio_starts_at_a_mid_clip_seek_and_keeps_pcm_windows_contiguous(){
+        let folder=Path::new(env!("CARGO_MANIFEST_DIR")).join("../output/media-qa");
+        std::fs::create_dir_all(&folder).unwrap();
+        let nonce=SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+        let wav=folder.join(format!("preview-beep-{nonce}.wav"));wave(&wav);
+        let source=super::super::AudioSource{path:wav.display().to_string(),required:true,duration:3.,volume:1.,
+            pan:0.7,track_id:Some("audio1".into()),..Default::default()};
+        let mut preview=PreviewMixer::new(&[source]).unwrap();
+        fn decode(packet:&[u8])->(&[u8],Vec<i16>){
+            let size=u32::from_le_bytes(packet[0..4].try_into().unwrap()) as usize;
+            let start=(4+size+3)&!3;
+            (&packet[4..4+size],packet[start..].chunks_exact(2).map(|sample|i16::from_le_bytes([sample[0],sample[1]])).collect())
+        }
+        let first=preview.read(52_800,4800).unwrap();
+        let second=preview.read(57_600,4800).unwrap();
+        let (levels,a)=decode(&first);
+        let (_,b)=decode(&second);
+        assert_eq!((a.len(),b.len()),(9600,9600));
+        let peaks:Vec<std::collections::HashMap<String,f32>>=serde_json::from_slice(levels).unwrap();
+        assert!(peaks.iter().all(|window|window["audio1"]>0.5));
+        let left=a.iter().step_by(2).map(|n|n.unsigned_abs()).max().unwrap();
+        let right=a.iter().skip(1).step_by(2).map(|n|n.unsigned_abs()).max().unwrap();
+        assert!(right>left*3,"pan reaches the scheduled PCM, left {left}, right {right}");
+        assert!((i32::from(a[9599])-i32::from(b[1])).abs()<3000,"a boundary must not jump or repeat the tone");
+        let earlier=preview.read(4800,4800).unwrap();
+        assert!(decode(&earlier).1.iter().all(|&sample|sample==0));
     }
     fn streamed(config:super::super::stream::StreamConfig,cancel_at:Option<u32>)->Result<ExportReport,String>{
         use super::super::stream::ExportPacket;

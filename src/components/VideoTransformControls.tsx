@@ -67,7 +67,7 @@ export default function VideoTransformControls({clip,asset,width,height,clock,on
     {field('rotation','Rotation',-3600,3600,false)}
     <div className="hv-inline-actions hv-align-controls">
       {([['x',-1,'Left'],['x',0,'Center'],['x',1,'Right'],['y',-1,'Top'],['y',0,'Middle'],['y',1,'Bottom']] as const)
-        .map(([axis,edge,label])=><button key={label} type="button" disabled={alignDisabled} title={`Align ${label.toLowerCase()} on canvas`}
+        .map(([axis,edge,label])=><button key={label} type="button" disabled={alignDisabled} data-hint={`Align ${label.toLowerCase()} on canvas`}
           onClick={()=>align(axis,edge)}>{label}</button>)}
     </div>
     <label className="hv-field">Blend mode<select value={clip.blendMode??'source-over'}

@@ -58,7 +58,7 @@ export default function VideoTimelineOverview({timeline,head,duration,viewStart,
   const x=(time:number)=>Math.min(1000,Math.max(0,time/duration*1000));
   return <div className="hv-overview">
     <button type="button" className="hv-overview-search" aria-label="Search timeline" aria-expanded={search}
-      title="Find clips, captions, or chapters" onClick={()=>setSearch(value=>!value)}><Search fontSize="inherit"/></button>
+      data-hint="Find clips, captions, or chapters" onClick={()=>setSearch(value=>!value)}><Search fontSize="inherit"/></button>
     <svg className="hv-overview-map" viewBox="0 0 1000 24" preserveAspectRatio="none"
       aria-label="Timeline overview" role="slider" tabIndex={0} aria-valuemin={0} aria-valuemax={duration} aria-valuenow={head}
       onKeyDown={event=>{

@@ -11,10 +11,26 @@ import type {VideoTransition} from './effects/types';
 import {clipCrop,fittedSize,footagePlacement,maskPath,maskAt,motionCovers} from './clip-layout';
 import {keyRgba} from './chroma-key';
 import {matteAt,motionAt} from './smart-footage';
-import {playbackRateAt,sourceTimeAt} from './clip-timing';
+import {playbackRateAt,sourcePosition,sourceTimeAt} from './clip-timing';
 import {CompositeCache} from './composite-cache';
 import {drawVideoShape} from './graphics';
 import {authoredTransitions,type TransitionSpan} from './transition-placement';
+import {needsPlaybackSeek,synchronizedPlaybackRate} from './playback-transport';
+import {VIDEO_TEMPORAL_KINDS,VIDEO_TIME_VARYING_KINDS} from './effects/catalog';
+
+const HISTORY_BUDGET=192*1024*1024;
+type PresentedVideo={time?:number;request:number};
+const videoFrames=new WeakMap<HTMLVideoElement,PresentedVideo>();
+function observeVideoFrames(video:HTMLVideoElement){
+  if(typeof video.requestVideoFrameCallback!=='function')return;
+  const state:PresentedVideo={request:0};
+  const record:VideoFrameRequestCallback=(_time,frame)=>{
+    state.time=frame.mediaTime;
+    state.request=video.requestVideoFrameCallback(record);
+  };
+  state.request=video.requestVideoFrameCallback(record);
+  videoFrames.set(video,state);
+}
 
 export function videoSurface(width:number,height:number):HTMLCanvasElement {
   const canvas=createSurface();canvas.width=width;canvas.height=height;return canvas;
@@ -31,10 +47,12 @@ export async function seekVideo(video:HTMLVideoElement,time:number,signal?:Abort
     const cleanup=()=>{clearTimeout(timer);if(frameCallback)video.cancelVideoFrameCallback(frameCallback);if(paint)cancelAnimationFrame(paint);
       video.removeEventListener(event,ready);video.removeEventListener('error',failed);signal?.removeEventListener('abort',abort);};
     const done=(error?:unknown)=>{if(complete)return;complete=true;cleanup();if(error)reject(error);else resolve();};
-    let seekComplete=false,readyPaints=0;
+    const started=performance.now();
+    let seekComplete=false,readyPaints=0,presentedAfterSeek=false;
     const canDraw=()=>seekComplete&&!video.seeking&&video.readyState>=2;
-    const presented=()=>{
-      if(canDraw()){done();return;}
+    const presented:VideoFrameRequestCallback=(_now,frame)=>{
+      presentedAfterSeek=frame.presentationTime>=started;
+      if(presentedAfterSeek&&canDraw()){done();return;}
       frameCallback=video.requestVideoFrameCallback(presented);
     };
     const checkPaint=()=>{
@@ -44,6 +62,7 @@ export async function seekVideo(video:HTMLVideoElement,time:number,signal?:Abort
     };
     const ready=()=>{
       seekComplete=true;
+      if(presentedAfterSeek&&canDraw()){done();return;}
       // seeked can precede presentation of the decoded texture. Reading it
       // immediately returned the previous frame on WebView2, intermittently.
       // A seek within one held frame need not publish another video callback;
@@ -66,8 +85,14 @@ async function loadSource(asset:VideoAsset):Promise<MediaSource>{
   return new Promise((resolve,reject)=>{
     const video=document.createElement('video');video.crossOrigin='anonymous';video.preload='auto';video.muted=true;video.playsInline=true;
     const timer=setTimeout(()=>done(Error(`Timed out opening ${asset.name}`)),18000);
-    const done=(error?:Error)=>{clearTimeout(timer);video.onloadedmetadata=null;video.onerror=null;if(error){video.removeAttribute('src');video.load();reject(error);}else resolve(video);};
-    video.onloadedmetadata=()=>done();video.onerror=()=>done(Error(`Cannot decode ${asset.name}. Relink it or check the system codec.`));video.src=url;
+    const done=(error?:Error)=>{clearTimeout(timer);video.onloadedmetadata=null;video.onloadeddata=null;video.onerror=null;
+      if(error){const observer=videoFrames.get(video);if(observer)video.cancelVideoFrameCallback(observer.request);
+        videoFrames.delete(video);video.removeAttribute('src');video.load();reject(error);}else resolve(video);};
+    video.onloadedmetadata=()=>observeVideoFrames(video);
+    // WebView2 can report a seek as ready before it has presented its first
+    // decoded texture if currentTime was set while the decoder was opening.
+    video.onloadeddata=()=>done();
+    video.onerror=()=>done(Error(`Cannot decode ${asset.name}. Relink it or check the system codec.`));video.src=url;
   });
 }
 /** Keep independent decoders for overlapping clips and historical frames.
@@ -84,12 +109,15 @@ export class VideoDecoderPool {
     }).catch(()=>{});
   }
 
-  source(asset:VideoAsset,clipId:string,history=false):Promise<MediaSource>{
+  source(asset:VideoAsset,clipId:string,history=false,standbyTime?:number):Promise<MediaSource>{
     const key=`${clipId}:${history?'history':'current'}`,old=this.sources.get(key);
     const identity=`${asset.libraryId??asset.path}:${asset.revision??0}`;
     if(old?.path===identity)return old.source;
     if(old)this.release(key);
-    const source=loadSource(asset);this.sources.set(key,{path:identity,source});
+    const source=loadSource(asset).then(async source=>{
+      if(standbyTime!==undefined&&source instanceof HTMLVideoElement)await seekVideo(source,standbyTime);
+      return source;
+    });this.sources.set(key,{path:identity,source});
     source.catch(()=>{if(this.sources.get(key)?.source===source)this.sources.delete(key);});
     return source;
   }
@@ -104,7 +132,7 @@ export class VideoDecoderPool {
         const asset=assets.get(clip.assetId??'');
         if(asset?.kind!=='video'||asset.missing)continue;
         standby.add(clip.id+':current');
-        void this.source(asset,clip.id).catch(()=>{});
+        void this.source(asset,clip.id,false,sourceTimeAt(clip,0)).catch(()=>{});
       }
     }
     for(const key of this.sources.keys())if(!active.has(key.slice(0,key.lastIndexOf(':')))&&!standby.has(key))this.release(key);
@@ -114,7 +142,12 @@ export class VideoDecoderPool {
     const item=this.sources.get(key);
     this.sources.delete(key);
     void item?.source.then(source=>{
-      if(source instanceof HTMLVideoElement){source.pause();source.removeAttribute('src');source.load();}
+      if(source instanceof HTMLVideoElement){
+        const observer=videoFrames.get(source);
+        if(observer)source.cancelVideoFrameCallback(observer.request);
+        videoFrames.delete(source);
+        source.pause();source.removeAttribute('src');source.load();
+      }
     }).catch(()=>{});
   }
 
@@ -124,8 +157,13 @@ export class VideoDecoderPool {
 export class TimelineCompositor {
   private readonly decoders:VideoDecoderPool;
   private readonly effects:VideoEffectsWorkerClient;
+  private readonly decodedFrames=new Map<string,{video:HTMLVideoElement;time:number;signature:string;frame:HTMLCanvasElement}>();
+  private readonly processedFrames=new Map<string,{source:HTMLCanvasElement;clip:VideoClip;frame:HTMLCanvasElement}>();
   private frames=new Map<string,HTMLCanvasElement>();
   private frameBytes=0;
+  private playbackFrames=new Map<string,{clipId:string;clock:number;frame:HTMLCanvasElement}>();
+  private playbackBytes=0;
+  private playbackTimeline?:VideoTimeline;
   private lastTemporalSource=new Map<string,{signature:string;pixels:Uint32Array;canvas:HTMLCanvasElement}>();
   private compounds = new Map<string, TimelineCompositor>();
   private sceneIds = new WeakMap<object, number>();
@@ -142,22 +180,32 @@ export class TimelineCompositor {
   setPlayback(playing: boolean) {
     if (this.playing === playing) return;
     this.playing = playing;
+    if(!playing){
+      this.playbackFrames.clear();this.playbackBytes=0;
+      this.decodedFrames.clear();this.processedFrames.clear();
+    }
     for (const child of this.compounds.values()) child.setPlayback(playing);
     if(!this.sharedDecoders)this.decoders.setPlayback(playing);
   }
 
   private async decode(source: HTMLVideoElement, clip: VideoClip, clock: number, history: boolean, signal?: AbortSignal) {
     const local = clock - clip.start, time = sourceTimeAt(clip, local), rate = playbackRateAt(clip, local);
-    if (!this.playing || history || rate < .25 || rate > 4) {
+    // A transition may reach beyond the source's handles. Hold the actual
+    // boundary frame instead of letting the decoder drift and repeatedly seek.
+    const outsideSource=time>=source.duration||time===0&&local<0&&sourcePosition(clip,local)<=0;
+    if (!this.playing || history || outsideSource || rate < .25 || rate > 4) {
       source.pause();
       await seekVideo(source, time, signal);
       return;
     }
     const target = Math.min(time, Math.max(0, source.duration - .001));
-    if (source.paused || source.seeking || source.readyState < 2 || Math.abs(source.currentTime - target) > Math.max(.09, 2 / this.fps * rate)) {
-      await seekVideo(source, target, signal);
+    const seek=source.paused||source.readyState<2||needsPlaybackSeek(source.currentTime,target,rate);
+    if(seek){
+      source.pause();
+      await seekVideo(source,target,signal);
     }
-    if (source.playbackRate !== rate) source.playbackRate = rate;
+    const playbackRate=seek?rate:synchronizedPlaybackRate(source.currentTime,target,rate);
+    if(Math.abs(source.playbackRate-playbackRate)>.001)source.playbackRate=playbackRate;
     if (this.playing && source.paused && !source.ended) void source.play().catch(() => {});
   }
   async rawFrame(timeline:VideoTimeline,clip:VideoClip,clock:number,signal?:AbortSignal,history=false):Promise<HTMLCanvasElement>{
@@ -175,17 +223,9 @@ export class TimelineCompositor {
     const key=`${signature}:${staticFrame?0:clock}`;
     const cached=!this.playing||staticFrame||history?this.frames.get(key):undefined;
     if(cached){this.frames.delete(key);this.frames.set(key,cached);return cached;}
-    const w=this.width,h=this.height,frame=videoSurface(w,h),ctx=frame.getContext('2d')!;
-    const transform=transformAt(clip,clock-clip.start);
-    ctx.translate(w*(.5+transform.x),h*(.5+transform.y));ctx.rotate(transform.rotation*Math.PI/180);
-    if(timeline.tracks.find(t=>t.id===clip.trackId)?.kind==='title'){
-      ctx.scale(clip.flipX?-1:1,(clip.flipY?-1:1)*transform.scaleY/transform.scale);
-      if(clip.shape)drawVideoShape(ctx,clip.shape,w,h,transform.scale);
-      else drawVideoText(ctx,{...clip,scale:transform.scale},w,h,this.referenceWidth,clock-clip.start);
-      this.remember(key,frame);return frame;
-    }
-    let drawable: HTMLCanvasElement | HTMLImageElement | HTMLVideoElement;
-    if (clip.compound) {
+    const w=this.width,h=this.height,transform=transformAt(clip,clock-clip.start);
+    let drawable: HTMLCanvasElement | HTMLImageElement | HTMLVideoElement | undefined;
+    if (!isTitle&&clip.compound) {
       const key = history ? `${clip.id}:history` : clip.id;
       let renderer = this.compounds.get(key);
       if (!renderer) {
@@ -194,11 +234,24 @@ export class TimelineCompositor {
       }
       renderer.setPlayback(this.playing && !history);
       drawable = await renderer.render({...clip.compound,assets:timeline.assets},sourceTimeAt(clip,clock-clip.start),signal,true);
-    } else {
+    } else if(!isTitle) {
       if(!asset||asset.missing)throw Error(`Missing source for ${asset?.name??'clip'}. Use Relink Media.`);
       const source=await this.decoders.source(asset,clip.id,history);signal?.throwIfAborted();
       if(source instanceof HTMLVideoElement)await this.decode(source,clip,clock,history,signal);
       drawable=source instanceof GifSource?source.frame(sourceTimeAt(clip,clock-clip.start)):source;
+    }
+    const video=drawable instanceof HTMLVideoElement?drawable:undefined;
+    const frameTime=video&&this.playing&&!history&&!smart&&!clip.animation&&!clip.keyframes?.length&&!clip.mask?.keys
+      &&!clip.mask?.featherKeys?.length&&!video.seeking?videoFrames.get(video)?.time:undefined;
+    const decoded=frameTime!==undefined?this.decodedFrames.get(clip.id):undefined;
+    if(decoded&&decoded.video===video&&decoded.time===frameTime&&decoded.signature===signature)return decoded.frame;
+    const frame=videoSurface(w,h),ctx=frame.getContext('2d')!;
+    ctx.translate(w*(.5+transform.x),h*(.5+transform.y));ctx.rotate(transform.rotation*Math.PI/180);
+    if(!drawable){
+      ctx.scale(clip.flipX?-1:1,(clip.flipY?-1:1)*transform.scaleY/transform.scale);
+      if(clip.shape)drawVideoShape(ctx,clip.shape,w,h,transform.scale);
+      else drawVideoText(ctx,{...clip,scale:transform.scale},w,h,this.referenceWidth,clock-clip.start);
+      this.remember(key,frame);return frame;
     }
     const sw=drawable instanceof HTMLVideoElement?drawable.videoWidth:drawable instanceof HTMLImageElement?drawable.naturalWidth:drawable.width;
     const sh=drawable instanceof HTMLVideoElement?drawable.videoHeight:drawable instanceof HTMLImageElement?drawable.naturalHeight:drawable.height;
@@ -218,7 +271,14 @@ export class TimelineCompositor {
       maskPath(ctx,clipMask,dw,dh);
       ctx.clip();
     }
-    ctx.drawImage(drawable,sw*crop.x,sh*crop.y,cw,ch,-dw/2,-dh/2,dw,dh);
+    let snapshot:VideoFrame|undefined;
+    if(video&&(!this.playing||history)&&typeof VideoFrame!=='undefined'){
+      // Capture the selected decoded texture while it belongs to this frame.
+      // A retained paused frame must survive subsequent seeks and decoder reuse.
+      try{snapshot=new VideoFrame(video,{timestamp:Math.round(sourceTime*1e6)});}catch{/* Use the drawable video on older codecs. */}
+    }
+    try{ctx.drawImage(snapshot??drawable,sw*crop.x,sh*crop.y,cw,ch,-dw/2,-dh/2,dw,dh);}
+    finally{snapshot?.close();}
     if(smart?.matte&&motionCovers(smart.matte.frames,sourceTime)){
       const matte=matteAt(smart.matte,sourceTime);
       const mask=videoSurface(w,h),maskCtx=mask.getContext('2d')!;
@@ -247,7 +307,7 @@ export class TimelineCompositor {
       keyRgba(image.data,clip.chromaKey);
       ctx.putImageData(image,0,0);
     }
-    if(asset?.kind==='video'&&clip.effects?.some(e=>e.enabled&&(e.kind==='video-temporal-echo'||e.kind==='video-motion-trail'))){
+    if(!this.playing&&asset?.kind==='video'&&clip.effects?.some(e=>e.enabled&&VIDEO_TEMPORAL_KINDS.has(e.kind))){
       // Exact RGBA equality reuses held/repeated decoded frames. No sampled hash,
       // downscaled comparison or approximate frame is substituted for artwork.
       const image=ctx.getImageData(0,0,w,h),pixels=new Uint32Array(image.data.buffer,image.data.byteOffset,w*h),last=this.lastTemporalSource.get(clip.id);
@@ -257,17 +317,29 @@ export class TimelineCompositor {
       this.lastTemporalSource.set(clip.id,{signature,pixels,canvas:frame});
     }
     if(!this.playing||staticFrame||history)this.remember(key,frame);else markImmutableEffectSource(frame);
+    if(video&&frameTime!==undefined)this.decodedFrames.set(clip.id,{video,time:frameTime,signature,frame});
     return frame;
   }
   async clipFrame(timeline:VideoTimeline,clip:VideoClip,clock:number,signal?:AbortSignal):Promise<HTMLCanvasElement>{
     const raw=await this.rawFrame(timeline,clip,clock,signal);
+    const temporal=clip.effects?.filter(effect=>effect.enabled&&VIDEO_TEMPORAL_KINDS.has(effect.kind))??[];
+    const horizon=temporal.length?Math.max(...temporal.map(effect=>effect.parameters?.history??.25)):0;
+    const capacity=Math.max(2,Math.floor(HISTORY_BUDGET/(this.width*this.height*4*2)));
+    const interval=Math.max(1/this.fps,horizon/capacity);
+    if(this.playing&&horizon)this.rememberPlayback(clip.id,clock,raw,interval);
     const local=clock-clip.start,sourceTime=sourceTimeAt(clip,local);
     const asset=timeline.assets.find(a=>a.id===clip.assetId);
-    const processed=await this.effects.process(raw,clip.effects??[],{timestamp:local,sourceTime,
-      frameIndex:Math.floor(sourceTime*this.fps),fps:this.fps,referenceWidth:this.referenceWidth,signal,grade:clip.grade,
+    const cacheable=this.playing&&!clip.grade?.keys&&!clip.grade?.mask?.keys&&!clip.grade?.basic?.grain&&
+      !clip.effects?.some(effect=>effect.enabled&&(VIDEO_TIME_VARYING_KINDS.has(effect.kind)||VIDEO_TEMPORAL_KINDS.has(effect.kind)
+        ||effect.keyframes?.length||effect.mask?.keys));
+    const previous=cacheable?this.processedFrames.get(clip.id):undefined;
+    const processed=previous?.clip===clip&&previous.source===raw?previous.frame:
+      await this.effects.process(raw,clip.effects??[],{timestamp:local,sourceTime,
+      frameIndex:Math.floor(sourceTime*this.fps),fps:this.fps,referenceWidth:this.referenceWidth,signal,grade:clip.grade,lane:clip.trackId,
       timing:{sourceIn:clip.sourceIn,sourceMap:clip.sourceMap,holdFrame:clip.holdFrame},
       historyKey:JSON.stringify([asset?.path,asset?.revision,asset?.crop,clip.id,clip.start,clip.sourceIn,clip.x,clip.y,clip.scale,clip.scaleY,clip.rotation,clip.title,clip.textStyle,clip.keyframes,clip.animation,clip.caption,clip.crop,clip.fit,clip.flipX,clip.flipY,clip.mask,clip.chromaKey,clip.sourceMap,clip.holdFrame,clip.smart&&this.sceneIds.get(clip.smart)]),
-      previousFrame:async age=>clock-age<clip.start?null:this.rawFrame(timeline,clip,clock-age,signal,true)});
+      previousFrame:horizon?async age=>clock-age<clip.start?null:this.playing?this.playbackFrame(clip.id,clock-age,interval):this.rawFrame(timeline,clip,clock-age,signal,true):undefined});
+    if(cacheable)this.processedFrames.set(clip.id,{source:raw,clip,frame:processed});
     const opacity=opacityAt(clip,Math.max(clip.start,Math.min(clock,clip.start+clip.duration-1e-7)));
     if(opacity>=1)return processed;
     const out=videoSurface(this.width,this.height),ctx=out.getContext('2d')!;ctx.globalAlpha=opacity;ctx.drawImage(processed,0,0);return out;
@@ -275,6 +347,12 @@ export class TimelineCompositor {
   async render(timeline:VideoTimeline,clock:number,signal?:AbortSignal,transparent=false):Promise<HTMLCanvasElement>{
     signal?.throwIfAborted();
     clock=Math.floor((clock+1e-7)*this.fps)/this.fps;
+    if(this.playbackTimeline?.clips!==timeline.clips||this.playbackTimeline.assets!==timeline.assets||this.playbackTimeline.tracks!==timeline.tracks){
+      this.playbackFrames.clear();this.playbackBytes=0;this.playbackTimeline=timeline;
+    }
+    for(const [key,item] of this.playbackFrames)if(item.clock>clock||item.clock<clock-3){
+      this.playbackFrames.delete(key);this.playbackBytes-=item.frame.width*item.frame.height*4;
+    }
     const clips=activeClips(timeline,clock).filter(c=>timeline.tracks.find(t=>t.id===c.trackId)?.kind!=='audio');
     if(this.transitionCache?.clips!==timeline.clips||this.transitionCache.tracks!==timeline.tracks)
       this.transitionCache={clips:timeline.clips,tracks:timeline.tracks,spans:authoredTransitions(timeline,this.fps)};
@@ -290,10 +368,28 @@ export class TimelineCompositor {
     const exact=!this.playing;
     const canvas=videoSurface(this.width,this.height),ctx=canvas.getContext('2d')!;
     if (!transparent || timeline.background) {
-      ctx.fillStyle=timeline.background??'#0b0e18';ctx.fillRect(0,0,this.width,this.height);
+      ctx.fillStyle=timeline.background??'#000000';ctx.fillRect(0,0,this.width,this.height);
+    }
+    const needed=new Map<string,VideoClip>();
+    for(const clip of clips)if(!clip.adjustment){
+      const span=transitions.get(clip.id);
+      if(!span)needed.set(clip.id,clip);
+      else{
+        if(span.from)needed.set(span.from.id,span.from);
+        if(span.to)needed.set(span.to.id,span.to);
+      }
     }
     const frames=new Map<string,HTMLCanvasElement>();
-    for(const clip of clips)if(!clip.adjustment&&!transitions.has(clip.id))frames.set(clip.id,await this.clipFrame(timeline,clip,clock,signal));
+    const inputs=[...needed.values()];
+    // Bound decode and surface allocation when dozens of tracks overlap.
+    for(let index=0;index<inputs.length;index+=3){
+      const batch=await Promise.allSettled(inputs.slice(index,index+3).map(async clip=>
+        [clip.id,await this.clipFrame(timeline,clip,clock,signal)] as const));
+      for(const result of batch){
+        if(result.status==='rejected')throw result.reason;
+        frames.set(...result.value);
+      }
+    }
     const consumed=new Set<string>();
     for(const clip of clips){
       if(consumed.has(clip.id))continue;
@@ -313,8 +409,8 @@ export class TimelineCompositor {
       ctx.globalCompositeOperation=clip.blendMode??'source-over';
       const span=transitions.get(clip.id);
       if(span){
-        const from=span.from?await this.clipFrame(timeline,span.from,clock,signal):videoSurface(this.width,this.height);
-        const to=span.to?await this.clipFrame(timeline,span.to,clock,signal):videoSurface(this.width,this.height);
+        const from=span.from?frames.get(span.from.id)!:videoSurface(this.width,this.height);
+        const to=span.to?frames.get(span.to.id)!:videoSurface(this.width,this.height);
         ctx.drawImage(await this.transition(from,to,(clock-span.start)/(span.end-span.start),span.transition,clock,signal),0,0);
         if(span.from)consumed.add(span.from.id);
         if(span.to)consumed.add(span.to.id);
@@ -343,11 +439,28 @@ export class TimelineCompositor {
   }
   private prune(timeline:VideoTimeline,active:Set<string>,clock:number):void{
     this.decoders.prune(timeline,active,clock);
+    for(const id of this.decodedFrames.keys())if(!active.has(id))this.decodedFrames.delete(id);
+    for(const id of this.processedFrames.keys())if(!active.has(id))this.processedFrames.delete(id);
     for(const id of this.lastTemporalSource.keys())if(!active.has(id))this.lastTemporalSource.delete(id);
     for (const [key, renderer] of this.compounds) if (!active.has(key.replace(/:history$/, ''))) {
       renderer.dispose();
       this.compounds.delete(key);
     }
+  }
+  private rememberPlayback(clipId:string,clock:number,frame:HTMLCanvasElement,interval:number):void{
+    const key=`${clipId}:${clock}`;
+    for(const item of this.playbackFrames.values())if(item.clipId===clipId&&clock-item.clock<interval-1e-7)return;
+    this.playbackFrames.set(key,{clipId,clock,frame});
+    this.playbackBytes+=frame.width*frame.height*4;
+    while(this.playbackBytes>HISTORY_BUDGET&&this.playbackFrames.size>1){
+      const first=this.playbackFrames.keys().next().value!,item=this.playbackFrames.get(first)!;
+      this.playbackFrames.delete(first);this.playbackBytes-=item.frame.width*item.frame.height*4;
+    }
+  }
+  private playbackFrame(clipId:string,clock:number,interval:number):HTMLCanvasElement|null{
+    let match:{clock:number;frame:HTMLCanvasElement}|undefined;
+    for(const item of this.playbackFrames.values())if(item.clipId===clipId&&item.clock<=clock+1e-7&&(!match||item.clock>match.clock))match=item;
+    return match&&clock-match.clock<=interval+2/this.fps?match.frame:null;
   }
   private remember(key:string,frame:HTMLCanvasElement):void{
     markImmutableEffectSource(frame);
@@ -359,7 +472,8 @@ export class TimelineCompositor {
   }
   dispose():void{
     if(!this.sharedEffects)this.effects.dispose();
-    this.frames.clear();this.frameBytes=0;this.lastTemporalSource.clear();this.composites?.clear();
+    this.decodedFrames.clear();this.processedFrames.clear();
+    this.frames.clear();this.frameBytes=0;this.playbackFrames.clear();this.playbackBytes=0;this.playbackTimeline=undefined;this.lastTemporalSource.clear();this.composites?.clear();
     if(!this.sharedDecoders)this.decoders.dispose();
     for (const renderer of this.compounds.values()) renderer.dispose();
     this.compounds.clear();

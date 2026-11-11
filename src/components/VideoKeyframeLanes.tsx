@@ -105,7 +105,7 @@ export default function VideoKeyframeLanes({clip,fps,zoom,width,head,visibleStar
       </select></label>
     </div>}
     {lanes.map(lane=><div className="hv-keyframe-lane" key={lane.id}>
-      <span className="hv-track-name" title={lane.label}>{lane.label}</span>
+      <span className="hv-track-name" data-hint={lane.label}>{lane.label}</span>
       <div className="hv-keyframe-track" style={{width}}>
         <span className="hv-keyframe-clip-span" style={{left:clip.start*zoom,width:clip.duration*zoom}}/>
         {lane.keys.map((key,index)=>{
@@ -113,7 +113,7 @@ export default function VideoKeyframeLanes({clip,fps,zoom,width,head,visibleStar
           if(time<visibleStart||time>visibleEnd||key.time>clip.duration+1e-7)return null;
           const active=keyFrame(head,fps)===keyFrame(time,fps),picked=has(selection,lane.id,index);
           return <button type="button" key={index} className={active?'is-keyed':''} aria-pressed={picked}
-            aria-label={`${lane.label} keyframe at ${time.toFixed(3)} seconds`} title={`${lane.label} · ${time.toFixed(3)} s`}
+            aria-label={`${lane.label} keyframe at ${time.toFixed(3)} seconds`} data-hint={`${lane.label} · ${time.toFixed(3)} s`}
             style={{left:time*zoom}} onPointerDown={event=>begin(event,lane,index)} onPointerMove={move}
             onPointerUp={event=>finish(event,false)} onPointerCancel={event=>finish(event,true)} onLostPointerCapture={event=>finish(event,true)}
             onClick={event=>{if(event.detail===0){setSelection([{lane:lane.id,index}]);onSeek(time);}}}>

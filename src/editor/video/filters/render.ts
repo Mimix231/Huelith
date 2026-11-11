@@ -2,6 +2,7 @@ import {createSurface} from '../../canvas-surface';
 import {isImmutableEffectSource,markImmutableEffectSource} from '../../immutable-effect-sources';
 import {VIDEO_FILTER_LOOKUP} from './index';
 import type {GradeRecipe} from './types';
+import {renderGpuLut} from '../lut-gpu';
 
 const size=33,stride=size*size,luts=new Map<string,Float32Array>();
 const clamp=(n:number)=>Math.max(0,Math.min(1,n));
@@ -58,10 +59,12 @@ type Prepared={id:string;pixels?:Uint8ClampedArray;graded?:Uint8ClampedArray;opa
 const prepared=new WeakMap<HTMLCanvasElement,Prepared>();
 export function renderVideoFilter(source:HTMLCanvasElement,id:string,amount:number):HTMLCanvasElement{
   const strength=clamp(amount/100);if(!strength)return source;
+  const lut=filterLut(id),accelerated=renderGpuLut(source,lut,size,strength,false);
+  if(accelerated)return accelerated;
   const w=source.width,h=source.height;let entry=isImmutableEffectSource(source)?prepared.get(source):undefined;
   if(!entry||entry.id!==id){
     const pixels=source.getContext('2d',{willReadFrequently:true})!.getImageData(0,0,w,h).data;
-    const graded=new Uint8ClampedArray(pixels.length),lut=filterLut(id),sample=[0,0,0];let partialAlpha=false;
+    const graded=new Uint8ClampedArray(pixels.length),sample=[0,0,0];let partialAlpha=false;
     for(let i=0;i<pixels.length;i+=4){
       if(pixels[i+3]){sampleFilter(lut,pixels[i],pixels[i+1],pixels[i+2],sample);graded[i]=sample[0];graded[i+1]=sample[1];graded[i+2]=sample[2];}
       graded[i+3]=pixels[i+3];

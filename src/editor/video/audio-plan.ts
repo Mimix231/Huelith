@@ -2,6 +2,7 @@ import type { NativeAudioSource, NativeGainLayer } from './native-media';
 import { offsetSourceMap, playbackRateAt, sourceTimeAt } from './clip-timing';
 import type { VideoClip, VideoScene, VideoTimeline } from './timeline';
 import {parameterAt} from './parameter-keys';
+import {AUTHORED_TRANSITION_LOOKUP} from './transition-recipes';
 
 export function audioGainAt(source: NativeAudioSource, time: number): number {
   const local = time - source.start;
@@ -79,10 +80,12 @@ export function timelineAudioSources(timeline: VideoTimeline,range?:{start:numbe
       const visible = { start: Math.max(start, window.start), end: Math.min(start + duration, window.end) };
       if (visible.end <= visible.start) continue;
       const fadeOut = Math.max(0, (clip.audioFadeOut??clip.fadeOut) - (clip.duration - duration));
+      const legacyIn=clip.transitionIn?.placement!=='cut'&&!AUTHORED_TRANSITION_LOOKUP.has(clip.transitionIn?.preset??'')?clip.transitionIn?.duration??0:0;
+      const legacyOut=AUTHORED_TRANSITION_LOOKUP.has(clip.transitionOut?.preset??'')?0:clip.transitionOut?.duration??0;
       const layer: Omit<NativeGainLayer, 'offset'> = {
         duration, volume: clip.volume, keys: clip.volumeKeys,busGain:track.gain,pan:clip.pan,panKeys:clip.panKeys,
-        fadeIn: Math.min(duration, Math.max(clip.audioFadeIn??clip.fadeIn,clip.transitionIn?.placement==='cut'?0:clip.transitionIn?.duration??0)),
-        fadeOut: Math.min(duration, Math.max(fadeOut,incoming?.transitionIn?.duration??0,clip.transitionOut?.duration??0)),
+        fadeIn: Math.min(duration, Math.max(clip.audioFadeIn??clip.fadeIn,legacyIn)),
+        fadeOut: Math.min(duration, Math.max(fadeOut,incoming?.transitionIn?.duration??0,legacyOut)),
         duck: clip.ducking && track.purpose !== 'dialogue' ? dialogue.filter(item => item.start < clip.start + duration + clip.ducking!.attack
           && item.start + item.duration + clip.ducking!.release > clip.start).map(item => ({
           start: item.start - clip.start, end: item.start + item.duration - clip.start, ...clip.ducking!,

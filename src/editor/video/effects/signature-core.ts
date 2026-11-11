@@ -75,6 +75,18 @@ export function visibleBounds(source:HTMLCanvasElement):{left:number;top:number;
  for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(d[(y*w+x)*4+3]>8){left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y);}
  return right<left?null:{left,top,right,bottom};
 }
+/** Rectangular letterbox padding and isolated transparent pixels are part of a scene.
+ * A subject matte leaves an appreciable gap inside its own visible bounds. */
+export function hasSignatureSilhouette(image:ImageData):boolean{
+ const {data,width,height}=image;
+ let left=width,right=-1,top=height,bottom=-1,covered=0;
+ for(let y=0;y<height;y++)for(let x=0;x<width;x++){
+  if(data[(y*width+x)*4+3]<96)continue;
+  covered++;left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y);
+ }
+ const area=(right-left+1)*(bottom-top+1);
+ return covered>0&&area-covered>Math.max(8,area*.04);
+}
 export function fxCenter(source:HTMLCanvasElement,effect:Effect):[number,number]{
  if(effect.parameters?.centerX!==undefined||effect.parameters?.centerY!==undefined)
   return [source.width*(effect.parameters?.centerX??50)/100,source.height*(effect.parameters?.centerY??50)/100];

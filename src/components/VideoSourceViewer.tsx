@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
 import type { VideoAsset,VideoSourceSelect } from '../editor/video/timeline';
 import VideoMediaThumbnail from './VideoMediaThumbnail';
+import VideoSourceTransport from './VideoSourceTransport';
 
 type Props = {
   asset: VideoAsset;
@@ -47,11 +48,8 @@ export default function VideoSourceViewer({ asset, url, onClose, onSave, onInser
       <div className="hv-source-viewer">
         <strong>{asset.name}</strong>
         <small>{asset.kind} · {asset.duration.toFixed(2)} s{asset.width && asset.height ? ` · ${asset.width} × ${asset.height}` : ''}</small>
-        {url && (asset.kind === 'video'
-          ? <video ref={element => { media.current = element; }} src={url} controls preload="metadata" playsInline />
-          : asset.kind === 'audio'
-            ? <audio ref={element => { media.current = element; }} src={url} controls preload="metadata" />
-            : <VideoMediaThumbnail asset={asset} url={url} />)}
+        {url&&(still?<VideoMediaThumbnail asset={asset} url={url}/>:
+          <VideoSourceTransport key={url} asset={asset} url={url} media={media}/>)}
         {!url && <small>Source is offline. Relink this media to preview it.</small>}
         {url&&onRecordingTool&&!still&&<div className="hv-inline-actions">
           {asset.kind==='video'&&<button aria-pressed={!!proxy} onClick={()=>onRecordingTool('proxy')}>{proxy?'Use original preview':'Build preview proxy'}</button>}

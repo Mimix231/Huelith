@@ -2,12 +2,11 @@
  * boundaries. It retains the subject's exact original pixels underneath.
  */
 import type {Effect} from '../../types';
-import {canvasWithSource,glow,strength,hash,read,write,intensity} from './signature-core';
+import {canvasWithSource,glow,strength,hash,read,write,intensity,hasSignatureSilhouette} from './signature-core';
 export function renderSigFrostbite(source:HTMLCanvasElement,effect:Effect):HTMLCanvasElement {
  const s=strength(effect);if(!s)return source;const color=effect.color??'#a0ebff';
- const original=read(source).data,w=source.width,h=source.height,density=Math.max(0,Math.min(100,effect.parameters?.density??65)),seed=effect.parameters?.seed??17;
- let hasSilhouette=false;
- for(let i=3;i<original.length;i+=4)if(original[i]<50){hasSilhouette=true;break;}
+ const image=read(source),original=image.data,w=source.width,h=source.height,density=Math.max(0,Math.min(100,effect.parameters?.density??65)),seed=effect.parameters?.seed??17;
+ const hasSilhouette=hasSignatureSilhouette(image);
  const out=hasSilhouette?glow(source,color,Math.max(1,(effect.parameters?.radius??20)*.6),4,s*.9):canvasWithSource(source);
  const ctx=out.getContext('2d');if(!ctx)throw new Error('Canvas unavailable');
  const luma=(i:number)=>intensity(original[i],original[i+1],original[i+2]);
@@ -20,9 +19,9 @@ export function renderSigFrostbite(source:HTMLCanvasElement,effect:Effect):HTMLC
    ice.data[i]=106;ice.data[i+1]=208;ice.data[i+2]=250;
    ice.data[i+3]=original[i+3]*s*frost;
   }
-  ctx.save();ctx.globalCompositeOperation='screen';ctx.drawImage(write(ice),0,0);ctx.restore();
+  ctx.save();ctx.globalCompositeOperation='source-atop';ctx.drawImage(write(ice),0,0);ctx.restore();
  }
- ctx.save();ctx.globalCompositeOperation='screen';ctx.strokeStyle='#c2f5ff';ctx.lineWidth=.8;
+ ctx.save();ctx.globalCompositeOperation=hasSilhouette?'screen':'source-atop';ctx.strokeStyle='#c2f5ff';ctx.lineWidth=.8;
  for(let i=0;i<Math.min(500,Math.round(density*2));i++){
   const x=Math.floor(hash(i,1,seed)*w),y=Math.floor(hash(i,3,seed)*h),index=(y*w+x)*4;
   if(original[index+3]<40)continue;

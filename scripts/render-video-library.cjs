@@ -46,10 +46,9 @@ async function main(){
     markImmutableEffectSource(c);
     return c;
   }
-  const cardFrame=(frame,alley=false,width=w,height=h)=>{
+  const cardFrame=(frame,width=w,height=h,background=matte)=>{
     const c=createCanvas(width,height),ctx=c.getContext('2d');
-    ctx.fillStyle=matte;ctx.fillRect(0,0,width,height);
-    if(alley){ctx.globalAlpha=.55;ctx.drawImage(base,0,0,width,height);ctx.globalAlpha=1;}
+    ctx.fillStyle=background;ctx.fillRect(0,0,width,height);
     ctx.drawImage(frame,0,0,width,height);
     return c;
   };
@@ -64,7 +63,7 @@ async function main(){
     throw Error('The preview cutout needs real transparent and opaque regions.');
   const entries=[];
   const save=(kind,id,frame,info={})=>{
-    const c=cardFrame(frame,id==='sig_11');
+    const c=cardFrame(frame,w,h,kind==='transitions'?'#000000':matte);
     const bytes=c.toBuffer('image/webp',86),file=`thumbnails/${kind}/${safe(id)}.webp`;
     writeAsset(file,bytes);
     entries.push({kind,id,file,sha256:hash(bytes),...info});
@@ -72,7 +71,7 @@ async function main(){
   async function saveMotion(kind,id,render){
     const frames=[];
     for(let i=0;i<=motionFps;i++){
-      const c=cardFrame(await render(i/motionFps),id==='sig_11',motionWidth,motionHeight);
+      const c=cardFrame(await render(i/motionFps),motionWidth,motionHeight,kind==='transitions'?'#000000':matte);
       frames.push(Buffer.from(pixels(c)));
     }
     const encoded=spawnSync(process.env.HUELITH_FFMPEG||'ffmpeg',['-v','error','-f','rawvideo','-pix_fmt','rgba',
@@ -111,7 +110,7 @@ async function main(){
     }):undefined;
     save('effects',effect.kind,output,{amount:effect.amount,color:effect.color,parameters:effect.parameters,
       source:temporal?'moving':usesCutout?'cutout':usesBright?'bright':'base',renderWidth:width,renderHeight:height,
-      change:difference(pixels(cardFrame(source,effect.kind==='sig_11')),pixels(cardFrame(output,effect.kind==='sig_11'))),
+      change:difference(pixels(cardFrame(source)),pixels(cardFrame(output))),
       opaquePreview:difference(temporal?pixels(movingFrame):basePixels,pixels(cardFrame(clip))),
       audit:await audit(effect),...motion});
   }

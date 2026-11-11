@@ -19,7 +19,34 @@ const {manualTransformAt,transformAt,transformEdit}=require('../src/editor/video
 const {audioGainAt,audioPanAt,audioVoiceMixAt,timelineAudioSources}=require('../src/editor/video/audio-plan.ts');
 const {parameterAt}=require('../src/editor/video/parameter-keys.ts');
 const {renderVideoTransition}=require('../src/editor/video/render-transition.ts');
+const {waveformPath}=require('../src/editor/video/audio-analysis.ts');
 
+test('live temporal effects reuse decoded history instead of seeking a second video decoder',async()=>{
+  const {timeline,clip}=addMediaClip(defaultTimeline(),makeAsset('Live','live.mp4','video',2));
+  const scene={...timeline,clips:[{...clip,effects:[{id:'echo',kind:'video-temporal-echo',amount:80,enabled:true}]}]};
+  const renderer=new TimelineCompositor(16,16,60);
+  let historicalDecodes=0,available=0;
+  renderer.rawFrame=async(_timeline,_clip,_clock,_signal,history)=>{
+    if(history)historicalDecodes++;
+    const frame=createCanvas(16,16);frame.getContext('2d').fillRect(0,0,16,16);return frame;
+  };
+  renderer.effects.process=async(source,_effects,context)=>{
+    if(await context.previousFrame?.(1/60))available++;
+    return source;
+  };
+  try{
+    renderer.setPlayback(true);
+    for(let index=0;index<8;index++)await renderer.render(scene,index/60);
+    assert.equal(historicalDecodes,0);
+    assert.equal(available,7);
+    available=0;
+    await renderer.render(scene,0);
+    assert.equal(available,0,'Loop wrap must not reuse future frames');
+    renderer.setPlayback(false);
+    await renderer.render(scene,1/60);
+    assert.equal(historicalDecodes,1,'Paused and exported frames retain exact seeking');
+  }finally{renderer.dispose();}
+});
 test('magnet snaps both moving edges and frame alignment still works when disabled',()=>{
   const {timeline}=addMediaClip(defaultTimeline(),makeAsset('Source','source.mp4','video',4),'video1',8);
   assert.deepEqual(magneticFrame(timeline,5.94,30,new Set(),0,{length:2}),{time:frameTime(5.94,30)});
@@ -62,6 +89,17 @@ test('a seek waits for drawable video data when the browser reports seeked early
   video.readyState=2;
   await pending;
   assert.equal(completed,true);
+});
+
+test('a waveform peak stays at the retimed clip position when the visible range is zoomed',()=>{
+  const asset={...makeAsset('Recording','source.wav','audio',20),waveform:Array.from({length:200},(_,index)=>index===90?.9:0)};
+  const inserted=addMediaClip(defaultTimeline(),asset,'audio1',0);
+  const clip={...inserted.clip,sourceIn:5,duration:6,sourceMap:[{time:0,source:5},{time:2,source:10},{time:6,source:15}]};
+  const path=waveformPath(asset,clip,{start:1,end:3,points:145});
+  const top=path.split('L').slice(0,145).map(point=>point.replace('M','').split(' ').map(Number));
+  const [x,y]=top.reduce((lowest,point)=>point[1]<lowest[1]?point:lowest);
+  assert.ok(x>=41&&x<=48,`source peak appears at x=${x}`);
+  assert.ok(y<5);
 });
 
 test('manual transform, clip animation, masked grades and audio automation survive a split',()=>{

@@ -28,7 +28,7 @@ function Wheel({ name, value, onChange, onCommit }: { name: string; value: Grade
   }
   return <div className="hv-grade-wheel">
     <small>{name}</small>
-    <button className="hv-wheel-face" aria-label={`${name} color wheel`} title={`Drag to tint ${name}. Arrow keys also move the point.`}
+    <button className="hv-wheel-face" aria-label={`${name} color wheel`} data-hint={`Drag to tint ${name}. Arrow keys also move the point.`}
       onPointerDown={event => { if (event.button !== 0) return; active.current = event.pointerId; event.currentTarget.setPointerCapture(event.pointerId); move(event); }}
       onPointerMove={move} onPointerUp={finish} onPointerCancel={finish} onLostPointerCapture={finish}
       onKeyDown={event => {

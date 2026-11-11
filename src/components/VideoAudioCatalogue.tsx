@@ -122,8 +122,8 @@ export default function VideoAudioCatalogue({ query, category, playing, busy, on
       <button className="hv-audio-audition" aria-label={`${preview === item.id ? 'Pause' : 'Preview'} ${item.title}`}
         disabled={playing} onClick={() => void play(item)}>{preview === item.id ? <Pause/> : <PlayArrow/>}</button>
       <div className="hv-audio-info">
-        <b title={item.title}>{item.title}</b>
-        <small title={item.creator}>{item.creator} · {clock(item.duration)}</small>
+        <b data-hint={item.title}>{item.title}</b>
+        <small data-hint={item.creator}>{item.creator} · {clock(item.duration)}</small>
         <small><a href={item.sourceUrl} target="_blank" rel="noreferrer">Recording source</a> · <a href={item.licenseUrl} target="_blank" rel="noreferrer">{item.license}</a></small>
       </div>
       <button className="hv-audio-add hv-draggable-card" disabled={busy}

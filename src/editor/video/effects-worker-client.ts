@@ -2,8 +2,8 @@ import {processVideoEffects} from './process-effects';
 import type {VideoEffect,VideoFrameContext} from './effects/types';
 import {isImmutableEffectSource} from '../immutable-effect-sources';
 type Pending={resolve:(canvas:HTMLCanvasElement)=>void;reject:(error:unknown)=>void;context:VideoFrameContext;cleanup:()=>void;sourceId:string};
-/** One bounded, awaited job per compositor; neighbor frames are requested on demand. */
-export class VideoEffectsWorkerClient {
+/** Each worker processes a single stack and services its own history requests. */
+class VideoEffectsWorkerLane {
   private worker:Worker|null=null;
   private unavailable=false;
   private disposed=false;
@@ -75,4 +75,45 @@ export class VideoEffectsWorkerClient {
     });
   }
   dispose():void{this.disposed=true;this.failAll(new DOMException('Video compositor closed','AbortError'));this.worker?.terminate();this.worker=null;}
+}
+
+/** Visible tracks can render independently before the compositor applies blend order. */
+export class VideoEffectsWorkerClient {
+  private readonly lanes=[{worker:new VideoEffectsWorkerLane(),tail:Promise.resolve(),waiting:0}];
+  private readonly affinity=new Map<string,number>();
+  private disposed=false;
+
+  prewarm(){this.lanes[0].worker.prewarm();}
+
+  process(source:HTMLCanvasElement,effects:readonly VideoEffect[],context:VideoFrameContext){
+    if(!context.grade&&!effects.some(effect=>effect.enabled))return Promise.resolve(source);
+    if(this.disposed)return Promise.reject(new DOMException('Video compositor closed','AbortError'));
+    // These kernels analyze a bounded light field or use a GPU color lookup.
+    // Keep the decoded texture on its owning thread instead of round-tripping
+    // two full-resolution bitmaps through the worker for a single operation.
+    if(!context.grade&&effects.filter(effect=>effect.enabled).length===1&&effects.every(effect=>
+      !effect.enabled||!effect.mask&&(effect.kind==='sig_11'||effect.kind==='video-filter')))
+      return processVideoEffects(source,effects,context);
+    const key=context.lane;
+    let index=key?this.affinity.get(key):undefined;
+    if(index===undefined||this.lanes[index].waiting){
+      if(this.lanes.length===1&&this.lanes[0].waiting)
+        this.lanes.push({worker:new VideoEffectsWorkerLane(),tail:Promise.resolve(),waiting:0});
+      index=this.lanes.length===2&&this.lanes[1].waiting<this.lanes[0].waiting?1:0;
+    }
+    if(key){
+      this.affinity.set(key,index);
+      if(this.affinity.size>256)this.affinity.delete(this.affinity.keys().next().value!);
+    }
+    const lane=this.lanes[index];
+    lane.waiting++;
+    const result=lane.tail.then(()=>{
+      if(this.disposed)throw new DOMException('Video compositor closed','AbortError');
+      return lane.worker.process(source,effects,context);
+    });
+    lane.tail=result.then(()=>{},()=>{});
+    return result.finally(()=>{lane.waiting--;});
+  }
+
+  dispose(){this.disposed=true;for(const lane of this.lanes)lane.worker.dispose();this.affinity.clear();}
 }

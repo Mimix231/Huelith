@@ -103,9 +103,9 @@ export default function VideoEffectInspector(props:Props){
       return <details className="hv-effect" key={effect.id} open={index===props.effects.length-1}>
         <summary>{descriptor.label}<span>{effect.enabled?'●':'○'}</span></summary>
         <div className="hv-effect-toolbar"><label><input type="checkbox" checked={effect.enabled} onChange={e=>change(effect.id,{enabled:e.target.checked})}/> Enabled</label>
-          <button title={`Move ${descriptor.label} up`} disabled={index===0||props.disabled} onClick={()=>move(index,-1)}>↑</button>
-          <button title={`Move ${descriptor.label} down`} disabled={index===props.effects.length-1||props.disabled} onClick={()=>move(index,1)}>↓</button>
-          <button title={`Remove ${descriptor.label}`} onClick={()=>send(live.current.filter(e=>e.id!==effect.id))}>×</button></div>
+          <button aria-label={`Move ${descriptor.label} up`} data-hint="Move effect up" disabled={index===0||props.disabled} onClick={()=>move(index,-1)}>↑</button>
+          <button aria-label={`Move ${descriptor.label} down`} data-hint="Move effect down" disabled={index===props.effects.length-1||props.disabled} onClick={()=>move(index,1)}>↓</button>
+          <button aria-label={`Remove ${descriptor.label}`} data-hint="Remove effect" onClick={()=>send(live.current.filter(e=>e.id!==effect.id))}>×</button></div>
         <div className="hv-effect-art"><img loading="lazy" draggable={false} alt="" src={`${VIDEO_LIBRARY_ROOT}thumbnails/${look?'filters/'+look.id:'effects/'+effect.kind}.webp`}/>
           <strong>{look?.name??VIDEO_LIBRARY_EFFECT_NAMES[effect.kind]??descriptor.label}</strong></div>
         {row(effect,{...descriptor,key:'amount',label:descriptor.amountLabel??'Strength'},undefined,`${descriptor.label} amount`)}

@@ -108,7 +108,7 @@ export default function VideoCaptionPanel({timeline,head,onChange,onSeek,onError
     <div key={trackId} className="hv-caption-list" style={{height:Math.min(430,cues.length*rowHeight)}} onScroll={e=>setScrollTop(e.currentTarget.scrollTop)}><div style={{height:cues.length*rowHeight,position:'relative'}}>{cues.slice(first,first+9).map((cue,offset)=>{const index=first+offset;
       const cps=Array.from(cue.text.replace(/\s+/g,'')).length/(cue.end-cue.start);
       return <div key={cue.id} className="hv-caption-cue" style={{position:'absolute',top:index*rowHeight,left:0,right:0,height:rowHeight}}>
-      <div><button className="hv-caption-number" title="Seek to caption" onClick={()=>onSeek(cue.start)}>{index+1}</button>
+      <div><button className="hv-caption-number" data-hint="Seek to caption" onClick={()=>onSeek(cue.start)}>{index+1}</button>
         <input type="checkbox" aria-label={'Select caption '+(index+1)} checked={marked.includes(cue.id)}
           onChange={event=>setMarked(items=>event.target.checked?[...items,cue.id]:items.filter(id=>id!==cue.id))}/></div>
       <div><div className="hv-pair">{(['start','end'] as const).map(edge=><label key={edge} className="hv-field">{edge}<input type="number" min={0} step={.01} value={+cue[edge].toFixed(3)} disabled={!editable(cue.id)} onChange={e=>{
