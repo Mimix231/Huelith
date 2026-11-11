@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"nature-glacier-morning","name":"Glacier Morning","category":"Nature","description":"Nature color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.2044,"contrast":1.0129,"saturation":1.0781,"gamma":0.9497,"lift":0.0053,"temperature":-0.2764,"tint":0.1507,"fade":0.0312,"shadow":[-0.0238,-0.0375,0.075],"highlight":[0.075,0.0355,-0.0075],"split":0.5585,"hue":-6.935}};

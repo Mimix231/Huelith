@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"night-ultraviolet-walk","name":"Ultraviolet Walk","category":"Night","description":"Night color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.12,"contrast":1.1391,"saturation":1.0448,"gamma":0.9857,"lift":-0.0108,"temperature":-0.3932,"tint":-0.2798,"fade":0.1213,"shadow":[0.075,0.0466,-0.0375],"highlight":[-0.0075,0.0628,0.075],"split":0.4666,"hue":3.134}};

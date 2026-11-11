@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"portrait-gentle-muse","name":"Gentle Muse","category":"Portrait","description":"Portrait color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0979,"contrast":1.1393,"saturation":0.9231,"gamma":1.0137,"lift":0.0119,"temperature":0.092,"tint":0.1992,"fade":0.0185,"shadow":[-0.0375,-0.0047,0.075],"highlight":[0.075,0.0014,-0.0075],"split":0.3025,"hue":5.578}};

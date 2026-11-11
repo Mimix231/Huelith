@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"creative-orchid-ocean","name":"Orchid Ocean","category":"Creative","description":"Creative color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0546,"contrast":1.0645,"saturation":1.2035,"gamma":1.1015,"lift":0.0004,"temperature":0.1106,"tint":0.0773,"fade":0.1745,"shadow":[0.0514,-0.0375,0.075],"highlight":[0.0593,0.075,-0.0075],"split":0.281,"hue":10.394}};

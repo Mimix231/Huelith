@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"creative-solar-peach","name":"Solar Peach","category":"Creative","description":"Creative color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0851,"contrast":1.1241,"saturation":1.2624,"gamma":1.0264,"lift":0.0021,"temperature":0.0089,"tint":-0.1333,"fade":0.1767,"shadow":[0.075,-0.0375,0.061],"highlight":[0.0317,0.075,-0.0075],"split":0.1443,"hue":-10.721}};

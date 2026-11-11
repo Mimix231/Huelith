@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"film-cocoa-frame","name":"Cocoa Frame","category":"Film","description":"Film color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0067,"contrast":1.0777,"saturation":0.8415,"gamma":1.1507,"lift":0.0516,"temperature":0.3568,"tint":-0.2313,"fade":0.1504,"shadow":[0.0138,-0.0375,0.075],"highlight":[0.075,0.0631,-0.0075],"split":0.3644,"hue":2.791}};

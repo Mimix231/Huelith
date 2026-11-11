@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"food-spiced-cocoa","name":"Spiced Cocoa","category":"Food","description":"Food color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0347,"contrast":1.0776,"saturation":1.0905,"gamma":1.066,"lift":0.0106,"temperature":0.6049,"tint":0.0452,"fade":0.0202,"shadow":[0.0282,0.075,-0.0375],"highlight":[-0.0075,0.0076,0.075],"split":0.4407,"hue":-0.099}};

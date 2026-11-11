@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"creative-electric-mint","name":"Electric Mint","category":"Creative","description":"Creative color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1838,"contrast":0.9783,"saturation":1.2427,"gamma":1.0121,"lift":0.0156,"temperature":-0.0846,"tint":-0.1735,"fade":0.1855,"shadow":[-0.0375,0.075,0.0562],"highlight":[0.075,-0.0075,0.0558],"split":0.3421,"hue":-22.899}};

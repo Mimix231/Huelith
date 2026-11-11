@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"nature-teal-waterfall","name":"Teal Waterfall","category":"Nature","description":"Nature color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.1687,"contrast":1.2265,"saturation":1.1703,"gamma":1.0882,"lift":0.0142,"temperature":-0.2823,"tint":-0.0115,"fade":0.0329,"shadow":[-0.0375,0.0329,0.075],"highlight":[0.075,-0.0075,0.0112],"split":0.5502,"hue":5.293}};

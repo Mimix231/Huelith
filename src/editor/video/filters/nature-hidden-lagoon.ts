@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"nature-hidden-lagoon","name":"Hidden Lagoon","category":"Nature","description":"Nature color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0059,"contrast":1.0352,"saturation":1.0617,"gamma":0.9942,"lift":0.0283,"temperature":-0.2835,"tint":0.2338,"fade":0.0676,"shadow":[-0.0375,0.0706,0.075],"highlight":[0.075,-0.0075,0.0387],"split":0.5351,"hue":0.918}};

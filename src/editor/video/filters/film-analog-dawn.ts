@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"film-analog-dawn","name":"Analog Dawn","category":"Film","description":"Film color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0383,"contrast":1.0003,"saturation":0.8612,"gamma":1.0045,"lift":0.0503,"temperature":0.5293,"tint":-0.2625,"fade":0.1508,"shadow":[-0.0375,0.0329,0.075],"highlight":[0.075,-0.0075,0.0112],"split":0.3079,"hue":1.69}};

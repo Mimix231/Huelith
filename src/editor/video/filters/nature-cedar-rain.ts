@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"nature-cedar-rain","name":"Cedar Rain","category":"Nature","description":"Nature color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1583,"contrast":1.185,"saturation":1.2083,"gamma":0.9952,"lift":-0.0072,"temperature":-0.0614,"tint":-0.1484,"fade":0.0321,"shadow":[-0.0375,0.075,0.0186],"highlight":[0.0666,-0.0075,0.075],"split":0.2058,"hue":-5.135}};

@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"nature-forest-air","name":"Forest Air","category":"Nature","description":"Nature color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.073,"contrast":1.1655,"saturation":1.1088,"gamma":0.9728,"lift":-0.0057,"temperature":-0.132,"tint":0.2659,"fade":0.0572,"shadow":[-0.0375,-0.0047,0.075],"highlight":[0.075,0.0014,-0.0075],"split":0.1847,"hue":-3.15}};

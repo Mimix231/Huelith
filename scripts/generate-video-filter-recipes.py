@@ -1,0 +1,31 @@
+"""Generate the individual, deterministic 270-look recipe source files.
+
+These are grading presets, not new names for an unchanged processor. Regression
+tests compare their sampled RGB transforms and reject duplicate outputs.
+"""
+import colorsys,json,random,re
+from pathlib import Path
+root=Path(__file__).resolve().parent.parent/'src/editor/video/filters'
+families={
+ 'Cinematic':('Midnight Orchid|Velvet Harbor|Silver Ember|Quiet Eclipse|Copper City|Indigo Passage|Golden Hourglass|Twilight Avenue|Slate Horizon|Moonlit Cinema|Amber Arrival|Steel Rose|Distant Lantern|Deep Meridian|Pearl Shadow|Autumn Frame|Electric Dusk|Dusky Theatre|Saffron Skyline|Violet District|Glass Boulevard|Burnished Light|Shadow Garden|Soft Projection|Evening Sonata|Lost Coast|Sepia Skyline|Blue Interlude|Warm Finale|Nocturne Vista',1.14,.92,.98,.015,.15,.07),
+ 'Film':('Paper Negative|Faded Avenue|Silver Halide|Sunday Print|Velvet Grain|Amber Memory|Cotton Light|Old Seaside|Marigold Roll|Analog Dawn|Summer Contact|Bronze Keepsake|Archive Bloom|Pastel Cinema|Coastal Print|Worn Polaroid|Honey Emulsion|Soft Exposure|Dusty Memories|Cocoa Frame|Rose Negative|Satin Print|Olive Archive|Vintage Window|Linen Haze|Dusk Revival|Evergreen Print|Golden Diary|Desert Album|Silver Notebook',1.02,.91,1.08,.035,.25,.13),
+ 'Portrait':('Rosewater|Gentle Muse|Velvet Blush|Soft Honey|Silken Plum|Peach Morning|Creamy Light|Pearl Portrait|Warm Whisper|Tender Ivory|Orchid Skin|Studio Bloom|Daylight Muse|Caramel Smile|Pink Serenity|Pure Canvas|Rose Quartz|Golden Grace|Soft Lavender|Blossom Veil|Porcelain Dawn|Honey Portrait|Cream Rose|Quiet Beauty|Warm Pearl|Satin Glow|Tender Apricot|Lilac Silhouette|Delicate Light|Amber Silk',1.02,.94,1.05,.018,.18,.025),
+ 'Nature':('Fern Canopy|Forest Air|Alpine Emerald|Ocean Glass|Wild Meadow|Evergreen Dawn|Mossy Trail|Pine Horizon|Sage Valley|Teal Waterfall|Olive Grove|Silver Lake|Cedar Rain|Autumn Birch|Rainforest Glow|Seabreeze|Mountain Mist|Hidden Lagoon|River Mint|Golden Savanna|Lime Orchard|Azure Tide|Arctic Pine|Prairie Sun|Jungle Dew|Botanical Shade|Seafoam Coast|Glacier Morning|Wild Ivy|Summer Marsh',1.10,1.12,1.0,.005,-.1,.045),
+ 'Food':('Honey Toast|Caramel Table|Spiced Cocoa|Vanilla Morning|Apricot Brunch|Cinnamon Plate|Citrus Peel|Golden Crust|Mint Cafe|Mocha Velvet|Amber Kitchen|Cherry Glaze|Creamy Peach|Lemon Picnic|Saffron Feast|Copper Roast|Fig Dessert|Olive Lunch|Berry Sorbet|Warm Bistro|Peanut Butter|Sunlit Pantry|Rustic Diner|Maple Sunday|Ginger Sip|Coconut Cream|Pistachio Light|Plum Pudding|Espresso Hour|Honey Market',1.08,1.12,1.03,.012,.4,.04),
+ 'Night':('Neon Alley|Violet Rain|After Hours|Cobalt Street|Electric Rose|Urban Moon|Night Indigo|Deep Sapphire|Purple Metro|Teal Midnight|Velvet Nightfall|Blue Neon|Magenta Avenue|Dark Disco|Moonbeam Pulse|Indigo Motel|Obsidian Glow|Starlit Glass|Ultraviolet Walk|Neon Orchid|Azure Skyline|Cosmic Boulevard|Night Ferry|Purple Taxi|Cyan Reflection|Dusk Terminal|Black Velvet|Nocturnal Bloom|Moonlit Asphalt|Electric Horizon',1.18,.96,.94,-.015,-.3,.12),
+ 'Retro':('Arcade Rose|Peach Arcade|Citrus Tape|Lilac Replay|Copper Cassette|Mint Records|Soda Summer|Cherry Stereo|Purple Mixtape|Bubblegum Drive|Honey Vinyl|Vapor Evening|Coral Replay|Teal Postcard|Tangerine Days|Velvet Disco|Pink Summer|Blue Cassette|Analog Mint|Violet Vinyl|Golden Replay|Retro Lemon|Peach Station|Faded Stereo|Magenta Memory|Rose Radio|Cyan Sunset|Amber Cassette|Dreamy Diner|Coral Memory',.96,1.03,1.12,.04,.15,.13),
+ 'Monochrome':('Silver Noir|Charcoal Portrait|Platinum Paper|Soft Graphite|Moonstone Mono|Carbon Print|Velvet Black|Pearl Mono|Sepia Ledger|Steel Monochrome|Warm Graphite|Cold Silver|Ink Cinema|Satin Monochrome|Bronze Mono|Matte Obsidian|Milk Glass|Smoked Quartz|Porcelain Silver|Black Chalk|Ivory Shadows|Muted Anthracite|Chrome Sketch|Dusty Silver|Night Graphite|Paper Charcoal|Classic Slate|Blue Platinum|Warm Ink|Silvery Dawn',1.18,.035,1.02,.008,.05,.025),
+ 'Creative':('Amethyst Dream|Emerald Aura|Cyber Bloom|Solar Peach|Electric Mint|Lavender Planet|Coral Moon|Amber Mirage|Purple Reverie|Teal Velvet|Neon Sorbet|Orchid Ocean|Rose Cosmos|Sapphire Haze|Golden Lavender|Lime Twilight|Crimson Mist|Turquoise Moon|Violet Nectar|Pink Comet|Mint Nebula|Plum Aurora|Copper Dreamscape|Azure Petal|Citrus Galaxy|Indigo Blossom|Solar Orchid|Magenta Lagoon|Emerald Sunset|Pearl Fantasy',1.06,1.15,1.04,.018,-.05,.18),
+}
+root.mkdir(parents=True,exist_ok=True);imports=[];names=[]
+for category,(titles,contrast,saturation,gamma,lift,temp,fade) in families.items():
+ for i,name in enumerate(titles.split('|')):
+  identifier=re.sub('[^a-z0-9]+','-',category.lower()+'-'+name.lower()).strip('-');rng=random.Random(identifier)
+  hue=(i*.61803398875%1);shadow=colorsys.hsv_to_rgb(hue,.75,.5);highlight=colorsys.hsv_to_rgb((hue+.4)%1,.55,.5)
+  recipe=dict(exposure=round(rng.uniform(-.22,.22),4),contrast=round(contrast+rng.uniform(-.1,.13),4),saturation=round(max(0,saturation+rng.uniform(-.08,.12)),4),gamma=round(gamma+rng.uniform(-.08,.09),4),lift=round(lift+rng.uniform(-.02,.025),4),temperature=round(temp+rng.uniform(-.3,.3),4),tint=round(rng.uniform(-.35,.35),4),fade=round(max(0,fade+rng.uniform(-.02,.03)),4),shadow=[round((c-.25)*.3,4) for c in shadow],highlight=[round((c-.25)*.3,4) for c in highlight],split=round(rng.uniform(.1,.6),4),hue=round(rng.uniform(-7,7) if category!='Creative' else rng.uniform(-28,28),3))
+  data=dict(id=identifier,name=name,category=category,description=f'{category} color treatment with balanced tonal curves and split-color shadows.',recipe=recipe)
+  variable='look'+str(len(names));imports.append(f"import {{look as {variable}}} from './{identifier}';");names.append(variable)
+  (root/(identifier+'.ts')).write_text("import type {VideoFilter} from './types';\nexport const look:VideoFilter="+json.dumps(data,separators=(',',':'))+';\n',encoding='utf-8')
+assert len(names)==270
+(root/'index.ts').write_text("import type {VideoFilter} from './types';\n"+'\n'.join(imports)+"\nexport const VIDEO_FILTERS:readonly VideoFilter[]=["+','.join(names)+"];\nexport const VIDEO_FILTER_LOOKUP=new Map(VIDEO_FILTERS.map(look=>[look.id,look]));\n",encoding='utf-8')
+print('Wrote',len(names),'individual grading recipes')

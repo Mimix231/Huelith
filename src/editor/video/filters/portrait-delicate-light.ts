@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"portrait-delicate-light","name":"Delicate Light","category":"Portrait","description":"Portrait color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0294,"contrast":1.0326,"saturation":0.9864,"gamma":0.9788,"lift":0.0375,"temperature":0.0267,"tint":0.0925,"fade":0.0297,"shadow":[-0.0183,0.075,-0.0375],"highlight":[0.0115,-0.0075,0.075],"split":0.2728,"hue":6.059}};

@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"monochrome-silver-noir","name":"Silver Noir","category":"Monochrome","description":"Monochrome color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1917,"contrast":1.2623,"saturation":0,"gamma":1.0142,"lift":0.0066,"temperature":0.1096,"tint":0.2778,"fade":0.0145,"shadow":[0.075,-0.0375,-0.0375],"highlight":[-0.0075,0.075,0.0255],"split":0.3779,"hue":-2.534}};

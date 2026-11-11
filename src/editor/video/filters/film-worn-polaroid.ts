@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"film-worn-polaroid","name":"Worn Polaroid","category":"Film","description":"Film color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0647,"contrast":1.0998,"saturation":0.8876,"gamma":1.128,"lift":0.0497,"temperature":-0.0223,"tint":0.2078,"fade":0.1309,"shadow":[0.0049,0.075,-0.0375],"highlight":[-0.0056,-0.0075,0.075],"split":0.2055,"hue":5.122}};

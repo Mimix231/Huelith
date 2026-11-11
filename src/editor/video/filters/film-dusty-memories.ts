@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"film-dusty-memories","name":"Dusty Memories","category":"Film","description":"Film color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0118,"contrast":1.0826,"saturation":0.9943,"gamma":1.1195,"lift":0.0261,"temperature":0.2703,"tint":0.2034,"fade":0.1378,"shadow":[0.075,0.0466,-0.0375],"highlight":[-0.0075,0.0628,0.075],"split":0.5477,"hue":-6.923}};

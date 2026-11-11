@@ -469,11 +469,11 @@ export default function FxStudio({ state, active, activeShape, onClose }: Props)
                         disabled={!writable} onClick={() => {
                           const effect = createStudioFilter(item.kind);
                           const origin = LAYER_EFFECTS.some(layerItem=>layerItem.kind === item.kind) ? 'effects' : category;
-                          begin(item.kind === 'cutout' ? 'Remove background' : item.label, origin, effect.id, [effect]);
+                          begin(item.label, origin, effect.id, [effect]);
                         }} title={`Open ${item.label} editor`}>
                         <EffectIcon kind={item.kind} className="fx-filter-mark" />
                         {!item.kind.startsWith('atelier_') && <EffectPreview kind={item.kind} onDemand className="fx-filter-live-preview" />}
-                        <span>{item.kind === 'cutout' ? 'Remove background' : item.label}</span>
+                        <span>{item.label}</span>
                       </button>
                       <button type="button" className={`fx-favorite-toggle ${favoriteKinds.includes(item.kind)?'active':''}`}
                         aria-label={`${favoriteKinds.includes(item.kind)?'Remove':'Add'} ${item.label} ${favoriteKinds.includes(item.kind)?'from':'to'} favorites`}

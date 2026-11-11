@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"food-honey-market","name":"Honey Market","category":"Food","description":"Food color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.1611,"contrast":1.08,"saturation":1.0565,"gamma":1.0058,"lift":-0.001,"temperature":0.1603,"tint":-0.2804,"fade":0.0338,"shadow":[0.075,-0.0375,0.0145],"highlight":[-0.0024,0.075,-0.0075],"split":0.2943,"hue":-6.939}};

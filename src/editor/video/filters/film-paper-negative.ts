@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"film-paper-negative","name":"Paper Negative","category":"Film","description":"Film color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.072,"contrast":1.067,"saturation":0.9725,"gamma":1.0301,"lift":0.0437,"temperature":0.5077,"tint":0.2157,"fade":0.1529,"shadow":[0.075,-0.0375,-0.0375],"highlight":[-0.0075,0.075,0.0255],"split":0.1467,"hue":-4.218}};

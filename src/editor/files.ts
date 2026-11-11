@@ -3,6 +3,28 @@ import { migrateLegacyEffects } from './effect-migration';
 import { documentToSVG } from './svg';
 import { exportCanvas, prepareImages } from './render';
 import { activeTab, useEditor } from './store';
+import { bindOpenedDocumentRecentId, isVideoProject, recentId, recordRecentProject, type VideoProject } from './project-hub';
+
+/** Capture the already-rendered canvas rather than re-running expensive effect stacks. */
+function quickRecentThumbnail(): string | undefined {
+  try {
+    const source = document.querySelector<HTMLCanvasElement>('.artboard-canvas');
+    if (!source || !source.width || !source.height) return undefined;
+    const target = document.createElement('canvas'); target.width = 240; target.height = 144;
+    const ctx = target.getContext('2d'); if (!ctx) return undefined;
+    const scale = Math.min(target.width / source.width, target.height / source.height);
+    const w = source.width * scale, h = source.height * scale;
+    ctx.fillStyle = '#1b1b2b'; ctx.fillRect(0, 0, target.width, target.height);
+    ctx.drawImage(source, (target.width - w) / 2, (target.height - h) / 2, w, h);
+    const data = target.toDataURL('image/webp', 0.74);
+    return data.length <= 80_000 ? data : undefined;
+  } catch { return undefined; }
+}
+
+
+function thumbnailForSavedDoc(id: string): string | undefined {
+  return activeTab(useEditor.getState()).doc.id === id ? quickRecentThumbnail() : undefined;
+}
 
 interface FileFilter {
   name: string;
@@ -33,13 +55,28 @@ function download(bytes: Uint8Array, name: string, mime: string): void {
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
+const projectWrites=new Map<string,Promise<void>>();
+/** A validated native project reader also works for recents after a restart,
+ * when the previous process's temporary file-dialog permission has expired. */
+export async function readProjectFile(path:string):Promise<string>{
+  const {invoke}=await import('@tauri-apps/api/core');return invoke('read_project_file',{path});
+}
+export async function writeProjectFile(path:string,bytes:Uint8Array):Promise<void>{
+  const contents=new TextDecoder('utf-8',{fatal:true}).decode(bytes);
+  const key=path.replace(/\\/g,'/').toLowerCase();
+  const write=(projectWrites.get(key)??Promise.resolve()).catch(()=>{}).then(async()=>{
+    const {invoke}=await import('@tauri-apps/api/core');await invoke('write_project_atomic',{path,contents});
+  });
+  projectWrites.set(key,write);try{await write;}finally{if(projectWrites.get(key)===write)projectWrites.delete(key);}
+}
 export async function saveBytes(bytes: Uint8Array, name: string, mime: string, filters: FileFilter[]): Promise<string | null> {
   if (isDesktop()) {
     const dialog = await import('@tauri-apps/plugin-dialog');
     const fs = await import('@tauri-apps/plugin-fs');
     const path = await dialog.save({ defaultPath: name, filters });
     if (!path) return null;
-    await fs.writeFile(path, bytes);
+    if(/\.huelith$/i.test(path)&&mime==='application/json')await writeProjectFile(path,bytes);
+    else await fs.writeFile(path, bytes);
     return path;
   }
   download(bytes, name, mime);
@@ -75,18 +112,19 @@ export async function saveProject(saveAs = false): Promise<boolean> {
   const { revision, path } = tab;
   const bytes = new TextEncoder().encode(JSON.stringify(tab.doc, null, 2));
 
-  if (isDesktop() && path && !saveAs) {
-    const fs = await import('@tauri-apps/plugin-fs');
-    await fs.writeFile(path, bytes);
+  if (isDesktop() && path && /\.huelith$/i.test(path) && !saveAs) {
+    await writeProjectFile(path, bytes);
     useEditor.getState().markSaved(id, revision, path);
+    await recordRecentProject(tab.doc, path, thumbnailForSavedDoc(id)).catch(console.warn);
     return true;
   }
 
   const chosen = await saveBytes(bytes, `${fileStem(tab.doc.name)}.huelith`, 'application/json', [
-    { name: 'Huelith project', extensions: ['huelith', 'spectrum'] },
+    { name: 'Huelith project', extensions: ['huelith'] },
   ]);
   if (!chosen) return false;
   useEditor.getState().markSaved(id, revision, isDesktop() ? chosen : undefined);
+  await recordRecentProject(tab.doc, isDesktop() ? chosen : undefined, thumbnailForSavedDoc(id)).catch(console.warn);
   return true;
 }
 
@@ -110,21 +148,21 @@ export async function saveAllProjects(): Promise<boolean> {
     const revision = tab.revision;
     let path = tab.path;
 
-    if (isDesktop() && path) {
-      const fs = await import('@tauri-apps/plugin-fs');
-      await fs.writeFile(path, bytes);
+    if (isDesktop() && path && /\.huelith$/i.test(path)) {
+      await writeProjectFile(path, bytes);
     } else {
       const selectedPath = await saveBytes(
         bytes,
         `${fileStem(tab.doc.name)}.huelith`,
         'application/json',
-        [{ name: 'Huelith project', extensions: ['huelith', 'spectrum'] }],
+        [{ name: 'Huelith project', extensions: ['huelith'] }],
       );
       if (!selectedPath) return false;
       path = isDesktop() ? selectedPath : undefined;
     }
 
     useEditor.getState().markSaved(id, revision, path);
+    await recordRecentProject(tab.doc, path, thumbnailForSavedDoc(id)).catch(console.warn);
   }
 
   // Editing during an open Save dialog may change a revision. In that case
@@ -139,14 +177,13 @@ export async function openProject(): Promise<boolean> {
 
   if (isDesktop()) {
     const dialog = await import('@tauri-apps/plugin-dialog');
-    const fs = await import('@tauri-apps/plugin-fs');
     const selected = await dialog.open({
       multiple: false,
       filters: [{ name: 'Huelith project', extensions: ['huelith', 'spectrum'] }],
     });
     if (typeof selected !== 'string') return false;
     path = selected;
-    value = JSON.parse(await fs.readTextFile(selected));
+    value = JSON.parse(await readProjectFile(selected));
   } else {
     const file = await pickFile('.huelith,.spectrum,application/json');
     if (!file) return false;
@@ -154,7 +191,57 @@ export async function openProject(): Promise<boolean> {
   }
 
   if (!isDocument(value)) throw new Error('Invalid or unsupported Huelith project (.huelith or legacy .spectrum).');
-  useEditor.getState().openDoc(migrateLegacyEffects(value), path);
+  const doc = migrateLegacyEffects(value);
+  useEditor.getState().openDoc(doc, path);
+  if (!path) bindOpenedDocumentRecentId(activeTab(useEditor.getState()).doc.id, recentId(doc));
+  await recordRecentProject(doc, path).catch(console.warn);
+  return true;
+}
+
+
+/** Unified .huelith projects are discriminated by validated document contents, not filename. */
+export async function openCreativeProject(): Promise<{ kind: 'image' | 'animation' | 'video'; video?: VideoProject; path?: string } | null> {
+  let value: unknown;
+  let path: string | undefined;
+  if (isDesktop()) {
+    const dialog = await import('@tauri-apps/plugin-dialog');
+    const selected = await dialog.open({ multiple: false, filters: [
+      { name: 'Huelith projects', extensions: ['huelith', 'spectrum', 'huelithvideo'] },
+    ] });
+    if (typeof selected !== 'string') return null;
+    path = selected;
+    value = JSON.parse(await readProjectFile(selected));
+  } else {
+    const file = await pickFile('.huelith,.spectrum,.huelithvideo,application/json');
+    if (!file) return null;
+    value = JSON.parse(await file.text());
+  }
+  if (isVideoProject(value)) {
+    await recordRecentProject(value, path).catch(console.warn);
+    return { kind: 'video', video: value, path };
+  }
+  if (!isDocument(value)) throw new Error('Unsupported project file. Choose a Huelith image, animation, or video project.');
+  const doc = migrateLegacyEffects(value);
+  const existing = path && useEditor.getState().tabs.find(tab => tab.path === path);
+  if (existing) useEditor.getState().activate(existing.doc.id);
+  else {
+    useEditor.getState().openDoc(doc, path);
+    if (!path) bindOpenedDocumentRecentId(activeTab(useEditor.getState()).doc.id, recentId(doc));
+  }
+  await recordRecentProject(doc, path).catch(console.warn);
+  return { kind: doc.animation ? 'animation' : 'image', path };
+}
+
+/** Reopens a known desktop project path; never treats a remembered path as trusted JSON. */
+export async function openProjectPath(path: string): Promise<boolean> {
+  if (!isDesktop()) return false;
+  const existing = useEditor.getState().tabs.find(tab => tab.path === path);
+  if (existing) { useEditor.getState().activate(existing.doc.id); return true; }
+  const parsed: unknown = JSON.parse(await readProjectFile(path));
+  if (!isDocument(parsed)) throw new Error('Recent project is invalid. Use Open project to select another file.');
+  const doc = migrateLegacyEffects(parsed);
+  useEditor.getState().openDoc(doc, path);
+  await recordRecentProject(doc, path).catch(console.warn);
   return true;
 }
 

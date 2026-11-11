@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"nature-mountain-mist","name":"Mountain Mist","category":"Nature","description":"Nature color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1928,"contrast":1.1004,"saturation":1.1626,"gamma":0.9964,"lift":0.0009,"temperature":0.1362,"tint":-0.1188,"fade":0.0463,"shadow":[0.075,-0.0375,0.0377],"highlight":[0.0147,0.075,-0.0075],"split":0.2319,"hue":-6.345}};

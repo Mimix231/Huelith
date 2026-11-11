@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"creative-turquoise-moon","name":"Turquoise Moon","category":"Creative","description":"Creative color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.2168,"contrast":0.982,"saturation":1.1316,"gamma":1.0969,"lift":0.0137,"temperature":0.0474,"tint":-0.2093,"fade":0.1785,"shadow":[-0.0375,0.0706,0.075],"highlight":[0.075,-0.0075,0.0387],"split":0.1214,"hue":25.006}};

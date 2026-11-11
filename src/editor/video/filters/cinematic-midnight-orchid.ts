@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"cinematic-midnight-orchid","name":"Midnight Orchid","category":"Cinematic","description":"Cinematic color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.2186,"contrast":1.101,"saturation":0.8843,"gamma":1.0296,"lift":-0.0048,"temperature":0.4281,"tint":-0.1279,"fade":0.075,"shadow":[0.075,-0.0375,-0.0375],"highlight":[-0.0075,0.075,0.0255],"split":0.2542,"hue":0.261}};

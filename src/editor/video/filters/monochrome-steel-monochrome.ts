@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"monochrome-steel-monochrome","name":"Steel Monochrome","category":"Monochrome","description":"Monochrome color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0374,"contrast":1.3021,"saturation":0.0877,"gamma":1.0082,"lift":0.0155,"temperature":0.0478,"tint":0.2764,"fade":0.0534,"shadow":[-0.0375,0.0329,0.075],"highlight":[0.075,-0.0075,0.0112],"split":0.512,"hue":5.261}};

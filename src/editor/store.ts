@@ -1,4 +1,5 @@
 import { INK_PRESETS } from './ink-engine';
+import { isWorkspace } from '../settings/theme-catalog';
 import {pixelSelection,clearPixelSelection} from './selection-mask';
 import { newCreative, type CreativeKind, type CreativeObject } from './creative';
 import { create } from 'zustand';
@@ -59,7 +60,7 @@ function savedWorkspace(): WorkspaceSettings {
     const raw = (localStorage.getItem('huelith-layout') ?? localStorage.getItem('spectrum-layout'));
     const layout = raw ? JSON.parse(raw) as Partial<WorkspaceSettings> : {};
     return {
-      theme: ['glass', 'material', 'classic', 'midnight', 'studio', 'strawberry', 'melon', 'peach', 'lemon', 'mango', 'sakura', 'blossom', 'shadow'].includes(theme ?? '') ? theme as Workspace : defaults.theme,
+      theme: isWorkspace(theme) ? theme : defaults.theme,
       appearanceMode: layout.appearanceMode === 'light' || layout.appearanceMode === 'dark' ? layout.appearanceMode : defaults.appearanceMode,
       inspectorOpen: typeof layout.inspectorOpen === 'boolean' ? layout.inspectorOpen : defaults.inspectorOpen,
       toolsOpen: typeof layout.toolsOpen === 'boolean' ? layout.toolsOpen : defaults.toolsOpen,

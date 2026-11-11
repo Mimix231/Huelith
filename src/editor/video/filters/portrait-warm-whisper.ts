@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"portrait-warm-whisper","name":"Warm Whisper","category":"Portrait","description":"Portrait color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.08,"contrast":0.9861,"saturation":1.0057,"gamma":1.0029,"lift":0.0026,"temperature":0.4226,"tint":0.3275,"fade":0.0208,"shadow":[0.075,-0.0375,0.0001],"highlight":[-0.0075,0.075,-0.0021],"split":0.2985,"hue":-3.676}};

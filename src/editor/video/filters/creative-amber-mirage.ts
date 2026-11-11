@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"creative-amber-mirage","name":"Amber Mirage","category":"Creative","description":"Creative color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0108,"contrast":1.0729,"saturation":1.1336,"gamma":0.9698,"lift":0.0385,"temperature":-0.2898,"tint":-0.1344,"fade":0.1629,"shadow":[-0.0327,0.075,-0.0375],"highlight":[0.022,-0.0075,0.075],"split":0.527,"hue":16.827}};

@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"food-copper-roast","name":"Copper Roast","category":"Food","description":"Food color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1534,"contrast":1.129,"saturation":1.1155,"gamma":1.1102,"lift":0.0201,"temperature":0.3386,"tint":-0.2541,"fade":0.0668,"shadow":[0.0049,0.075,-0.0375],"highlight":[-0.0056,-0.0075,0.075],"split":0.2682,"hue":0.644}};

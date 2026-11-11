@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"retro-purple-mixtape","name":"Purple Mixtape","category":"Retro","description":"Retro color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1333,"contrast":0.9021,"saturation":1.0264,"gamma":1.163,"lift":0.0575,"temperature":0.2671,"tint":0.2068,"fade":0.1509,"shadow":[0.075,-0.0375,0.0001],"highlight":[-0.0075,0.075,-0.0021],"split":0.3997,"hue":4.052}};

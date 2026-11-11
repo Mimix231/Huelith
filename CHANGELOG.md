@@ -1,3 +1,32 @@
+## Unreleased — v0.3.0-alpha.0 (Stages D–G, 2026-11-03)
+
+- Integrated all 221 existing operations as independent video-owned copies, plus Video Color Grade, Temporal Echo and Motion Trail, with ordered clip stacks, controls, keyframes and transitions.
+- Unified full-resolution video preview/seeking/export compositing; added bounded worker/prefix caches and continuous newest-request scheduling. Fixed stale WebView2 textures after seeking. Heavy stacks still exceed real-time budgets.
+- Replaced the short silent UI export with bounded binary streaming H.264/AAC MP4, including native audio decoding, mixing, resampling, trims, fades, gain and timeline placement. Removed whole-file preview Blobs in favor of individually authorized streaming media URLs.
+- Added Animation Studio MP4 alongside APNG/frame exports, preserving varying cel durations, holds, vector/text content and persistent effects.
+- Repaired low-strength Emboss, Edge Detection, Neon Edges, Ember Glow and Retro Vision; fixed advanced opaque outline width; exposed discrete palette size and meaningful control units. Kept the existing image slider scheduler.
+- Added atomic project reads/writes, legacy save-as-copy behavior, native relinking, IndexedDB video recovery and accessible timeline resizing. Fixed Windows canonical-path handling and numeric MSI metadata for the alpha version.
+- Verified native exports with audio/frame/timing checks, legacy image save/reopen, APNG holds, the actual bundled app, 777 Node tests and both installer builds. Clean install/upgrade/uninstall, broad artistic certification and universal low-latency playback remain unverified. See `docs/HUELITH_V03_STAGE_D_G_IMPLEMENTATION.md`.
+
+## Unreleased — v0.3-alpha development (Stage C Video Editor, 2026-11-02)
+
+- Replaced the Stage B diagnostics-only Video Workspace with a compact three-pane editing interface, monitor and multi-track timeline.
+- Added non-destructive media clips, timed title overlays, visual transforms, opacity and volume, overlapping clips and crossfades.
+- Added video/audio track creation, seeking, playback, zoom, moving, trimming, splitting, locking/muting, undo/redo and inspector controls.
+- Added media import and preview, plus source-path persistence in the existing `.huelith` video-project format. Earlier Stage A/B video projects still load.
+- Added a limited video-only MP4 exporter that composites **edited** frames and uses Stage B's Rust/Media Foundation RGBA encoder. Unlike the Stage B diagnostic, it does not export a fake test pattern.
+- **Known limitations:** Windows native build and actual MP4 output remain unverified here; WebView preview has a 256 MB source-size cap; audio is previewable but not mixed into the MP4; export uses bounded temporary raw frames (30 seconds maximum and 2.5 GB cap); source files are referenced, not embedded.
+- Left all existing image/animation effect modules and slider rendering untouched. See `docs/HUELITH_STAGE_C_VIDEO_EDITOR.md`.
+
+## Unreleased — v0.3-alpha development (Stage A Creative Hub, 2026-11-02)
+
+- Added Huelith Creative Hub with separate Image Editor, Animation Studio, and Video Editor project launchers.
+- Reused existing image/animation project creation and introduced frame-rate setup for new animations.
+- Added video-project metadata, save/reopen, and a clearly marked Stage A Video Editor workspace scaffold (`.huelithvideo`).
+- Added a recent-project grid with search/filter/sort, optional saved thumbnails, reopen and non-destructive removal.
+- Added persistent Home/Resume navigation, unified project picker, and unsaved-video close protection.
+- Existing effects and live-slider rendering were deliberately left unchanged.
+
 # Changelog
 
 Huelith is the new name for the image editor previously released as Spectrum. The first public release was **0.1.0**; **0.2.0** begins with Phases T, U, and V. This changelog documents released source features, not a claim that every workflow is bug-free or that all native acceleration is complete.
@@ -257,3 +286,13 @@ The first public alpha already contained the following implemented **features an
 - Wired 11 original effects to dedicated `src/editor/effects/` implementations, with pixel-level reference and alpha tests.
 - Added optional full-resolution WebGL2 spatial blur kernels plus a CPU fallback, visible-alpha ROI and reusable immutable Gaussian stages.
 - Improved direct CPU performance in representative blur benchmarks. The 20–50 ms universal target remains outstanding; GPU/WebView2 runtime validation is still required.
+
+### Unreleased v0.3-alpha — Stage B (2026-11-02)
+
+- Unified newly created image, animation and video project files under the `.huelith` extension; video documents remain explicitly typed within the project JSON. Existing image/animation formats are unchanged.
+- Introduced a Windows-only Rust Media Foundation foundation for native video probing, first-frame decoding, and H.264/MP4 export without an FFmpeg dependency.
+- Added a diagnostic MP4 test-pattern export and a video-only native transcode path to the Video Editor shell.
+- Added bounded, file-backed RGBA sequence encoding as the backend seam for upcoming Animation Studio export.
+- Added atomic MP4 export staging, frame/dimension limits, overwrite protection, and clear platform/codec errors.
+- Preserved the image editor effect library and continuous slider preview implementation unchanged.
+- Windows native build and runtime verification remain pending; this milestone is **not yet production-certified**.

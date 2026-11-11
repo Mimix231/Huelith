@@ -15,7 +15,7 @@ export function renderSigRetroVision(source:HTMLCanvasElement,effect:Effect):HTM
    const i=(y*w+x)*4;if(!src[i+3])continue;
    const from=(y*w+Math.max(0,Math.min(w-1,x+wobble)))*4;
    for(let c=0;c<3;c++){const shifted=src[i+c]*(1-s)+src[from+c]*s;
- const phosphor=c===1?Math.min(255,shifted*1.1):shifted*(1-.3*mix);
+ const phosphor=c===1?Math.min(255,shifted*(1+.1*s)):shifted*(1-.3*mix*s);
  d[i+c]=(shifted*(1-mix)+phosphor*mix)*line*(x%3===c?1:1-.12*s);}
   }
  }

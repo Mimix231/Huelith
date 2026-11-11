@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"food-apricot-brunch","name":"Apricot Brunch","category":"Food","description":"Food color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0907,"contrast":1.1598,"saturation":1.0906,"gamma":1.0112,"lift":-0.0012,"temperature":0.4756,"tint":-0.2935,"fade":0.0526,"shadow":[-0.0375,0.075,0.0562],"highlight":[0.075,-0.0075,0.0558],"split":0.1582,"hue":5.77}};

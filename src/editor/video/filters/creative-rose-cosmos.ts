@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"creative-rose-cosmos","name":"Rose Cosmos","category":"Creative","description":"Creative color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1378,"contrast":1.0805,"saturation":1.1948,"gamma":0.9674,"lift":0.0296,"temperature":0.1177,"tint":-0.1165,"fade":0.2061,"shadow":[-0.0375,0.075,0.0186],"highlight":[0.0666,-0.0075,0.075],"split":0.26,"hue":27.691}};

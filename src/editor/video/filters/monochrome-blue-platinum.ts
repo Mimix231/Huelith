@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"monochrome-blue-platinum","name":"Blue Platinum","category":"Monochrome","description":"Monochrome color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.1657,"contrast":1.2569,"saturation":0.0566,"gamma":0.9495,"lift":0.014,"temperature":0.1355,"tint":0.1412,"fade":0.0257,"shadow":[-0.0238,-0.0375,0.075],"highlight":[0.075,0.0355,-0.0075],"split":0.5406,"hue":-4.892}};

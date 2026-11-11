@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"cinematic-distant-lantern","name":"Distant Lantern","category":"Cinematic","description":"Cinematic color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.1487,"contrast":1.2649,"saturation":0.9788,"gamma":0.9224,"lift":0.0056,"temperature":0.2869,"tint":-0.1944,"fade":0.0991,"shadow":[-0.0375,0.075,0.0186],"highlight":[0.0666,-0.0075,0.075],"split":0.5389,"hue":1.134}};

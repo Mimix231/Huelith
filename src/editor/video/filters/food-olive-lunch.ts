@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"food-olive-lunch","name":"Olive Lunch","category":"Food","description":"Food color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0234,"contrast":1.0002,"saturation":1.2188,"gamma":1.0521,"lift":-0.0047,"temperature":0.4074,"tint":0.1808,"fade":0.0322,"shadow":[-0.0375,0.0706,0.075],"highlight":[0.075,-0.0075,0.0387],"split":0.1731,"hue":6.685}};

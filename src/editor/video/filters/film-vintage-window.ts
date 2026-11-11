@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"film-vintage-window","name":"Vintage Window","category":"Film","description":"Film color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.098,"contrast":1.15,"saturation":0.9581,"gamma":1.1603,"lift":0.0198,"temperature":0.2405,"tint":-0.077,"fade":0.1289,"shadow":[0.0425,0.075,-0.0375],"highlight":[-0.0075,0.0182,0.075],"split":0.5611,"hue":1.704}};

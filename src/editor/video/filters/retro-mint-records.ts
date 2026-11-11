@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"retro-mint-records","name":"Mint Records","category":"Retro","description":"Retro color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.1859,"contrast":0.9721,"saturation":1.1308,"gamma":1.1985,"lift":0.0604,"temperature":0.4099,"tint":0.0042,"fade":0.1108,"shadow":[0.075,0.0234,-0.0375],"highlight":[-0.0075,0.075,0.0701],"split":0.2451,"hue":-0.214}};

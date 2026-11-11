@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"nature-river-mint","name":"River Mint","category":"Nature","description":"Nature color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1752,"contrast":1.0026,"saturation":1.0623,"gamma":0.9996,"lift":0.0263,"temperature":0.1521,"tint":0.036,"fade":0.0398,"shadow":[0.075,0.0466,-0.0375],"highlight":[-0.0075,0.0628,0.075],"split":0.5551,"hue":2.773}};

@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"cinematic-nocturne-vista","name":"Nocturne Vista","category":"Cinematic","description":"Cinematic color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.1779,"contrast":1.1848,"saturation":0.8813,"gamma":0.9663,"lift":0.031,"temperature":0.3751,"tint":0.1655,"fade":0.0511,"shadow":[0.075,-0.0375,0.0145],"highlight":[-0.0024,0.075,-0.0075],"split":0.4203,"hue":3.701}};

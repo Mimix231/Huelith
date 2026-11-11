@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"night-purple-taxi","name":"Purple Taxi","category":"Night","description":"Night color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1613,"contrast":1.1823,"saturation":0.9031,"gamma":0.932,"lift":0.0012,"temperature":-0.0804,"tint":-0.3028,"fade":0.1032,"shadow":[0.0425,0.075,-0.0375],"highlight":[-0.0075,0.0182,0.075],"split":0.3747,"hue":-3.16}};

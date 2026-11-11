@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"food-honey-toast","name":"Honey Toast","category":"Food","description":"Food color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1231,"contrast":1.1366,"saturation":1.2335,"gamma":1.0542,"lift":0.0101,"temperature":0.4214,"tint":0.1964,"fade":0.0239,"shadow":[0.075,-0.0375,-0.0375],"highlight":[-0.0075,0.075,0.0255],"split":0.1435,"hue":1.294}};

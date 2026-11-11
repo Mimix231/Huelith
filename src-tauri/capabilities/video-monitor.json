@@ -1,0 +1,6 @@
+{
+  "identifier": "video-monitor",
+  "description": "Playback messages for the detached Video Studio monitor",
+  "windows": ["video-monitor"],
+  "permissions": ["core:event:default"]
+}

@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"retro-magenta-memory","name":"Magenta Memory","category":"Retro","description":"Retro color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1633,"contrast":0.9098,"saturation":1.0982,"gamma":1.1053,"lift":0.0361,"temperature":-0.0028,"tint":-0.0487,"fade":0.1387,"shadow":[0.0747,-0.0375,0.075],"highlight":[0.0423,0.075,-0.0075],"split":0.2327,"hue":-6.117}};

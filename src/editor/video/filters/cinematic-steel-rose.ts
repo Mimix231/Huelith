@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"cinematic-steel-rose","name":"Steel Rose","category":"Cinematic","description":"Cinematic color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0222,"contrast":1.1417,"saturation":1.0132,"gamma":1.0126,"lift":0.0215,"temperature":0.3164,"tint":0.0184,"fade":0.072,"shadow":[0.0514,-0.0375,0.075],"highlight":[0.0593,0.075,-0.0075],"split":0.4336,"hue":-6.847}};

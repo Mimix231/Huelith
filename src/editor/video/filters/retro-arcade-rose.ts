@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"retro-arcade-rose","name":"Arcade Rose","category":"Retro","description":"Retro color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.2006,"contrast":0.932,"saturation":1.0348,"gamma":1.109,"lift":0.0226,"temperature":0.0353,"tint":-0.0475,"fade":0.1261,"shadow":[0.075,-0.0375,-0.0375],"highlight":[-0.0075,0.075,0.0255],"split":0.24,"hue":-1.132}};

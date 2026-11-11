@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"film-silver-halide","name":"Silver Halide","category":"Film","description":"Film color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0606,"contrast":0.9325,"saturation":0.8522,"gamma":1.1292,"lift":0.018,"temperature":0.1382,"tint":0.2708,"fade":0.1169,"shadow":[0.0282,0.075,-0.0375],"highlight":[-0.0075,0.0076,0.075],"split":0.4514,"hue":6.234}};

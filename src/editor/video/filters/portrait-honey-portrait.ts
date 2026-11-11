@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"portrait-honey-portrait","name":"Honey Portrait","category":"Portrait","description":"Portrait color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0066,"contrast":1.0861,"saturation":0.8655,"gamma":1.0974,"lift":0.0269,"temperature":0.3943,"tint":0.1797,"fade":0.0158,"shadow":[0.075,-0.0375,-0.0231],"highlight":[-0.0075,0.075,0.015],"split":0.1427,"hue":-6.237}};

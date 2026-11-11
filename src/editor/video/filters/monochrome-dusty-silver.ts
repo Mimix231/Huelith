@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"monochrome-dusty-silver","name":"Dusty Silver","category":"Monochrome","description":"Monochrome color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.1973,"contrast":1.1805,"saturation":0,"gamma":0.9411,"lift":0.0013,"temperature":0.3319,"tint":0.1601,"fade":0.0092,"shadow":[0.0425,0.075,-0.0375],"highlight":[-0.0075,0.0182,0.075],"split":0.5749,"hue":1.877}};

@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"retro-teal-postcard","name":"Teal Postcard","category":"Retro","description":"Retro color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.1617,"contrast":1.0652,"saturation":1.0758,"gamma":1.1332,"lift":0.0369,"temperature":0.2406,"tint":0.0787,"fade":0.1393,"shadow":[0.075,-0.0143,-0.0375],"highlight":[-0.0075,0.075,0.0425],"split":0.4634,"hue":-2.659}};

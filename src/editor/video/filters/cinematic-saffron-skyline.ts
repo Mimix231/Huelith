@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"cinematic-saffron-skyline","name":"Saffron Skyline","category":"Cinematic","description":"Cinematic color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0009,"contrast":1.0656,"saturation":0.8682,"gamma":1.0531,"lift":-0.0009,"temperature":-0.0034,"tint":0.2458,"fade":0.0785,"shadow":[0.075,0.0466,-0.0375],"highlight":[-0.0075,0.0628,0.075],"split":0.541,"hue":3.033}};

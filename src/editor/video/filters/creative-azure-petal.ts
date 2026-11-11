@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"creative-azure-petal","name":"Azure Petal","category":"Creative","description":"Creative color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0024,"contrast":1.1315,"saturation":1.1669,"gamma":0.9705,"lift":0.0294,"temperature":-0.3147,"tint":-0.2384,"fade":0.1711,"shadow":[0.0425,0.075,-0.0375],"highlight":[-0.0075,0.0182,0.075],"split":0.5342,"hue":-25.731}};

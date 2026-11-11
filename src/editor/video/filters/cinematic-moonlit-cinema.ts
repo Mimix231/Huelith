@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"cinematic-moonlit-cinema","name":"Moonlit Cinema","category":"Cinematic","description":"Cinematic color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0678,"contrast":1.1716,"saturation":0.9425,"gamma":0.9809,"lift":0.0234,"temperature":0.4065,"tint":0.2561,"fade":0.0717,"shadow":[-0.0375,0.0329,0.075],"highlight":[0.075,-0.0075,0.0112],"split":0.3212,"hue":-1.813}};

@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"retro-violet-vinyl","name":"Violet Vinyl","category":"Retro","description":"Retro color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1717,"contrast":0.8796,"saturation":1.1143,"gamma":1.1739,"lift":0.0611,"temperature":-0.0638,"tint":-0.3344,"fade":0.1281,"shadow":[0.0138,-0.0375,0.075],"highlight":[0.075,0.0631,-0.0075],"split":0.1194,"hue":4.268}};

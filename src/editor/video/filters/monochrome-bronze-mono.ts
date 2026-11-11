@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"monochrome-bronze-mono","name":"Bronze Mono","category":"Monochrome","description":"Monochrome color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.058,"contrast":1.2587,"saturation":0,"gamma":1.0559,"lift":0.0217,"temperature":0.1881,"tint":-0.2478,"fade":0.0453,"shadow":[-0.0375,-0.0279,0.075],"highlight":[0.075,0.0185,-0.0075],"split":0.3029,"hue":2.324}};

@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"food-peanut-butter","name":"Peanut Butter","category":"Food","description":"Food color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0236,"contrast":1.189,"saturation":1.0644,"gamma":1.1199,"lift":0.0229,"temperature":0.4343,"tint":-0.0611,"fade":0.069,"shadow":[-0.0375,0.075,-0.019],"highlight":[0.039,-0.0075,0.075],"split":0.5598,"hue":-2.652}};

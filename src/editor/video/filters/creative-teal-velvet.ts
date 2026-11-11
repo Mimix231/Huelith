@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"creative-teal-velvet","name":"Teal Velvet","category":"Creative","description":"Creative color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0916,"contrast":0.9908,"saturation":1.0898,"gamma":1.0672,"lift":0.0284,"temperature":-0.1229,"tint":0.1182,"fade":0.1865,"shadow":[-0.0375,0.0329,0.075],"highlight":[0.075,-0.0075,0.0112],"split":0.1155,"hue":-1.97}};

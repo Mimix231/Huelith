@@ -2,7 +2,7 @@ import {clamp,type EffectFactory} from './common';
 /** Actual palette clustering via weighted RGB k-means. Samples are drawn
  * deterministically from the visible source, not generic RGB bit-crushing. */
 export const paletteQuantizer:EffectFactory=({source,width:w,height:h,amount,parameters:p})=>{
-  const k=Math.max(2,Math.min(16,Math.round(2+clamp((p.colorMix??50)/100)*14)));
+  const k=Math.max(2,Math.min(16,Math.round(p.paletteSize??(2+clamp((p.colorMix??50)/100)*14))));
   const bins=new Map<number,{r:number;g:number;b:number;n:number}>();
   const stride=Math.max(1,Math.floor(Math.sqrt(w*h/20000)));
   for(let y=0;y<h;y+=stride)for(let x=0;x<w;x+=stride){

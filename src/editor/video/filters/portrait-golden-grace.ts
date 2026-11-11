@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"portrait-golden-grace","name":"Golden Grace","category":"Portrait","description":"Portrait color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0518,"contrast":1.1362,"saturation":0.9488,"gamma":1.0644,"lift":0.0266,"temperature":0.4314,"tint":-0.1416,"fade":0.0429,"shadow":[-0.0375,0.0706,0.075],"highlight":[0.075,-0.0075,0.0387],"split":0.4884,"hue":5.645}};

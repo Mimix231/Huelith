@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"monochrome-sepia-ledger","name":"Sepia Ledger","category":"Monochrome","description":"Monochrome color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.1768,"contrast":1.1722,"saturation":0,"gamma":0.9626,"lift":0.0323,"temperature":-0.1448,"tint":0.0252,"fade":0.0274,"shadow":[0.075,-0.0375,0.0001],"highlight":[-0.0075,0.075,-0.0021],"split":0.1511,"hue":-6.156}};

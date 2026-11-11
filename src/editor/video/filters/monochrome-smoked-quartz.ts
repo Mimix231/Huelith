@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"monochrome-smoked-quartz","name":"Smoked Quartz","category":"Monochrome","description":"Monochrome color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0672,"contrast":1.2423,"saturation":0,"gamma":1.0167,"lift":0.006,"temperature":0.1786,"tint":0.242,"fade":0.0494,"shadow":[-0.0375,0.0706,0.075],"highlight":[0.075,-0.0075,0.0387],"split":0.2713,"hue":-5.384}};

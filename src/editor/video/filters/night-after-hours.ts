@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"night-after-hours","name":"After Hours","category":"Night","description":"Night color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0829,"contrast":1.1261,"saturation":0.9317,"gamma":1.0224,"lift":0.0082,"temperature":-0.2558,"tint":-0.1931,"fade":0.1469,"shadow":[0.0282,0.075,-0.0375],"highlight":[-0.0075,0.0076,0.075],"split":0.292,"hue":1.547}};

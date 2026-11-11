@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"creative-emerald-sunset","name":"Emerald Sunset","category":"Creative","description":"Creative color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.061,"contrast":1.0717,"saturation":1.2699,"gamma":1.076,"lift":0.0145,"temperature":0.2358,"tint":-0.1948,"fade":0.2036,"shadow":[-0.0183,0.075,-0.0375],"highlight":[0.0115,-0.0075,0.075],"split":0.5435,"hue":-13.352}};

@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"nature-olive-grove","name":"Olive Grove","category":"Nature","description":"Nature color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0683,"contrast":1.1741,"saturation":1.2141,"gamma":1.0458,"lift":0.0138,"temperature":-0.2089,"tint":0.2953,"fade":0.0578,"shadow":[0.0658,0.075,-0.0375],"highlight":[-0.0075,0.0352,0.075],"split":0.5571,"hue":-2.901}};

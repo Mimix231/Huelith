@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"monochrome-moonstone-mono","name":"Moonstone Mono","category":"Monochrome","description":"Monochrome color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.157,"contrast":1.2423,"saturation":0.1205,"gamma":0.9807,"lift":-0.0011,"temperature":-0.1002,"tint":-0.2544,"fade":0.027,"shadow":[-0.0375,0.075,0.0562],"highlight":[0.075,-0.0075,0.0558],"split":0.3201,"hue":6.747}};

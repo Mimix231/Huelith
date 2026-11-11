@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"cinematic-amber-arrival","name":"Amber Arrival","category":"Cinematic","description":"Cinematic color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0608,"contrast":1.1463,"saturation":0.9505,"gamma":0.9457,"lift":0.0393,"temperature":0.2935,"tint":0.3291,"fade":0.091,"shadow":[0.0658,0.075,-0.0375],"highlight":[-0.0075,0.0352,0.075],"split":0.5823,"hue":-2.831}};

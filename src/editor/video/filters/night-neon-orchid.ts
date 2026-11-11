@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"night-neon-orchid","name":"Neon Orchid","category":"Night","description":"Night color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.1352,"contrast":1.2871,"saturation":1.0721,"gamma":0.9589,"lift":0.0088,"temperature":-0.4576,"tint":0.21,"fade":0.1361,"shadow":[0.0138,-0.0375,0.075],"highlight":[0.075,0.0631,-0.0075],"split":0.5569,"hue":1.271}};

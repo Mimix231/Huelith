@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"night-cobalt-street","name":"Cobalt Street","category":"Night","description":"Night color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.2014,"contrast":1.1072,"saturation":0.9389,"gamma":1.0264,"lift":-0.0345,"temperature":-0.5831,"tint":-0.3287,"fade":0.1274,"shadow":[0.075,-0.0375,0.061],"highlight":[0.0317,0.075,-0.0075],"split":0.5876,"hue":-5.75}};

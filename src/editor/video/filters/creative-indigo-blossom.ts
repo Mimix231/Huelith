@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"creative-indigo-blossom","name":"Indigo Blossom","category":"Creative","description":"Creative color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0714,"contrast":0.9667,"saturation":1.1992,"gamma":0.9925,"lift":0.0236,"temperature":-0.2963,"tint":-0.0022,"fade":0.1734,"shadow":[-0.0375,0.075,0.0418],"highlight":[0.075,-0.0075,0.0663],"split":0.4109,"hue":10.582}};

@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"food-creamy-peach","name":"Creamy Peach","category":"Food","description":"Food color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.1907,"contrast":1.1741,"saturation":1.0573,"gamma":1.0259,"lift":0.0144,"temperature":0.2457,"tint":0.3307,"fade":0.0304,"shadow":[-0.0375,0.075,0.0186],"highlight":[0.0666,-0.0075,0.075],"split":0.2252,"hue":-5.398}};

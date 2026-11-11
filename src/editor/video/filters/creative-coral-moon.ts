@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"creative-coral-moon","name":"Coral Moon","category":"Creative","description":"Creative color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0601,"contrast":1.0494,"saturation":1.0798,"gamma":1.0787,"lift":0.0079,"temperature":0.1099,"tint":-0.0631,"fade":0.1638,"shadow":[-0.0095,-0.0375,0.075],"highlight":[0.075,0.0461,-0.0075],"split":0.4551,"hue":7.127}};

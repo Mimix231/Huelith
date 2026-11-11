@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"creative-neon-sorbet","name":"Neon Sorbet","category":"Creative","description":"Creative color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0622,"contrast":1.0909,"saturation":1.0993,"gamma":0.9847,"lift":0.0316,"temperature":-0.2654,"tint":-0.2474,"fade":0.1811,"shadow":[0.0658,0.075,-0.0375],"highlight":[-0.0075,0.0352,0.075],"split":0.2774,"hue":-0.655}};

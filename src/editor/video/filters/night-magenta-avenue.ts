@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"night-magenta-avenue","name":"Magenta Avenue","category":"Night","description":"Night color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1233,"contrast":1.2743,"saturation":0.9773,"gamma":1.0212,"lift":-0.0185,"temperature":-0.5048,"tint":-0.013,"fade":0.1175,"shadow":[-0.0375,0.075,0.0186],"highlight":[0.0666,-0.0075,0.075],"split":0.3223,"hue":-3.151}};

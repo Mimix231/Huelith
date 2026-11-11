@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"night-deep-sapphire","name":"Deep Sapphire","category":"Night","description":"Night color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1506,"contrast":1.1,"saturation":1.0312,"gamma":0.9563,"lift":-0.006,"temperature":-0.4127,"tint":-0.2677,"fade":0.1126,"shadow":[-0.0327,0.075,-0.0375],"highlight":[0.022,-0.0075,0.075],"split":0.5182,"hue":3.258}};

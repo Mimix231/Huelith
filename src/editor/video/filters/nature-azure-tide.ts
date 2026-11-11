@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"nature-azure-tide","name":"Azure Tide","category":"Nature","description":"Nature color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0324,"contrast":1.0078,"saturation":1.0889,"gamma":1.0069,"lift":0.0024,"temperature":0.0335,"tint":0.1182,"fade":0.0372,"shadow":[0.075,-0.0375,-0.0231],"highlight":[-0.0075,0.075,0.015],"split":0.3055,"hue":-3.745}};

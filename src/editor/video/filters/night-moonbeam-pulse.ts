@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"night-moonbeam-pulse","name":"Moonbeam Pulse","category":"Night","description":"Night color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0559,"contrast":1.2116,"saturation":1.0523,"gamma":0.8798,"lift":-0.0276,"temperature":-0.5323,"tint":-0.1088,"fade":0.1264,"shadow":[-0.0375,-0.0279,0.075],"highlight":[0.075,0.0185,-0.0075],"split":0.2145,"hue":-6.793}};

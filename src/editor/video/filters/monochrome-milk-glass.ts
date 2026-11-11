@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"monochrome-milk-glass","name":"Milk Glass","category":"Monochrome","description":"Monochrome color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.02,"contrast":1.208,"saturation":0.0305,"gamma":1.0265,"lift":0.0261,"temperature":-0.0639,"tint":-0.2545,"fade":0.0081,"shadow":[0.075,-0.0375,0.0377],"highlight":[0.0147,0.075,-0.0075],"split":0.5972,"hue":-5.099}};

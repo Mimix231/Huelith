@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"film-honey-emulsion","name":"Honey Emulsion","category":"Film","description":"Film color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0989,"contrast":0.9954,"saturation":0.8798,"gamma":1.1441,"lift":0.0379,"temperature":0.0129,"tint":0.1769,"fade":0.1453,"shadow":[0.075,-0.0375,0.0377],"highlight":[0.0147,0.075,-0.0075],"split":0.2008,"hue":0.086}};

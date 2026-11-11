@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"retro-pink-summer","name":"Pink Summer","category":"Retro","description":"Retro color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.1057,"contrast":0.894,"saturation":0.9573,"gamma":1.1958,"lift":0.0599,"temperature":0.0295,"tint":0.0472,"fade":0.1124,"shadow":[0.075,-0.0375,0.0377],"highlight":[0.0147,0.075,-0.0075],"split":0.5839,"hue":3.227}};

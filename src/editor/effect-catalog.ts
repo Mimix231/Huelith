@@ -1,4 +1,8 @@
 import { EXPANSION_120 } from './expansion-120';
+/** Saved projects can still render their authored cutout. New work uses Cutout Mask. */
+export const LEGACY_CUTOUT = {
+  group:'Stylize', kind:'cutout', label:'Legacy cutout', initial:38, min:0, max:150, unit:'RGB distance', step:1,
+} as const;
 /** Each filter has a supported algorithm, its own neutral value, and a meaningful UI scale. */
 export const FILTER_CATALOG = [
   { group: 'Color & light', kind: 'brightness', label: 'Brightness', initial: 115, min: 0, max: 300, unit: '%', step: 1 },
@@ -73,7 +77,6 @@ export const FILTER_CATALOG = [
   { group: 'Stylize', kind: 'wave', label: 'Wave', initial: 24, min: 0, max: 100, unit: 'px', step: 1 },
   { group: 'Stylize', kind: 'glass', label: 'Glass refraction', initial: 20, min: 0, max: 100, unit: 'px', step: 1 },
   { group: 'Stylize', kind: 'frosted', label: 'Frosted glass', initial: 12, min: 0, max: 60, unit: 'px', step: 1 },
-  { group: 'Stylize', kind: 'cutout', label: 'Remove background', initial: 38, min: 0, max: 150, unit: 'RGB distance', step: 1 },
   { group: 'Stylize', kind: 'outline', label: 'Hyper outline', initial: 10, min: 0, max: 100, unit: 'px', step: 1 },
   { group: 'Stylize', kind: 'glow', label: 'Spectrum glow', initial: 22, min: 0, max: 100, unit: 'px', step: 1 },
   { group: 'Stylize', kind: 'shadow', label: 'Shadow forge', initial: 16, min: 0, max: 100, unit: 'px', step: 1 },
@@ -105,8 +108,10 @@ export const FILTER_CATALOG = [
   ...EXPANSION_120,
 ] as const;
 
-export type FilterKind = (typeof FILTER_CATALOG)[number]['kind'];
+export type FilterKind = (typeof FILTER_CATALOG)[number]['kind'] | typeof LEGACY_CUTOUT.kind;
+const AMOUNT_LABELS:Partial<Record<FilterKind,string>>={boxblur:'Horizontal radius',pixelate:'Pixel width',halftone:'Dot spacing',posterize:'Palette levels',outline:'Outline width',glow:'Glow radius',cutout:'Background color tolerance',solarize:'Solarization threshold'};
+export const effectAmountLabel=(kind:FilterKind,label:string):string=>AMOUNT_LABELS[kind]??label;
 export type ControlDescription = { label: string; min: number; max: number; step: number; unit: string };
 export const FILTER_CONTROL_MAP: Record<FilterKind, ControlDescription> = Object.fromEntries(
-  FILTER_CATALOG.map(({ kind, label, min, max, step, unit }) => [kind, { label, min, max, step, unit }]),
+  [...FILTER_CATALOG,LEGACY_CUTOUT].map(({ kind, label, min, max, step, unit }) => [kind, { label:effectAmountLabel(kind,label), min, max, step, unit }]),
 ) as Record<FilterKind, ControlDescription>;

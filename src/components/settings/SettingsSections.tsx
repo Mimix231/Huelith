@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Button, Slider, Switch } from '@mui/material';
 import { activeTab, useEditor } from '../../editor/store';
 import type { Tool, Workspace } from '../../editor/types';
+import {THEME_COLLECTIONS,THEME_IDENTITIES} from '../../settings/theme-catalog';
 import { cpuBackendInfo, testCpuBackend, type CpuBackendInfo } from '../../settings/native-cpu';
 import { BACKEND_EVENT, nativeBackendStatus, nativeGraphSelfTest, type AuroraBackendStatus } from '../../settings/native-aurora';
 import type { AuroraPreferences } from '../../settings/preferences';
@@ -40,7 +41,6 @@ function Heading({ title, subtitle }: { title: string; subtitle: string }) {
 function Toggle({ value, onChange, title }: { value: boolean; onChange: (enabled: boolean) => void; title: string }) {
   return <Switch checked={value} size="small" inputProps={{ 'aria-label': title }} onChange={(_, enabled) => onChange(enabled)} />;
 }
-const THEMES: Workspace[] = ['glass', 'material', 'classic', 'midnight', 'studio', 'strawberry', 'melon', 'peach', 'lemon', 'mango', 'sakura', 'blossom', 'shadow'];
 export function AppearanceSection({ settings, update }: SettingsSectionProps) {
   const workspace = useEditor(state => state.workspace);
   const mode = useEditor(state => state.appearanceMode);
@@ -49,7 +49,9 @@ export function AppearanceSection({ settings, update }: SettingsSectionProps) {
     <Heading title="Appearance" subtitle="Make Huelith feel like your own creative workspace." />
     <SettingRow title="Theme" description="Each theme has its own visual identity and stylesheet.">
       <select aria-label="Theme" value={workspace} onChange={event => store().setWorkspace(event.target.value as Workspace)}>
-        {THEMES.map(theme => <option key={theme} value={theme}>{theme[0].toUpperCase() + theme.slice(1)}</option>)}
+        {THEME_COLLECTIONS.map(collection=><optgroup key={collection.name} label={collection.name}>
+          {collection.themes.map(theme=><option key={theme} value={theme}>{THEME_IDENTITIES[theme].name}</option>)}
+        </optgroup>)}
       </select>
     </SettingRow>
     <SettingRow title="Color scheme" description="Light or dark interface.">

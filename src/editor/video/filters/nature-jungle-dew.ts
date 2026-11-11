@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"nature-jungle-dew","name":"Jungle Dew","category":"Nature","description":"Nature color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1305,"contrast":1.1511,"saturation":1.227,"gamma":1.0159,"lift":0.0188,"temperature":-0.1474,"tint":0.1331,"fade":0.0636,"shadow":[0.0747,-0.0375,0.075],"highlight":[0.0423,0.075,-0.0075],"split":0.2593,"hue":-5.2}};

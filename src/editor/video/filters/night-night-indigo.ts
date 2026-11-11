@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"night-night-indigo","name":"Night Indigo","category":"Night","description":"Night color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1631,"contrast":1.0948,"saturation":0.9263,"gamma":0.9279,"lift":-0.0238,"temperature":-0.2168,"tint":-0.1441,"fade":0.1,"shadow":[-0.0095,-0.0375,0.075],"highlight":[0.075,0.0461,-0.0075],"split":0.4565,"hue":0.968}};

@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"monochrome-warm-graphite","name":"Warm Graphite","category":"Monochrome","description":"Monochrome color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0217,"contrast":1.1376,"saturation":0.147,"gamma":1.0138,"lift":0.0315,"temperature":-0.2154,"tint":0.1333,"fade":0.0299,"shadow":[0.0658,0.075,-0.0375],"highlight":[-0.0075,0.0352,0.075],"split":0.3503,"hue":3.234}};

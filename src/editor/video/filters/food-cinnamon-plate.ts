@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"food-cinnamon-plate","name":"Cinnamon Plate","category":"Food","description":"Food color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.1639,"contrast":0.9894,"saturation":1.0764,"gamma":0.9778,"lift":0.0154,"temperature":0.3237,"tint":-0.1583,"fade":0.0309,"shadow":[0.075,0.0234,-0.0375],"highlight":[-0.0075,0.075,0.0701],"split":0.3487,"hue":1.816}};

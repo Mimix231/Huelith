@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"nature-evergreen-dawn","name":"Evergreen Dawn","category":"Nature","description":"Nature color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.105,"contrast":1.0585,"saturation":1.0655,"gamma":1.0135,"lift":-0.0094,"temperature":-0.2638,"tint":-0.0246,"fade":0.0384,"shadow":[0.075,0.0234,-0.0375],"highlight":[-0.0075,0.075,0.0701],"split":0.2517,"hue":-0.695}};

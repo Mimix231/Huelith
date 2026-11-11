@@ -61,7 +61,7 @@ export function appliedStudioItems(effects: readonly Effect[]): AppliedStudioIte
     groups.set(id, {
       id,
       category,
-      title: effect.studioPreset ?? (effect.kind === 'cutout' ? 'Remove background' : definition?.label ?? effect.kind),
+      title: effect.studioPreset ?? (effect.kind === 'cutout' ? 'Legacy cutout' : definition?.label ?? effect.kind),
       icon: effect.studioPreset ?? effect.kind,
       effects: [effect],
       startIndex: index,
@@ -70,8 +70,8 @@ export function appliedStudioItems(effects: readonly Effect[]): AppliedStudioIte
   return [...groups.values()].sort((a, b) => a.startIndex - b.startIndex);
 }
 
-export const CREATIVITY_FILTERS = FILTER_CATALOG.filter(item => item.kind !== 'cutout' && !layerEffectSet.has(item.kind) && item.group !== 'Signature FX');
-export const LAYER_EFFECTS = FILTER_CATALOG.filter(item => item.kind === 'cutout' || layerEffectSet.has(item.kind));
+export const CREATIVITY_FILTERS = FILTER_CATALOG.filter(item => !layerEffectSet.has(item.kind) && item.group !== 'Signature FX');
+export const LAYER_EFFECTS = FILTER_CATALOG.filter(item => layerEffectSet.has(item.kind));
 
 /** Move one applied icon (including all steps in a legacy FX chain) as one unit. */
 export function moveStudioItem(effects: readonly Effect[], itemId: string, direction: -1 | 1): Effect[] {

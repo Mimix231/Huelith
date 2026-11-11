@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"nature-arctic-pine","name":"Arctic Pine","category":"Nature","description":"Nature color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1285,"contrast":1.088,"saturation":1.2343,"gamma":0.9417,"lift":-0.0145,"temperature":-0.0695,"tint":0.0362,"fade":0.0687,"shadow":[-0.0375,0.0097,0.075],"highlight":[0.075,-0.0075,-0.0059],"split":0.3421,"hue":-3.447}};

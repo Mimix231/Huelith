@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"retro-tangerine-days","name":"Tangerine Days","category":"Retro","description":"Retro color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0635,"contrast":1.0607,"saturation":1.1355,"gamma":1.1822,"lift":0.0453,"temperature":0.2668,"tint":0.0189,"fade":0.131,"shadow":[-0.0375,-0.0279,0.075],"highlight":[0.075,0.0185,-0.0075],"split":0.3786,"hue":-5.198}};

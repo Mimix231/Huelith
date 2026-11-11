@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"cinematic-evening-sonata","name":"Evening Sonata","category":"Cinematic","description":"Cinematic color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.1951,"contrast":1.0653,"saturation":0.96,"gamma":0.9992,"lift":0.0343,"temperature":-0.0572,"tint":0.2867,"fade":0.0908,"shadow":[0.0747,-0.0375,0.075],"highlight":[0.0423,0.075,-0.0075],"split":0.3267,"hue":5.614}};

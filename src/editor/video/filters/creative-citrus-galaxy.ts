@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"creative-citrus-galaxy","name":"Citrus Galaxy","category":"Creative","description":"Creative color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.1051,"contrast":1.1802,"saturation":1.1719,"gamma":1.0092,"lift":0.0201,"temperature":-0.218,"tint":0.3128,"fade":0.1921,"shadow":[0.0747,-0.0375,0.075],"highlight":[0.0423,0.075,-0.0075],"split":0.5315,"hue":9.735}};

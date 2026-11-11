@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"film-linen-haze","name":"Linen Haze","category":"Film","description":"Film color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0611,"contrast":1.0079,"saturation":0.8401,"gamma":1.155,"lift":0.0577,"temperature":0.2623,"tint":0.3223,"fade":0.1182,"shadow":[0.0747,-0.0375,0.075],"highlight":[0.0423,0.075,-0.0075],"split":0.2884,"hue":4.895}};

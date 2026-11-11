@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"portrait-creamy-light","name":"Creamy Light","category":"Portrait","description":"Portrait color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1054,"contrast":0.9582,"saturation":1.0293,"gamma":0.9734,"lift":-0.0009,"temperature":0.4334,"tint":-0.2935,"fade":0.0235,"shadow":[-0.0095,-0.0375,0.075],"highlight":[0.075,0.0461,-0.0075],"split":0.3015,"hue":3.707}};

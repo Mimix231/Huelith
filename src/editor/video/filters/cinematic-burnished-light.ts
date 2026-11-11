@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"cinematic-burnished-light","name":"Burnished Light","category":"Cinematic","description":"Cinematic color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0212,"contrast":1.0733,"saturation":1.0175,"gamma":0.9332,"lift":0.0236,"temperature":0.0413,"tint":0.309,"fade":0.0754,"shadow":[0.075,-0.0375,-0.0231],"highlight":[-0.0075,0.075,0.015],"split":0.3735,"hue":-5.521}};

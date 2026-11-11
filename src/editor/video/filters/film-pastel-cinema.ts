@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"film-pastel-cinema","name":"Pastel Cinema","category":"Film","description":"Film color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.085,"contrast":0.9445,"saturation":0.9939,"gamma":1.0574,"lift":0.0582,"temperature":0.3444,"tint":-0.1635,"fade":0.145,"shadow":[0.075,-0.0143,-0.0375],"highlight":[-0.0075,0.075,0.0425],"split":0.5208,"hue":4.562}};

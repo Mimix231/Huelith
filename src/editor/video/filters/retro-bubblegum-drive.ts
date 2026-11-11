@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"retro-bubblegum-drive","name":"Bubblegum Drive","category":"Retro","description":"Retro color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.1318,"contrast":0.8982,"saturation":1.1212,"gamma":1.1889,"lift":0.0554,"temperature":0.4292,"tint":-0.1117,"fade":0.1191,"shadow":[-0.0375,0.0329,0.075],"highlight":[0.075,-0.0075,0.0112],"split":0.1654,"hue":3.436}};

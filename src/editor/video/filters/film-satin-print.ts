@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"film-satin-print","name":"Satin Print","category":"Film","description":"Film color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1772,"contrast":1.0513,"saturation":1.0042,"gamma":1.0732,"lift":0.0179,"temperature":0.317,"tint":-0.102,"fade":0.1536,"shadow":[0.075,-0.0375,-0.0231],"highlight":[-0.0075,0.075,0.015],"split":0.1734,"hue":1.419}};

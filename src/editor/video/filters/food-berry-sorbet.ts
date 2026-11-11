@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"food-berry-sorbet","name":"Berry Sorbet","category":"Food","description":"Food color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0408,"contrast":0.9937,"saturation":1.0675,"gamma":1.0598,"lift":0.0282,"temperature":0.4132,"tint":-0.0765,"fade":0.0229,"shadow":[0.075,0.0466,-0.0375],"highlight":[-0.0075,0.0628,0.075],"split":0.2405,"hue":-0.346}};

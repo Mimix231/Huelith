@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"retro-retro-lemon","name":"Retro Lemon","category":"Retro","description":"Retro color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.204,"contrast":0.9378,"saturation":1.0245,"gamma":1.1414,"lift":0.0206,"temperature":0.0597,"tint":0.1388,"fade":0.1223,"shadow":[0.075,-0.0375,-0.0231],"highlight":[-0.0075,0.075,0.015],"split":0.4191,"hue":-1.06}};

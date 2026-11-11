@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"food-amber-kitchen","name":"Amber Kitchen","category":"Food","description":"Food color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0697,"contrast":1.2022,"saturation":1.0965,"gamma":1.1025,"lift":0.0001,"temperature":0.5977,"tint":-0.3272,"fade":0.0375,"shadow":[0.0658,0.075,-0.0375],"highlight":[-0.0075,0.0352,0.075],"split":0.2844,"hue":3.19}};

@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"monochrome-ivory-shadows","name":"Ivory Shadows","category":"Monochrome","description":"Monochrome color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0761,"contrast":1.1935,"saturation":0.1491,"gamma":0.9606,"lift":-0.0049,"temperature":0.0873,"tint":-0.3404,"fade":0.0289,"shadow":[-0.0375,0.075,-0.019],"highlight":[0.039,-0.0075,0.075],"split":0.3305,"hue":-3.719}};

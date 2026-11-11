@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"food-caramel-table","name":"Caramel Table","category":"Food","description":"Food color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0927,"contrast":1.1544,"saturation":1.0678,"gamma":1.0239,"lift":-0.0034,"temperature":0.4817,"tint":-0.1194,"fade":0.0288,"shadow":[-0.0375,-0.0047,0.075],"highlight":[0.075,0.0014,-0.0075],"split":0.3679,"hue":0.621}};

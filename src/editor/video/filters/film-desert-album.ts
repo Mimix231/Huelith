@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"film-desert-album","name":"Desert Album","category":"Film","description":"Film color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0693,"contrast":1.0547,"saturation":0.8588,"gamma":1.0219,"lift":0.0194,"temperature":0.1947,"tint":0.2615,"fade":0.1504,"shadow":[-0.0183,0.075,-0.0375],"highlight":[0.0115,-0.0075,0.075],"split":0.4226,"hue":4.914}};

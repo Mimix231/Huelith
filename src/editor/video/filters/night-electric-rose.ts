@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"night-electric-rose","name":"Electric Rose","category":"Night","description":"Night color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1789,"contrast":1.0923,"saturation":1.0095,"gamma":1.017,"lift":-0.0112,"temperature":-0.1078,"tint":-0.2027,"fade":0.1027,"shadow":[-0.0375,0.075,0.0562],"highlight":[0.075,-0.0075,0.0558],"split":0.1983,"hue":-0.857}};

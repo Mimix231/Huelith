@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"monochrome-carbon-print","name":"Carbon Print","category":"Monochrome","description":"Monochrome color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.084,"contrast":1.2553,"saturation":0,"gamma":0.942,"lift":0.0191,"temperature":-0.1924,"tint":-0.1992,"fade":0.0086,"shadow":[0.075,0.0234,-0.0375],"highlight":[-0.0075,0.075,0.0701],"split":0.1304,"hue":4.824}};

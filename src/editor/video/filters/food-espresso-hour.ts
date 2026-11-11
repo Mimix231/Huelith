@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"food-espresso-hour","name":"Espresso Hour","category":"Food","description":"Food color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0917,"contrast":1.1379,"saturation":1.06,"gamma":1.0998,"lift":0.0327,"temperature":0.5314,"tint":-0.1606,"fade":0.0491,"shadow":[-0.0183,0.075,-0.0375],"highlight":[0.0115,-0.0075,0.075],"split":0.3281,"hue":-1.216}};

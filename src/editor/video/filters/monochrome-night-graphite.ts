@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"monochrome-night-graphite","name":"Night Graphite","category":"Monochrome","description":"Monochrome color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0436,"contrast":1.2069,"saturation":0.0544,"gamma":0.9505,"lift":-0.0109,"temperature":0.3023,"tint":0.2713,"fade":0.0285,"shadow":[0.0747,-0.0375,0.075],"highlight":[0.0423,0.075,-0.0075],"split":0.1281,"hue":4.133}};

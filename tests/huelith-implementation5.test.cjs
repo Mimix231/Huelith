@@ -78,13 +78,13 @@ test('Frame scheduler, worker budgets and overlay controls are actually wired',(
   assert.match(read('src/components/AnimationTimeline.tsx'),/Playback speed/);
   assert.match(read('src/components/CreativeLab.tsx'),/Keyframe interpolation/);
   assert.match(read('src/components/Canvas.tsx'),/drawViewportRulers/);
-  assert.match(read('src/App.tsx'),/<span className="badge">0\.2<\/span>/);
+  assert.match(read('src/App.tsx'),/<span className="badge">0\.3 dev<\/span>/);
 });
-test('Packaging metadata all matches Huelith 0.2.0 and legacy effects are not renamed',()=> {
+test('Packaging metadata all matches Huelith 0.3-alpha and legacy effects are not renamed',()=> {
   const pkg=JSON.parse(read('package.json'));
   const lock=JSON.parse(read('package-lock.json'));
   const tauri=JSON.parse(read('src-tauri/tauri.conf.json'));
-  assert.equal(pkg.version,'0.2.0');assert.equal(lock.version,pkg.version);
+  assert.equal(pkg.version,'0.3.0-alpha.0');assert.equal(lock.version,pkg.version);
   assert.equal(tauri.version,pkg.version);
   assert.equal(tauri.productName,'Huelith');
   assert.match(read('src/editor/types.ts'),/glowPalette\?: 'single' \| 'spectrum'/);

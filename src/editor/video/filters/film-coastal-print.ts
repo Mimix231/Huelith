@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"film-coastal-print","name":"Coastal Print","category":"Film","description":"Film color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0695,"contrast":1.0711,"saturation":0.8823,"gamma":1.0078,"lift":0.0406,"temperature":0.1083,"tint":-0.2153,"fade":0.1199,"shadow":[-0.0375,-0.0279,0.075],"highlight":[0.075,0.0185,-0.0075],"split":0.4389,"hue":-4.218}};

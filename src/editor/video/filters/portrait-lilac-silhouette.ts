@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"portrait-lilac-silhouette","name":"Lilac Silhouette","category":"Portrait","description":"Portrait color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0534,"contrast":1.1012,"saturation":0.9069,"gamma":0.9754,"lift":0.0221,"temperature":-0.074,"tint":-0.3402,"fade":0.0264,"shadow":[-0.0238,-0.0375,0.075],"highlight":[0.075,0.0355,-0.0075],"split":0.1738,"hue":-1.181}};

@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"portrait-peach-morning","name":"Peach Morning","category":"Portrait","description":"Portrait color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0673,"contrast":0.9821,"saturation":0.9087,"gamma":1.0042,"lift":0.0138,"temperature":-0.0157,"tint":0.0751,"fade":0.0546,"shadow":[0.075,0.0234,-0.0375],"highlight":[-0.0075,0.075,0.0701],"split":0.305,"hue":-4.945}};

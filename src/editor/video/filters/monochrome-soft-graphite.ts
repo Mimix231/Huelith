@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"monochrome-soft-graphite","name":"Soft Graphite","category":"Monochrome","description":"Monochrome color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0498,"contrast":1.1667,"saturation":0.0639,"gamma":1.0342,"lift":0.0225,"temperature":-0.0105,"tint":-0.1775,"fade":0.0306,"shadow":[0.075,-0.0375,0.061],"highlight":[0.0317,0.075,-0.0075],"split":0.3432,"hue":2.046}};

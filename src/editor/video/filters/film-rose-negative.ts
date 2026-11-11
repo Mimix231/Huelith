@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"film-rose-negative","name":"Rose Negative","category":"Film","description":"Film color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0631,"contrast":1.0143,"saturation":1.0063,"gamma":1.0137,"lift":0.0499,"temperature":-0.0491,"tint":0.1815,"fade":0.1168,"shadow":[-0.0375,0.075,-0.019],"highlight":[0.039,-0.0075,0.075],"split":0.1717,"hue":-2.902}};

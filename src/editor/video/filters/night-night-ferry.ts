@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"night-night-ferry","name":"Night Ferry","category":"Night","description":"Night color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.2176,"contrast":1.1268,"saturation":0.9584,"gamma":0.9963,"lift":0.0067,"temperature":-0.0965,"tint":-0.2706,"fade":0.1068,"shadow":[-0.0375,0.0097,0.075],"highlight":[0.075,-0.0075,-0.0059],"split":0.198,"hue":-5.598}};

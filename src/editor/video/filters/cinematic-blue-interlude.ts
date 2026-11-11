@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"cinematic-blue-interlude","name":"Blue Interlude","category":"Cinematic","description":"Cinematic color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0715,"contrast":1.1135,"saturation":1.033,"gamma":0.9984,"lift":0.0026,"temperature":-0.0755,"tint":0.1865,"fade":0.0667,"shadow":[-0.0238,-0.0375,0.075],"highlight":[0.075,0.0355,-0.0075],"split":0.1705,"hue":-4.016}};

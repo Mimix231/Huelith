@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"creative-amethyst-dream","name":"Amethyst Dream","category":"Creative","description":"Creative color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.2142,"contrast":1.1307,"saturation":1.2059,"gamma":0.9614,"lift":0.0291,"temperature":0.1074,"tint":0.33,"fade":0.1958,"shadow":[0.075,-0.0375,-0.0375],"highlight":[-0.0075,0.075,0.0255],"split":0.2253,"hue":0.006}};

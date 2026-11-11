@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"creative-golden-lavender","name":"Golden Lavender","category":"Creative","description":"Creative color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.187,"contrast":1.1237,"saturation":1.1935,"gamma":1.0523,"lift":0.0018,"temperature":0.1799,"tint":0.0972,"fade":0.209,"shadow":[-0.0375,-0.0279,0.075],"highlight":[0.075,0.0185,-0.0075],"split":0.534,"hue":-21.354}};

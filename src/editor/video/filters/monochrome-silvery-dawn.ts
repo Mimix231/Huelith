@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"monochrome-silvery-dawn","name":"Silvery Dawn","category":"Monochrome","description":"Monochrome color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1343,"contrast":1.1025,"saturation":0.06,"gamma":1.0412,"lift":0.0288,"temperature":0.3242,"tint":0.2836,"fade":0.0229,"shadow":[0.075,-0.0375,0.0145],"highlight":[-0.0024,0.075,-0.0075],"split":0.5928,"hue":4.179}};

@@ -17,9 +17,10 @@ export function renderNeonEdges(source:HTMLCanvasElement,effect:Effect):HTMLCanv
   const i=(y*w+x)*4;if(!d[i+3])continue;
   const edge=Math.max(0,edges[y*w+x]-threshold),power=Math.min(1,edge/120*strength);
   emitter.data[i]=red;emitter.data[i+1]=green;emitter.data[i+2]=blue;emitter.data[i+3]=power*d[i+3];
-  d[i]=d[i]*.9+power*red*.95;
-  d[i+1]=d[i+1]*.9+power*green*.95;
-  d[i+2]=d[i+2]*.9+power*blue*.95;
+  const base=1-.1*Math.min(1,strength);
+  d[i]=d[i]*base+power*red*.95;
+  d[i+1]=d[i+1]*base+power*green*.95;
+  d[i+2]=d[i+2]*base+power*blue*.95;
  }
  m.putImageData(emitter,0,0);
  const output=write(input),ctx=output.getContext('2d');if(!ctx)throw new Error('Canvas unavailable');
@@ -27,7 +28,7 @@ export function renderNeonEdges(source:HTMLCanvasElement,effect:Effect):HTMLCanv
  if(glow>0){ctx.save();ctx.globalCompositeOperation='screen';ctx.globalAlpha=.65;
  ctx.filter=`blur(${Math.min(100,glow)}px)`;ctx.drawImage(mask,0,0);ctx.restore();}
  const branching=effect.parameters?.branching??0;
- if(branching>0){ctx.save();ctx.strokeStyle=effect.color??'#52dcff';ctx.lineWidth=.8;ctx.globalCompositeOperation='screen';
+ if(branching>0){ctx.save();ctx.strokeStyle=effect.color??'#52dcff';ctx.lineWidth=.8;ctx.globalCompositeOperation='screen';ctx.globalAlpha=Math.min(1,strength);
  const seed=effect.parameters?.seed??42;let count=0;
  for(let y=2;y<h-3&&count<branching*2;y+=3)for(let x=2;x<w-3&&count<branching*2;x+=3){
   const i=(y*w+x)*4;if(emitter.data[i+3]<60||hash(x,y,seed)>branching/900)continue;

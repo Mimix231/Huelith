@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"monochrome-black-chalk","name":"Black Chalk","category":"Monochrome","description":"Monochrome color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.2028,"contrast":1.208,"saturation":0.0859,"gamma":0.978,"lift":0.0061,"temperature":0.0294,"tint":-0.3413,"fade":0.0132,"shadow":[0.0138,-0.0375,0.075],"highlight":[0.075,0.0631,-0.0075],"split":0.1493,"hue":-6.367}};

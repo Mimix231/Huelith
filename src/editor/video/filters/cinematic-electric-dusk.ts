@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"cinematic-electric-dusk","name":"Electric Dusk","category":"Cinematic","description":"Cinematic color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.1354,"contrast":1.1291,"saturation":0.9078,"gamma":0.9261,"lift":0.0187,"temperature":0.3362,"tint":0.1767,"fade":0.0699,"shadow":[0.075,-0.0375,0.0377],"highlight":[0.0147,0.075,-0.0075],"split":0.5877,"hue":6.465}};

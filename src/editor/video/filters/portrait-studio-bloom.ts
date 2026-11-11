@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"portrait-studio-bloom","name":"Studio Bloom","category":"Portrait","description":"Portrait color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0805,"contrast":1.0586,"saturation":1.0437,"gamma":1.0634,"lift":0.0113,"temperature":0.4748,"tint":-0.1916,"fade":0.0287,"shadow":[0.0514,-0.0375,0.075],"highlight":[0.0593,0.075,-0.0075],"split":0.4882,"hue":-1.263}};

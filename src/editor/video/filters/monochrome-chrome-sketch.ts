@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"monochrome-chrome-sketch","name":"Chrome Sketch","category":"Monochrome","description":"Monochrome color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0204,"contrast":1.1849,"saturation":0,"gamma":1.0607,"lift":-0.0069,"temperature":0.1027,"tint":-0.1178,"fade":0.0067,"shadow":[-0.0375,0.0097,0.075],"highlight":[0.075,-0.0075,-0.0059],"split":0.3363,"hue":4.028}};

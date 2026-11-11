@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"food-mocha-velvet","name":"Mocha Velvet","category":"Food","description":"Food color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.1499,"contrast":1.0153,"saturation":1.1024,"gamma":1.0279,"lift":0.0149,"temperature":0.4683,"tint":0.1755,"fade":0.0445,"shadow":[-0.0375,0.0329,0.075],"highlight":[0.075,-0.0075,0.0112],"split":0.5697,"hue":2.151}};

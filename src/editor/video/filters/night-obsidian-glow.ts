@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"night-obsidian-glow","name":"Obsidian Glow","category":"Night","description":"Night color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1242,"contrast":1.2393,"saturation":1.0781,"gamma":0.9753,"lift":-0.0132,"temperature":-0.0732,"tint":0.1084,"fade":0.1001,"shadow":[0.075,-0.0375,0.0377],"highlight":[0.0147,0.075,-0.0075],"split":0.5579,"hue":0.94}};

@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"cinematic-slate-horizon","name":"Slate Horizon","category":"Cinematic","description":"Cinematic color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.2019,"contrast":1.1319,"saturation":0.8521,"gamma":0.932,"lift":0.0176,"temperature":-0.1154,"tint":-0.2291,"fade":0.0531,"shadow":[0.075,-0.0375,0.0001],"highlight":[-0.0075,0.075,-0.0021],"split":0.5728,"hue":5.455}};

@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"cinematic-autumn-frame","name":"Autumn Frame","category":"Cinematic","description":"Cinematic color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1496,"contrast":1.2,"saturation":0.9297,"gamma":0.9257,"lift":-0.0003,"temperature":0.3154,"tint":-0.039,"fade":0.0758,"shadow":[0.0049,0.075,-0.0375],"highlight":[-0.0056,-0.0075,0.075],"split":0.377,"hue":5.457}};

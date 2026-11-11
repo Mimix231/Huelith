@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"cinematic-dusky-theatre","name":"Dusky Theatre","category":"Cinematic","description":"Cinematic color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0916,"contrast":1.2682,"saturation":0.9336,"gamma":0.9434,"lift":0.038,"temperature":-0.0695,"tint":-0.1495,"fade":0.0651,"shadow":[-0.0375,0.0706,0.075],"highlight":[0.075,-0.0075,0.0387],"split":0.3391,"hue":-4.554}};

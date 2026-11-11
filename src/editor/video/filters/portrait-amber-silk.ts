@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"portrait-amber-silk","name":"Amber Silk","category":"Portrait","description":"Portrait color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.1781,"contrast":1.0579,"saturation":0.922,"gamma":1.0805,"lift":0.0422,"temperature":0.2223,"tint":0.3186,"fade":0.0517,"shadow":[0.075,-0.0375,0.0145],"highlight":[-0.0024,0.075,-0.0075],"split":0.5051,"hue":6.645}};

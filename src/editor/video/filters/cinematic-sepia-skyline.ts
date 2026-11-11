@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"cinematic-sepia-skyline","name":"Sepia Skyline","category":"Cinematic","description":"Cinematic color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0299,"contrast":1.0921,"saturation":0.9097,"gamma":0.9996,"lift":0.0325,"temperature":-0.1137,"tint":0.2175,"fade":0.0742,"shadow":[0.075,0.009,-0.0375],"highlight":[-0.0075,0.075,0.0596],"split":0.288,"hue":-1.012}};

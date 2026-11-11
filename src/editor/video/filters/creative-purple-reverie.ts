@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"creative-purple-reverie","name":"Purple Reverie","category":"Creative","description":"Creative color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0158,"contrast":0.9789,"saturation":1.0852,"gamma":1.029,"lift":0.0235,"temperature":0.1388,"tint":0.1085,"fade":0.1739,"shadow":[0.075,-0.0375,0.0001],"highlight":[-0.0075,0.075,-0.0021],"split":0.2823,"hue":-23.689}};

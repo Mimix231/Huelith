@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"portrait-orchid-skin","name":"Orchid Skin","category":"Portrait","description":"Portrait color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0991,"contrast":1.0285,"saturation":0.9228,"gamma":1.1354,"lift":-0.0013,"temperature":0.0083,"tint":-0.2574,"fade":0.0188,"shadow":[0.0658,0.075,-0.0375],"highlight":[-0.0075,0.0352,0.075],"split":0.5198,"hue":-0.039}};

@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"cinematic-shadow-garden","name":"Shadow Garden","category":"Cinematic","description":"Cinematic color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1697,"contrast":1.2043,"saturation":0.8877,"gamma":0.9659,"lift":0.0329,"temperature":-0.1397,"tint":0.1968,"fade":0.0891,"shadow":[-0.0375,0.0097,0.075],"highlight":[0.075,-0.0075,-0.0059],"split":0.3729,"hue":-0.984}};

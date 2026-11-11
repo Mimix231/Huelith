@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"nature-silver-lake","name":"Silver Lake","category":"Nature","description":"Nature color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0139,"contrast":1.1143,"saturation":1.2272,"gamma":1.0168,"lift":0.0282,"temperature":-0.0514,"tint":-0.2103,"fade":0.0265,"shadow":[0.0514,-0.0375,0.075],"highlight":[0.0593,0.075,-0.0075],"split":0.3192,"hue":0.747}};

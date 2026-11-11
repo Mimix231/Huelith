@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"cinematic-glass-boulevard","name":"Glass Boulevard","category":"Cinematic","description":"Cinematic color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0082,"contrast":1.1157,"saturation":0.8696,"gamma":0.9438,"lift":0.034,"temperature":0.0912,"tint":0.0894,"fade":0.0968,"shadow":[-0.0375,0.075,-0.019],"highlight":[0.039,-0.0075,0.075],"split":0.1812,"hue":4.354}};

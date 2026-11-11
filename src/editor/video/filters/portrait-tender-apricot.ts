@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"portrait-tender-apricot","name":"Tender Apricot","category":"Portrait","description":"Portrait color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0212,"contrast":0.9885,"saturation":1.0334,"gamma":0.9851,"lift":0.0137,"temperature":0.3245,"tint":0.3398,"fade":0.0215,"shadow":[0.075,0.009,-0.0375],"highlight":[-0.0075,0.075,0.0596],"split":0.3004,"hue":0.675}};

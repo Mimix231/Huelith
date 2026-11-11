@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"food-mint-cafe","name":"Mint Cafe","category":"Food","description":"Food color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.2031,"contrast":1.1207,"saturation":1.0858,"gamma":1.0309,"lift":-0.0042,"temperature":0.6684,"tint":0.1297,"fade":0.0431,"shadow":[0.075,-0.0375,0.0001],"highlight":[-0.0075,0.075,-0.0021],"split":0.3773,"hue":-3.33}};

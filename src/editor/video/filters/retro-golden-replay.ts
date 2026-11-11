@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"retro-golden-replay","name":"Golden Replay","category":"Retro","description":"Retro color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0991,"contrast":0.9521,"saturation":1.02,"gamma":1.1128,"lift":0.0433,"temperature":0.1314,"tint":-0.1455,"fade":0.1386,"shadow":[-0.0375,0.075,-0.019],"highlight":[0.039,-0.0075,0.075],"split":0.2161,"hue":0.586}};

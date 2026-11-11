@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"night-indigo-motel","name":"Indigo Motel","category":"Night","description":"Night color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.1788,"contrast":1.1263,"saturation":1.0264,"gamma":0.9948,"lift":0.001,"temperature":-0.3403,"tint":-0.1235,"fade":0.1004,"shadow":[0.0049,0.075,-0.0375],"highlight":[-0.0056,-0.0075,0.075],"split":0.5778,"hue":1.593}};

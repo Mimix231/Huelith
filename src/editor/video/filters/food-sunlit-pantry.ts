@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"food-sunlit-pantry","name":"Sunlit Pantry","category":"Food","description":"Food color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.1786,"contrast":1.082,"saturation":1.1453,"gamma":1.0411,"lift":0.0164,"temperature":0.1038,"tint":0.2923,"fade":0.0612,"shadow":[0.075,-0.0375,-0.0231],"highlight":[-0.0075,0.075,0.015],"split":0.388,"hue":-0.413}};

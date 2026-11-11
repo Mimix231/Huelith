@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"nature-rainforest-glow","name":"Rainforest Glow","category":"Nature","description":"Nature color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.1206,"contrast":1.1758,"saturation":1.1087,"gamma":0.9673,"lift":-0.0082,"temperature":-0.342,"tint":0.2999,"fade":0.0519,"shadow":[-0.0375,-0.0279,0.075],"highlight":[0.075,0.0185,-0.0075],"split":0.464,"hue":-4.868}};

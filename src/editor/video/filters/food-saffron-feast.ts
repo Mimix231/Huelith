@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"food-saffron-feast","name":"Saffron Feast","category":"Food","description":"Food color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1286,"contrast":0.983,"saturation":1.0622,"gamma":1.0743,"lift":0.0115,"temperature":0.175,"tint":0.2841,"fade":0.0308,"shadow":[-0.0375,-0.0279,0.075],"highlight":[0.075,0.0185,-0.0075],"split":0.5895,"hue":-5.107}};

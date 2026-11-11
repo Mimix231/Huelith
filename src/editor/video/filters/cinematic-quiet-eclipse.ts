@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"cinematic-quiet-eclipse","name":"Quiet Eclipse","category":"Cinematic","description":"Cinematic color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.1273,"contrast":1.1871,"saturation":0.9434,"gamma":0.9125,"lift":0.0213,"temperature":-0.0407,"tint":-0.2974,"fade":0.0797,"shadow":[0.075,-0.0375,0.061],"highlight":[0.0317,0.075,-0.0075],"split":0.425,"hue":0.719}};

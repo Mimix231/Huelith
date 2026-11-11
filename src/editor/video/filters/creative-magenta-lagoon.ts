@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"creative-magenta-lagoon","name":"Magenta Lagoon","category":"Creative","description":"Creative color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.2012,"contrast":1.0893,"saturation":1.2095,"gamma":1.0548,"lift":0.0233,"temperature":0.2275,"tint":-0.1954,"fade":0.208,"shadow":[-0.0238,-0.0375,0.075],"highlight":[0.075,0.0355,-0.0075],"split":0.5443,"hue":-10.744}};

@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"nature-alpine-emerald","name":"Alpine Emerald","category":"Nature","description":"Nature color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0829,"contrast":1.0378,"saturation":1.1513,"gamma":1.0796,"lift":0.0006,"temperature":-0.2626,"tint":-0.1035,"fade":0.0651,"shadow":[0.0282,0.075,-0.0375],"highlight":[-0.0075,0.0076,0.075],"split":0.5187,"hue":6.496}};

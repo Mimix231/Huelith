@@ -13,7 +13,7 @@ export function renderSigEmberGlow(source:HTMLCanvasElement,effect:Effect):HTMLC
  for(let i=0;i<sparks;i++){
   const x=Math.floor(hash(i,2,seed)*w),y=Math.floor(hash(i,3,seed)*h);
   const index=(y*w+x)*4;if(original[index+3]<50)continue;
-  ctx.globalAlpha=.17+s*.65*hash(i,4,seed);ctx.fillRect(x,y-(2+hash(i,7,seed)*20),i%3===0?2:1,i%3===0?2:1);
+  ctx.globalAlpha=s*(.17+.65*hash(i,4,seed));ctx.fillRect(x,y-(2+hash(i,7,seed)*20),i%3===0?2:1,i%3===0?2:1);
  }
  ctx.restore();return out;
 }

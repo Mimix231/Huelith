@@ -71,6 +71,7 @@ test('Shadow Forge has an independent stack with multiple colors and editable po
 
 test('per-filter parameters use defined bounds and stay different from generic amount', () => {
   const kinds = new Set(FILTER_CATALOG.map(item => item.kind));
+  kinds.add('cutout'); // Existing documents still use the legacy parameter schema.
   for (const [kind, controls] of Object.entries(EFFECT_PARAMETER_SCHEMA)) {
     assert.ok(kinds.has(kind), kind);
     for (const control of controls) {

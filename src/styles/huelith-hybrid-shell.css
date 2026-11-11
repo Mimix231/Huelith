@@ -93,3 +93,6 @@
 .app .inspector{background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 4%,var(--panel-bg)),var(--panel-bg) 25%)}
 .app .inspector .inspector-tabs button.active{border-bottom-color:transparent;border-radius:9px;background:var(--accent-soft);box-shadow:inset 0 -2px 0 var(--accent)}
 @media(prefers-reduced-motion:reduce){.app .command-menu-trigger,.app .document-strip .doc-tab,.app .toolrail .MuiIconButton-root{transition:none!important}}
+/* Creative Hub launch control; intentionally separate from the editor menus. */
+.app .hub-home-return{display:flex;align-items:center;gap:5px;flex:none;padding:6px 9px;border:1px solid var(--hybrid-border);border-radius:9px;background:var(--panel-bg);font-size:11px;font-weight:750;cursor:pointer}
+.app .hub-home-return:hover{background:var(--accent-soft);color:var(--accent)}

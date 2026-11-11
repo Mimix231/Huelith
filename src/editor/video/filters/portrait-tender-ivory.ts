@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"portrait-tender-ivory","name":"Tender Ivory","category":"Portrait","description":"Portrait color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.1101,"contrast":1.0705,"saturation":0.8638,"gamma":1.1306,"lift":0.0032,"temperature":0.3994,"tint":0.0023,"fade":0.0434,"shadow":[-0.0375,0.0329,0.075],"highlight":[0.075,-0.0075,0.0112],"split":0.5494,"hue":-0.617}};

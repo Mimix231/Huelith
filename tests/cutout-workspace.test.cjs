@@ -10,7 +10,8 @@ test('cutout is accessible through Inspector, not new Effect choices', () => {
   assert.match(app,/CutoutWorkspace/);
   assert.match(app,/panel === 'inspector'/);
   assert.match(app,/Remove Background/);
-  assert.match(catalog,/item.kind !== 'cutout'/);
+  const {FILTER_CATALOG}=require('./helpers/load-typescript.cjs').loadTypeScript(path.join(root,'src/editor/effect-catalog.ts'));
+  assert.equal(FILTER_CATALOG.some(item=>item.kind==='cutout'),false);
   assert.doesNotMatch(catalog,/LAYER_EFFECT_KINDS = \['cutout'/);
   assert.match(catalog,/effect.kind === 'cutout'/); // legacy FX kept readable
 });

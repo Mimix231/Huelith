@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"food-citrus-peel","name":"Citrus Peel","category":"Food","description":"Food color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.2048,"contrast":1.1445,"saturation":1.1981,"gamma":0.9523,"lift":0.0145,"temperature":0.5177,"tint":-0.346,"fade":0.0652,"shadow":[-0.0095,-0.0375,0.075],"highlight":[0.075,0.0461,-0.0075],"split":0.1611,"hue":-0.339}};

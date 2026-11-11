@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"night-moonlit-asphalt","name":"Moonlit Asphalt","category":"Night","description":"Night color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0501,"contrast":1.2239,"saturation":0.9082,"gamma":0.9193,"lift":-0.0091,"temperature":-0.3678,"tint":0.3195,"fade":0.1149,"shadow":[-0.0183,0.075,-0.0375],"highlight":[0.0115,-0.0075,0.075],"split":0.1712,"hue":2.324}};

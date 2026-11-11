@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"food-fig-dessert","name":"Fig Dessert","category":"Food","description":"Food color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0737,"contrast":1.1995,"saturation":1.0963,"gamma":1.044,"lift":0.0291,"temperature":0.2652,"tint":-0.1954,"fade":0.0487,"shadow":[0.075,-0.0375,0.0377],"highlight":[0.0147,0.075,-0.0075],"split":0.4026,"hue":-2.718}};

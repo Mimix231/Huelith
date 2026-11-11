@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"retro-coral-memory","name":"Coral Memory","category":"Retro","description":"Retro color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1911,"contrast":0.931,"saturation":1.0974,"gamma":1.0556,"lift":0.0479,"temperature":0.0138,"tint":-0.3085,"fade":0.1259,"shadow":[0.075,-0.0375,0.0145],"highlight":[-0.0024,0.075,-0.0075],"split":0.4364,"hue":2.91}};

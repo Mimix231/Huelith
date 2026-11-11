@@ -4,7 +4,7 @@ const root=path.resolve(__dirname,'..');
 const catalog=fs.readFileSync(path.join(root,'src/editor/effect-catalog.ts'),'utf8').split('...EXPANSION_120')[0];
 const ops=fs.readFileSync(path.join(root,'src/editor/effect-ops.ts'),'utf8');
 const body=ops.slice(ops.indexOf('export function applyEffect('));
-const kinds=Array.from(catalog.matchAll(/\{ group: '[^']+', kind: '([^']+)', label: '([^']+)'/g),match=>({kind:match[1],name:match[2]}));
+const kinds=Array.from(catalog.matchAll(/group:\s*'[^']+',\s*kind:\s*'([^']+)',\s*label:\s*'([^']+)'/g),match=>({kind:match[1],name:match[2]}));
 const legacy={
  boxblur:'box-blur.ts',motionblur:'motion-blur.ts',radialblur:'radial-blur.ts',lensblur:'lens-blur.ts',
  zoomblur:'shock-zoom.ts',surfaceblur:'surface-blur.ts',sharpen:'sharpen.ts',unsharp:'unsharp-mask.ts',

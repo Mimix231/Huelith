@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"retro-citrus-tape","name":"Citrus Tape","category":"Retro","description":"Retro color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0321,"contrast":0.8689,"saturation":0.9831,"gamma":1.1011,"lift":0.0322,"temperature":0.1663,"tint":0.0393,"fade":0.1183,"shadow":[0.0282,0.075,-0.0375],"highlight":[-0.0075,0.0076,0.075],"split":0.5997,"hue":1.871}};

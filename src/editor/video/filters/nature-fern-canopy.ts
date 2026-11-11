@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"nature-fern-canopy","name":"Fern Canopy","category":"Nature","description":"Nature color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1943,"contrast":1.2276,"saturation":1.1135,"gamma":1.048,"lift":-0.0064,"temperature":-0.0768,"tint":0.3083,"fade":0.043,"shadow":[0.075,-0.0375,-0.0375],"highlight":[-0.0075,0.075,0.0255],"split":0.5811,"hue":-0.235}};

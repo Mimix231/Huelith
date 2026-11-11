@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"portrait-cream-rose","name":"Cream Rose","category":"Portrait","description":"Portrait color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.2093,"contrast":1.0754,"saturation":0.9094,"gamma":1.0424,"lift":0.0391,"temperature":0.2366,"tint":0.0168,"fade":0.0261,"shadow":[-0.0375,0.0097,0.075],"highlight":[0.075,-0.0075,-0.0059],"split":0.1372,"hue":6.798}};

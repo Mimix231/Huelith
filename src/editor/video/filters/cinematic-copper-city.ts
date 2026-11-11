@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"cinematic-copper-city","name":"Copper City","category":"Cinematic","description":"Cinematic color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0111,"contrast":1.0594,"saturation":0.8795,"gamma":1.0392,"lift":0.0302,"temperature":0.2111,"tint":-0.1224,"fade":0.0672,"shadow":[-0.0375,0.075,0.0562],"highlight":[0.075,-0.0075,0.0558],"split":0.2129,"hue":4.285}};

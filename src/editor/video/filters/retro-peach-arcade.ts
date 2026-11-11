@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"retro-peach-arcade","name":"Peach Arcade","category":"Retro","description":"Retro color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.1873,"contrast":1.0304,"saturation":1.0372,"gamma":1.1126,"lift":0.032,"temperature":0.3628,"tint":0.1264,"fade":0.1567,"shadow":[-0.0375,-0.0047,0.075],"highlight":[0.075,0.0014,-0.0075],"split":0.5136,"hue":1.12}};

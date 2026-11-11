@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"film-dusk-revival","name":"Dusk Revival","category":"Film","description":"Film color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1554,"contrast":0.9542,"saturation":0.9909,"gamma":1.111,"lift":0.0578,"temperature":0.1277,"tint":-0.0539,"fade":0.116,"shadow":[-0.0375,0.075,0.0418],"highlight":[0.075,-0.0075,0.0663],"split":0.5385,"hue":0.543}};

@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"film-amber-memory","name":"Amber Memory","category":"Film","description":"Film color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.1983,"contrast":1.1097,"saturation":0.8458,"gamma":1.0663,"lift":0.0186,"temperature":0.5402,"tint":-0.1825,"fade":0.1524,"shadow":[0.075,0.0234,-0.0375],"highlight":[-0.0075,0.075,0.0701],"split":0.1984,"hue":-1.334}};

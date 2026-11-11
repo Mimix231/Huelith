@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"monochrome-paper-charcoal","name":"Paper Charcoal","category":"Monochrome","description":"Monochrome color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.2149,"contrast":1.1811,"saturation":0,"gamma":1.0594,"lift":-0.0076,"temperature":0.3005,"tint":0.3141,"fade":0.0517,"shadow":[-0.0375,0.075,0.0418],"highlight":[0.075,-0.0075,0.0663],"split":0.4535,"hue":5.608}};

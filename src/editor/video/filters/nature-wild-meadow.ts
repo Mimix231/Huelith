@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"nature-wild-meadow","name":"Wild Meadow","category":"Nature","description":"Nature color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.1453,"contrast":1.0233,"saturation":1.0589,"gamma":1.0143,"lift":-0.0149,"temperature":-0.025,"tint":-0.2398,"fade":0.0387,"shadow":[-0.0375,0.075,0.0562],"highlight":[0.075,-0.0075,0.0558],"split":0.4629,"hue":3.689}};

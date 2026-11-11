@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"monochrome-satin-monochrome","name":"Satin Monochrome","category":"Monochrome","description":"Monochrome color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.183,"contrast":1.2833,"saturation":0.0445,"gamma":0.9949,"lift":0.0321,"temperature":0.0519,"tint":0.015,"fade":0.0096,"shadow":[0.075,-0.0143,-0.0375],"highlight":[-0.0075,0.075,0.0425],"split":0.4105,"hue":-3.284}};

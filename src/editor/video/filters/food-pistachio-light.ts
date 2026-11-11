@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"food-pistachio-light","name":"Pistachio Light","category":"Food","description":"Food color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0599,"contrast":1.0943,"saturation":1.1229,"gamma":1.0376,"lift":0.0092,"temperature":0.5187,"tint":-0.2614,"fade":0.0509,"shadow":[0.075,0.009,-0.0375],"highlight":[-0.0075,0.075,0.0596],"split":0.177,"hue":-0.77}};

@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"retro-analog-mint","name":"Analog Mint","category":"Retro","description":"Retro color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.165,"contrast":0.9075,"saturation":1.1174,"gamma":1.1808,"lift":0.0361,"temperature":0.2969,"tint":-0.2112,"fade":0.1502,"shadow":[0.075,0.0466,-0.0375],"highlight":[-0.0075,0.0628,0.075],"split":0.5707,"hue":2.255}};

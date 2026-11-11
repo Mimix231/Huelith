@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"retro-rose-radio","name":"Rose Radio","category":"Retro","description":"Retro color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0397,"contrast":0.8791,"saturation":1.1089,"gamma":1.04,"lift":0.0567,"temperature":0.1761,"tint":-0.2947,"fade":0.1407,"shadow":[-0.0375,0.075,0.0418],"highlight":[0.075,-0.0075,0.0663],"split":0.3993,"hue":3.442}};

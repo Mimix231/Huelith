@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"monochrome-velvet-black","name":"Velvet Black","category":"Monochrome","description":"Monochrome color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0151,"contrast":1.1995,"saturation":0.0115,"gamma":1.1058,"lift":-0.004,"temperature":0.3075,"tint":-0.1682,"fade":0.0097,"shadow":[-0.0095,-0.0375,0.075],"highlight":[0.075,0.0461,-0.0075],"split":0.1423,"hue":-2.354}};

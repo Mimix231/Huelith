@@ -9,7 +9,7 @@ import { guardCloseRequest } from './close-guard';
  * All native close requests (custom X, Alt+F4, taskbar) pass through one
  * registered Tauri listener. No async work happens before preventDefault().
  */
-export default function WindowControls() {
+export default function WindowControls({ extraDirty = false, onSaveExtra }: { extraDirty?: boolean; onSaveExtra?: () => Promise<boolean> }) {
   const desktop = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
   const [maximized, setMaximized] = useState(false);
   const [ready, setReady] = useState(false);
@@ -37,7 +37,7 @@ export default function WindowControls() {
           const { tabs, textDraft } = useEditor.getState();
           guardCloseRequest(
             event,
-            tabs.filter(tab => tab.dirty).length,
+            tabs.filter(tab => tab.dirty).length + (extraDirty ? 1 : 0),
             textDraft !== null,
             () => setConfirmOpen(true),
           );
@@ -84,7 +84,7 @@ export default function WindowControls() {
       unlistenClose?.();
       unlistenResize?.();
     };
-  }, [desktop]);
+  }, [desktop, extraDirty]);
 
   async function act(action: 'minimize' | 'toggleMaximize' | 'close'): Promise<void> {
     if (!desktop || !ready || closing) return;
@@ -113,6 +113,10 @@ export default function WindowControls() {
         const saved = await saveAllProjects();
         if (!saved) {
           setError('Close cancelled because not all documents were saved.');
+          return;
+        }
+        if (extraDirty && (!onSaveExtra || !(await onSaveExtra()))) {
+          setError('Close cancelled because the video project was not saved.');
           return;
         }
       }
@@ -174,7 +178,7 @@ export default function WindowControls() {
       >
         <DialogTitle id="huelith-close-title">Unsaved Huelith documents</DialogTitle>
         <DialogContent>
-          Some changes have not been saved. Save all open documents before closing, discard
+          Some changes have not been saved, including any unsaved video project. Save all open documents before closing, discard
           unsaved changes, or continue editing.
           {error && <p role="alert" className="window-close-error">{error}</p>}
         </DialogContent>

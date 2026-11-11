@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"film-archive-bloom","name":"Archive Bloom","category":"Film","description":"Film color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0596,"contrast":1.1155,"saturation":0.8488,"gamma":1.1345,"lift":0.0467,"temperature":0.2511,"tint":0.0499,"fade":0.122,"shadow":[-0.0375,0.075,0.0186],"highlight":[0.0666,-0.0075,0.075],"split":0.1694,"hue":-6.19}};

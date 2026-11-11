@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"portrait-rosewater","name":"Rosewater","category":"Portrait","description":"Portrait color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0642,"contrast":0.9487,"saturation":0.9759,"gamma":1.1197,"lift":0.0288,"temperature":0.2439,"tint":-0.1093,"fade":0.048,"shadow":[0.075,-0.0375,-0.0375],"highlight":[-0.0075,0.075,0.0255],"split":0.4784,"hue":-3.419}};

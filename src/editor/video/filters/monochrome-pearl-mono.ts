@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"monochrome-pearl-mono","name":"Pearl Mono","category":"Monochrome","description":"Monochrome color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.2072,"contrast":1.2272,"saturation":0.048,"gamma":1.0965,"lift":-0.0092,"temperature":0.3328,"tint":0.1968,"fade":0.0511,"shadow":[-0.0327,0.075,-0.0375],"highlight":[0.022,-0.0075,0.075],"split":0.3139,"hue":6.901}};

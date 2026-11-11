@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"food-vanilla-morning","name":"Vanilla Morning","category":"Food","description":"Food color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.153,"contrast":1.1191,"saturation":1.0795,"gamma":1.0044,"lift":0.0167,"temperature":0.2998,"tint":0.1489,"fade":0.0317,"shadow":[0.075,-0.0375,0.061],"highlight":[0.0317,0.075,-0.0075],"split":0.5341,"hue":2.587}};

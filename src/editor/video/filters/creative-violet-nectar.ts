@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"creative-violet-nectar","name":"Violet Nectar","category":"Creative","description":"Creative color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0743,"contrast":1.1208,"saturation":1.1176,"gamma":1.0768,"lift":0.0257,"temperature":0.123,"tint":-0.064,"fade":0.1747,"shadow":[0.075,0.0466,-0.0375],"highlight":[-0.0075,0.0628,0.075],"split":0.1158,"hue":4.652}};

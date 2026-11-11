@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"film-old-seaside","name":"Old Seaside","category":"Film","description":"Film color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0993,"contrast":1.0722,"saturation":1.0044,"gamma":1.0886,"lift":0.0205,"temperature":0.4613,"tint":-0.0013,"fade":0.1266,"shadow":[-0.0327,0.075,-0.0375],"highlight":[0.022,-0.0075,0.075],"split":0.2356,"hue":-4.66}};

@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"nature-prairie-sun","name":"Prairie Sun","category":"Nature","description":"Nature color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0457,"contrast":1.1291,"saturation":1.144,"gamma":1.0402,"lift":-0.0019,"temperature":-0.2616,"tint":0.0796,"fade":0.0606,"shadow":[0.0425,0.075,-0.0375],"highlight":[-0.0075,0.0182,0.075],"split":0.5043,"hue":1.377}};

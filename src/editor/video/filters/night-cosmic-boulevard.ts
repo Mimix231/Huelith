@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"night-cosmic-boulevard","name":"Cosmic Boulevard","category":"Night","description":"Night color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.05,"contrast":1.2426,"saturation":0.9197,"gamma":0.8989,"lift":-0.0265,"temperature":-0.1935,"tint":0.2521,"fade":0.1248,"shadow":[0.075,-0.0375,-0.0231],"highlight":[-0.0075,0.075,0.015],"split":0.182,"hue":5.905}};

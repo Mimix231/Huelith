@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"food-ginger-sip","name":"Ginger Sip","category":"Food","description":"Food color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0396,"contrast":1.1264,"saturation":1.1753,"gamma":0.9606,"lift":-0.0064,"temperature":0.3511,"tint":0.2043,"fade":0.0658,"shadow":[0.0747,-0.0375,0.075],"highlight":[0.0423,0.075,-0.0075],"split":0.1072,"hue":1.392}};

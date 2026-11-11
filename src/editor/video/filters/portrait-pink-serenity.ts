@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"portrait-pink-serenity","name":"Pink Serenity","category":"Portrait","description":"Portrait color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0591,"contrast":0.992,"saturation":0.9933,"gamma":1.1193,"lift":0.0419,"temperature":-0.0799,"tint":0.0318,"fade":0.0335,"shadow":[-0.0375,-0.0279,0.075],"highlight":[0.075,0.0185,-0.0075],"split":0.456,"hue":-6.264}};

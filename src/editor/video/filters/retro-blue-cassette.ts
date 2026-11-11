@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"retro-blue-cassette","name":"Blue Cassette","category":"Retro","description":"Retro color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1566,"contrast":0.9121,"saturation":1.0736,"gamma":1.054,"lift":0.0611,"temperature":-0.0982,"tint":-0.2339,"fade":0.1524,"shadow":[-0.0375,0.0706,0.075],"highlight":[0.075,-0.0075,0.0387],"split":0.4593,"hue":4.758}};

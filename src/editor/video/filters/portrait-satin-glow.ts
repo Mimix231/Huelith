@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"portrait-satin-glow","name":"Satin Glow","category":"Portrait","description":"Portrait color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1554,"contrast":1.1474,"saturation":0.965,"gamma":1.0409,"lift":0.0387,"temperature":-0.0576,"tint":-0.0122,"fade":0.0534,"shadow":[-0.0375,0.075,0.0418],"highlight":[0.075,-0.0075,0.0663],"split":0.1761,"hue":5.985}};

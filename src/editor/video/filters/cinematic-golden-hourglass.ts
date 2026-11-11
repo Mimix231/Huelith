@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"cinematic-golden-hourglass","name":"Golden Hourglass","category":"Cinematic","description":"Cinematic color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.1751,"contrast":1.2497,"saturation":0.9945,"gamma":1.0199,"lift":-0.0022,"temperature":-0.0986,"tint":0.206,"fade":0.0571,"shadow":[-0.0095,-0.0375,0.075],"highlight":[0.075,0.0461,-0.0075],"split":0.2964,"hue":0.113}};

@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"food-coconut-cream","name":"Coconut Cream","category":"Food","description":"Food color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.1481,"contrast":1.1586,"saturation":1.0769,"gamma":1.0138,"lift":-0.0066,"temperature":0.3133,"tint":-0.2439,"fade":0.0337,"shadow":[-0.0375,0.075,0.0418],"highlight":[0.075,-0.0075,0.0663],"split":0.5328,"hue":0.177}};

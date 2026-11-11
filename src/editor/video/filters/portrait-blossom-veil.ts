@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"portrait-blossom-veil","name":"Blossom Veil","category":"Portrait","description":"Portrait color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0338,"contrast":1.0551,"saturation":0.8612,"gamma":1.0772,"lift":0.0083,"temperature":0.41,"tint":-0.2546,"fade":0.0338,"shadow":[0.0138,-0.0375,0.075],"highlight":[0.075,0.0631,-0.0075],"split":0.4284,"hue":-0.185}};

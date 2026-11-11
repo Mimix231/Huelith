@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"food-plum-pudding","name":"Plum Pudding","category":"Food","description":"Food color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.184,"contrast":1.1047,"saturation":1.1021,"gamma":1.0058,"lift":-0.0026,"temperature":0.5584,"tint":0.0475,"fade":0.0317,"shadow":[-0.0238,-0.0375,0.075],"highlight":[0.075,0.0355,-0.0075],"split":0.2543,"hue":3.441}};

@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"monochrome-classic-slate","name":"Classic Slate","category":"Monochrome","description":"Monochrome color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.167,"contrast":1.2044,"saturation":0.0061,"gamma":1.0236,"lift":-0.0029,"temperature":0.1476,"tint":-0.119,"fade":0.0337,"shadow":[0.075,0.009,-0.0375],"highlight":[-0.0075,0.075,0.0596],"split":0.1919,"hue":-1.366}};

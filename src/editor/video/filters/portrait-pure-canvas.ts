@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"portrait-pure-canvas","name":"Pure Canvas","category":"Portrait","description":"Portrait color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.1828,"contrast":0.9537,"saturation":1.0241,"gamma":1.126,"lift":0.0288,"temperature":-0.0926,"tint":0.2519,"fade":0.0218,"shadow":[0.0049,0.075,-0.0375],"highlight":[-0.0056,-0.0075,0.075],"split":0.1655,"hue":-3.991}};

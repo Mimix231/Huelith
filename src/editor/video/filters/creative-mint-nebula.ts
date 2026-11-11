@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"creative-mint-nebula","name":"Mint Nebula","category":"Creative","description":"Creative color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0735,"contrast":0.9874,"saturation":1.1654,"gamma":0.9892,"lift":0.0153,"temperature":0.1111,"tint":-0.3323,"fade":0.2069,"shadow":[-0.0375,0.075,-0.019],"highlight":[0.039,-0.0075,0.075],"split":0.5857,"hue":-12.127}};

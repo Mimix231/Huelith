@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"creative-pink-comet","name":"Pink Comet","category":"Creative","description":"Creative color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1215,"contrast":0.9926,"saturation":1.1272,"gamma":1.0971,"lift":0.0334,"temperature":-0.2566,"tint":-0.2822,"fade":0.1604,"shadow":[0.0138,-0.0375,0.075],"highlight":[0.075,0.0631,-0.0075],"split":0.4917,"hue":-16.289}};

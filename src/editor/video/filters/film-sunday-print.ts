@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"film-sunday-print","name":"Sunday Print","category":"Film","description":"Film color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0761,"contrast":0.9461,"saturation":0.9358,"gamma":1.0186,"lift":0.0467,"temperature":0.108,"tint":-0.244,"fade":0.1249,"shadow":[0.075,-0.0375,0.061],"highlight":[0.0317,0.075,-0.0075],"split":0.3425,"hue":-3.886}};

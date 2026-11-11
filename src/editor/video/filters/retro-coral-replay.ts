@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"retro-coral-replay","name":"Coral Replay","category":"Retro","description":"Retro color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0317,"contrast":0.8895,"saturation":1.1472,"gamma":1.1267,"lift":0.0572,"temperature":0.1903,"tint":-0.2072,"fade":0.1587,"shadow":[-0.0375,0.075,0.0186],"highlight":[0.0666,-0.0075,0.075],"split":0.179,"hue":-6.676}};

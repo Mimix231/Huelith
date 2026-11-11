@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"monochrome-muted-anthracite","name":"Muted Anthracite","category":"Monochrome","description":"Monochrome color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0333,"contrast":1.1771,"saturation":0,"gamma":1.0793,"lift":-0.0023,"temperature":-0.0162,"tint":-0.2831,"fade":0.0453,"shadow":[0.075,-0.0375,-0.0231],"highlight":[-0.0075,0.075,0.015],"split":0.4197,"hue":3.124}};

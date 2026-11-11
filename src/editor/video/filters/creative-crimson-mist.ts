@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"creative-crimson-mist","name":"Crimson Mist","category":"Creative","description":"Creative color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1224,"contrast":1.1025,"saturation":1.1163,"gamma":1.0364,"lift":0.0411,"temperature":-0.2912,"tint":-0.251,"fade":0.1767,"shadow":[0.075,-0.0375,0.0377],"highlight":[0.0147,0.075,-0.0075],"split":0.4111,"hue":-27.126}};

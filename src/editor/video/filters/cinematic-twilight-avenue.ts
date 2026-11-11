@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"cinematic-twilight-avenue","name":"Twilight Avenue","category":"Cinematic","description":"Cinematic color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0843,"contrast":1.2226,"saturation":0.8465,"gamma":1.0153,"lift":0.013,"temperature":0.1649,"tint":-0.2037,"fade":0.0633,"shadow":[-0.0327,0.075,-0.0375],"highlight":[0.022,-0.0075,0.075],"split":0.1296,"hue":0.907}};

@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"portrait-quiet-beauty","name":"Quiet Beauty","category":"Portrait","description":"Portrait color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.1498,"contrast":0.9983,"saturation":0.9419,"gamma":1.0316,"lift":0.0047,"temperature":0.4102,"tint":0.2778,"fade":0.0516,"shadow":[0.0425,0.075,-0.0375],"highlight":[-0.0075,0.0182,0.075],"split":0.5743,"hue":-4.308}};

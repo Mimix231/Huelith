@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"food-warm-bistro","name":"Warm Bistro","category":"Food","description":"Food color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.1515,"contrast":1.202,"saturation":1.2074,"gamma":1.0695,"lift":0.0348,"temperature":0.6158,"tint":0.1731,"fade":0.0502,"shadow":[0.0138,-0.0375,0.075],"highlight":[0.075,0.0631,-0.0075],"split":0.1298,"hue":-6.184}};

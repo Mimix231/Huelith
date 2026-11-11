@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"creative-copper-dreamscape","name":"Copper Dreamscape","category":"Creative","description":"Creative color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0548,"contrast":1.0143,"saturation":1.1521,"gamma":1.0629,"lift":-0.0016,"temperature":-0.0428,"tint":0.2162,"fade":0.1659,"shadow":[-0.0375,0.0097,0.075],"highlight":[0.075,-0.0075,-0.0059],"split":0.5506,"hue":4.713}};

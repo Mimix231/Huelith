@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"portrait-caramel-smile","name":"Caramel Smile","category":"Portrait","description":"Portrait color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0016,"contrast":1.1014,"saturation":1.0097,"gamma":1.0246,"lift":0.0246,"temperature":0.1438,"tint":-0.099,"fade":0.0299,"shadow":[0.075,-0.0143,-0.0375],"highlight":[-0.0075,0.075,0.0425],"split":0.5767,"hue":4.29}};

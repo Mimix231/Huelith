@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"portrait-porcelain-dawn","name":"Porcelain Dawn","category":"Portrait","description":"Portrait color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1278,"contrast":1.1418,"saturation":1.0152,"gamma":1.0184,"lift":0.0338,"temperature":0.004,"tint":-0.3017,"fade":0.0098,"shadow":[-0.0375,0.075,-0.019],"highlight":[0.039,-0.0075,0.075],"split":0.5621,"hue":-4.638}};

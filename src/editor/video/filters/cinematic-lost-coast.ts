@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"cinematic-lost-coast","name":"Lost Coast","category":"Cinematic","description":"Cinematic color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.027,"contrast":1.1991,"saturation":0.86,"gamma":0.9511,"lift":0.0331,"temperature":-0.0004,"tint":0.0544,"fade":0.051,"shadow":[-0.0375,0.075,0.0418],"highlight":[0.075,-0.0075,0.0663],"split":0.1409,"hue":4.004}};

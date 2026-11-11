@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"retro-cherry-stereo","name":"Cherry Stereo","category":"Retro","description":"Retro color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.1822,"contrast":1.0823,"saturation":1.1469,"gamma":1.0971,"lift":0.062,"temperature":0.3748,"tint":-0.1055,"fade":0.1224,"shadow":[-0.0327,0.075,-0.0375],"highlight":[0.022,-0.0075,0.075],"split":0.2281,"hue":-0.152}};

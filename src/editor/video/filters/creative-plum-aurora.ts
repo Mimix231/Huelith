@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"creative-plum-aurora","name":"Plum Aurora","category":"Creative","description":"Creative color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1131,"contrast":1.032,"saturation":1.093,"gamma":1.066,"lift":0.0409,"temperature":0.0677,"tint":-0.2506,"fade":0.1879,"shadow":[0.075,-0.0375,-0.0231],"highlight":[-0.0075,0.075,0.015],"split":0.5242,"hue":10.305}};

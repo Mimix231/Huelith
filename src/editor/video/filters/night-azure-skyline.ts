@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"night-azure-skyline","name":"Azure Skyline","category":"Night","description":"Night color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.1774,"contrast":1.1941,"saturation":0.994,"gamma":0.9579,"lift":-0.023,"temperature":-0.4497,"tint":0.0252,"fade":0.1266,"shadow":[-0.0375,0.075,-0.019],"highlight":[0.039,-0.0075,0.075],"split":0.3723,"hue":1.333}};

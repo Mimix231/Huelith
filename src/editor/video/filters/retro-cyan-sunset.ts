@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"retro-cyan-sunset","name":"Cyan Sunset","category":"Retro","description":"Retro color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1108,"contrast":1.0865,"saturation":1.0828,"gamma":1.0493,"lift":0.0281,"temperature":0.3564,"tint":-0.141,"fade":0.1182,"shadow":[0.075,0.009,-0.0375],"highlight":[-0.0075,0.075,0.0596],"split":0.2851,"hue":0.087}};

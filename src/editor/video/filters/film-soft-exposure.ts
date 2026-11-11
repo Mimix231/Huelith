@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"film-soft-exposure","name":"Soft Exposure","category":"Film","description":"Film color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0527,"contrast":0.9413,"saturation":0.9963,"gamma":1.0498,"lift":0.0326,"temperature":0.2826,"tint":-0.3131,"fade":0.1556,"shadow":[-0.0375,0.0706,0.075],"highlight":[0.075,-0.0075,0.0387],"split":0.1846,"hue":-6.427}};

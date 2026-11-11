@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"portrait-silken-plum","name":"Silken Plum","category":"Portrait","description":"Portrait color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1109,"contrast":0.9289,"saturation":0.9109,"gamma":1.0206,"lift":0.0016,"temperature":0.001,"tint":0.1075,"fade":0.0168,"shadow":[-0.0375,0.075,0.0562],"highlight":[0.075,-0.0075,0.0558],"split":0.3087,"hue":2.125}};

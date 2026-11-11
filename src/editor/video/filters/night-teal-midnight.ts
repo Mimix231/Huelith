@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"night-teal-midnight","name":"Teal Midnight","category":"Night","description":"Night color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.1146,"contrast":1.1333,"saturation":0.889,"gamma":0.9915,"lift":-0.0018,"temperature":-0.1339,"tint":0.2188,"fade":0.142,"shadow":[-0.0375,0.0329,0.075],"highlight":[0.075,-0.0075,0.0112],"split":0.4839,"hue":5.406}};

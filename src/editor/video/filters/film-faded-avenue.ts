@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"film-faded-avenue","name":"Faded Avenue","category":"Film","description":"Film color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0827,"contrast":0.9488,"saturation":0.9053,"gamma":1.129,"lift":0.0434,"temperature":0.4612,"tint":0.1393,"fade":0.1225,"shadow":[-0.0375,-0.0047,0.075],"highlight":[0.075,0.0014,-0.0075],"split":0.1715,"hue":-1.552}};

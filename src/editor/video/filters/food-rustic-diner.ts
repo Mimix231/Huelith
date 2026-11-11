@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"food-rustic-diner","name":"Rustic Diner","category":"Food","description":"Food color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0366,"contrast":1.1994,"saturation":1.0694,"gamma":1.1069,"lift":0.0226,"temperature":0.3439,"tint":-0.1835,"fade":0.0558,"shadow":[-0.0375,0.0097,0.075],"highlight":[0.075,-0.0075,-0.0059],"split":0.5865,"hue":0.269}};

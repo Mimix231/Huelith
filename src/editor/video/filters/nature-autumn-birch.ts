@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"nature-autumn-birch","name":"Autumn Birch","category":"Nature","description":"Nature color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0347,"contrast":1.1654,"saturation":1.2119,"gamma":0.9943,"lift":-0.0113,"temperature":-0.3375,"tint":-0.0356,"fade":0.0507,"shadow":[0.075,-0.0143,-0.0375],"highlight":[-0.0075,0.075,0.0425],"split":0.1965,"hue":-4.356}};

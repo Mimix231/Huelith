@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"creative-sapphire-haze","name":"Sapphire Haze","category":"Creative","description":"Creative color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0506,"contrast":0.9735,"saturation":1.0849,"gamma":1.1174,"lift":0.013,"temperature":-0.0588,"tint":-0.1593,"fade":0.184,"shadow":[0.075,-0.0143,-0.0375],"highlight":[-0.0075,0.075,0.0425],"split":0.3081,"hue":27.426}};

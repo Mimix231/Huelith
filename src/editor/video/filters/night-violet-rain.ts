@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"night-violet-rain","name":"Violet Rain","category":"Night","description":"Night color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1014,"contrast":1.1312,"saturation":0.9669,"gamma":0.965,"lift":-0.0214,"temperature":-0.5253,"tint":-0.0223,"fade":0.1102,"shadow":[-0.0375,-0.0047,0.075],"highlight":[0.075,0.0014,-0.0075],"split":0.3801,"hue":-4.401}};

@@ -331,6 +331,7 @@ const colorScienceLabels = [
 colorScienceLabels.forEach((label,index)=>{
   dedicatedControls[`atelier_0_${index}`] = [pct('colorMix',label,50)];
 });
+dedicatedControls.atelier_0_14=[parameter('paletteSize','Palette colors',2,16,9,'colors',1)];
 for(const [kind,controls] of Object.entries(dedicatedControls)) EFFECT_PARAMETER_SCHEMA[kind as EffectKind]=controls;
 
 export function defaultParameters(kind: EffectKind): EffectParameters {

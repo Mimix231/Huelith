@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"nature-ocean-glass","name":"Ocean Glass","category":"Nature","description":"Nature color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.2052,"contrast":1.005,"saturation":1.2197,"gamma":1.0139,"lift":0.0147,"temperature":-0.0579,"tint":-0.1873,"fade":0.0412,"shadow":[0.075,-0.0375,0.061],"highlight":[0.0317,0.075,-0.0075],"split":0.5215,"hue":0.694}};

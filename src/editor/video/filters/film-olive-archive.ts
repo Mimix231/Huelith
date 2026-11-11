@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"film-olive-archive","name":"Olive Archive","category":"Film","description":"Film color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0798,"contrast":1.1312,"saturation":0.9058,"gamma":1.155,"lift":0.0343,"temperature":0.1846,"tint":-0.219,"fade":0.1138,"shadow":[-0.0375,0.0097,0.075],"highlight":[0.075,-0.0075,-0.0059],"split":0.1244,"hue":1.345}};

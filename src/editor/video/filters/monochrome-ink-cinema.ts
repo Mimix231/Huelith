@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"monochrome-ink-cinema","name":"Ink Cinema","category":"Monochrome","description":"Monochrome color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0776,"contrast":1.1527,"saturation":0.059,"gamma":1.0488,"lift":0.0128,"temperature":0.1716,"tint":-0.3121,"fade":0.0518,"shadow":[-0.0375,0.075,0.0186],"highlight":[0.0666,-0.0075,0.075],"split":0.5377,"hue":2.632}};

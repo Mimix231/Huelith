@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"cinematic-velvet-harbor","name":"Velvet Harbor","category":"Cinematic","description":"Cinematic color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.1238,"contrast":1.0481,"saturation":0.8787,"gamma":0.9007,"lift":0.0069,"temperature":0.0709,"tint":0.1618,"fade":0.0831,"shadow":[-0.0375,-0.0047,0.075],"highlight":[0.075,0.0014,-0.0075],"split":0.1018,"hue":-2.028}};

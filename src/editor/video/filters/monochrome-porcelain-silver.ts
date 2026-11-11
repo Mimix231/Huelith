@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"monochrome-porcelain-silver","name":"Porcelain Silver","category":"Monochrome","description":"Monochrome color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.07,"contrast":1.1344,"saturation":0.0959,"gamma":0.9813,"lift":0.0212,"temperature":0.2534,"tint":0.039,"fade":0.0374,"shadow":[0.075,0.0466,-0.0375],"highlight":[-0.0075,0.0628,0.075],"split":0.4985,"hue":-5.2}};

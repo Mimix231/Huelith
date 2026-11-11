@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"portrait-soft-honey","name":"Soft Honey","category":"Portrait","description":"Portrait color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0383,"contrast":1.1325,"saturation":0.9305,"gamma":1.0152,"lift":0.0047,"temperature":-0.0365,"tint":-0.1616,"fade":0.0538,"shadow":[0.075,-0.0375,0.061],"highlight":[0.0317,0.075,-0.0075],"split":0.1257,"hue":5.376}};

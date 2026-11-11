@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"nature-lime-orchard","name":"Lime Orchard","category":"Nature","description":"Nature color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0822,"contrast":1.0685,"saturation":1.1387,"gamma":1.089,"lift":-0.0062,"temperature":-0.1693,"tint":-0.2509,"fade":0.057,"shadow":[-0.0375,0.075,-0.019],"highlight":[0.039,-0.0075,0.075],"split":0.3165,"hue":-3.145}};

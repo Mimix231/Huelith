@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"cinematic-warm-finale","name":"Warm Finale","category":"Cinematic","description":"Cinematic color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0881,"contrast":1.1413,"saturation":0.992,"gamma":0.9732,"lift":0.0061,"temperature":0.2078,"tint":0.3353,"fade":0.0929,"shadow":[-0.0183,0.075,-0.0375],"highlight":[0.0115,-0.0075,0.075],"split":0.3773,"hue":5.751}};

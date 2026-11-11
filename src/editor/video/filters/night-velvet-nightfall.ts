@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"night-velvet-nightfall","name":"Velvet Nightfall","category":"Night","description":"Night color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.2106,"contrast":1.1645,"saturation":0.9907,"gamma":0.8664,"lift":0.0094,"temperature":-0.2362,"tint":0.2664,"fade":0.1163,"shadow":[0.0658,0.075,-0.0375],"highlight":[-0.0075,0.0352,0.075],"split":0.2944,"hue":-2.597}};

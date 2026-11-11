@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"retro-vapor-evening","name":"Vapor Evening","category":"Retro","description":"Retro color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0763,"contrast":0.9101,"saturation":1.042,"gamma":1.1306,"lift":0.0439,"temperature":0.2966,"tint":-0.2748,"fade":0.1274,"shadow":[0.0514,-0.0375,0.075],"highlight":[0.0593,0.075,-0.0075],"split":0.1041,"hue":-1.814}};

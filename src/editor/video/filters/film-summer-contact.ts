@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"film-summer-contact","name":"Summer Contact","category":"Film","description":"Film color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.1823,"contrast":1.0142,"saturation":0.8498,"gamma":1.1465,"lift":0.0247,"temperature":0.423,"tint":-0.0638,"fade":0.1192,"shadow":[0.0658,0.075,-0.0375],"highlight":[-0.0075,0.0352,0.075],"split":0.288,"hue":-5.054}};

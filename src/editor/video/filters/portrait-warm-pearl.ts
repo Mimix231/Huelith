@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"portrait-warm-pearl","name":"Warm Pearl","category":"Portrait","description":"Portrait color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0197,"contrast":0.9254,"saturation":0.8678,"gamma":1.0204,"lift":0.0125,"temperature":0.1907,"tint":-0.1468,"fade":0.0509,"shadow":[0.0747,-0.0375,0.075],"highlight":[0.0423,0.075,-0.0075],"split":0.56,"hue":0.658}};

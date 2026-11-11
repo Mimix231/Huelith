@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"cinematic-indigo-passage","name":"Indigo Passage","category":"Cinematic","description":"Cinematic color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0924,"contrast":1.2137,"saturation":1.0012,"gamma":0.9908,"lift":0.0096,"temperature":0.146,"tint":-0.0983,"fade":0.0886,"shadow":[0.075,0.0234,-0.0375],"highlight":[-0.0075,0.075,0.0701],"split":0.1982,"hue":-6.854}};

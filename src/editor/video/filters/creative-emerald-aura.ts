@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"creative-emerald-aura","name":"Emerald Aura","category":"Creative","description":"Creative color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1313,"contrast":1.0549,"saturation":1.1302,"gamma":0.9788,"lift":0.0011,"temperature":-0.0477,"tint":0.1767,"fade":0.2001,"shadow":[-0.0375,-0.0047,0.075],"highlight":[0.075,0.0014,-0.0075],"split":0.3784,"hue":-8.272}};

@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"creative-pearl-fantasy","name":"Pearl Fantasy","category":"Creative","description":"Creative color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.086,"contrast":1.1286,"saturation":1.2471,"gamma":1.08,"lift":0.0267,"temperature":-0.1609,"tint":0.069,"fade":0.2035,"shadow":[0.075,-0.0375,0.0145],"highlight":[-0.0024,0.075,-0.0075],"split":0.2373,"hue":-8.752}};

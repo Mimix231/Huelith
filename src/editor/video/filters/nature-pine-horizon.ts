@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"nature-pine-horizon","name":"Pine Horizon","category":"Nature","description":"Nature color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0029,"contrast":1.1843,"saturation":1.2299,"gamma":0.9969,"lift":0.0243,"temperature":-0.2373,"tint":-0.0564,"fade":0.044,"shadow":[-0.0327,0.075,-0.0375],"highlight":[0.022,-0.0075,0.075],"split":0.457,"hue":0.394}};

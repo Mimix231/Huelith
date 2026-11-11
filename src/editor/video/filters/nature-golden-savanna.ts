@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"nature-golden-savanna","name":"Golden Savanna","category":"Nature","description":"Nature color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1285,"contrast":1.1051,"saturation":1.0455,"gamma":1.001,"lift":0.0108,"temperature":-0.2138,"tint":-0.2738,"fade":0.0311,"shadow":[0.0138,-0.0375,0.075],"highlight":[0.075,0.0631,-0.0075],"split":0.5388,"hue":3.489}};

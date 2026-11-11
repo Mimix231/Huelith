@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"film-marigold-roll","name":"Marigold Roll","category":"Film","description":"Film color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0611,"contrast":1.0243,"saturation":0.9019,"gamma":1.1309,"lift":0.0402,"temperature":0.0486,"tint":-0.3131,"fade":0.152,"shadow":[0.075,-0.0375,0.0001],"highlight":[-0.0075,0.075,-0.0021],"split":0.5352,"hue":3.613}};

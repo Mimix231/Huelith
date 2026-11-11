@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"food-cherry-glaze","name":"Cherry Glaze","category":"Food","description":"Food color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1594,"contrast":1.0111,"saturation":1.235,"gamma":0.9825,"lift":0.0232,"temperature":0.1152,"tint":0.0298,"fade":0.0537,"shadow":[0.0514,-0.0375,0.075],"highlight":[0.0593,0.075,-0.0075],"split":0.3041,"hue":5.68}};

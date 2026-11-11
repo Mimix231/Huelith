@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"retro-amber-cassette","name":"Amber Cassette","category":"Retro","description":"Retro color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0244,"contrast":0.9698,"saturation":1.0337,"gamma":1.1585,"lift":0.0446,"temperature":0.3626,"tint":0.2401,"fade":0.1356,"shadow":[-0.0238,-0.0375,0.075],"highlight":[0.075,0.0355,-0.0075],"split":0.43,"hue":-6.909}};

@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"night-neon-alley","name":"Neon Alley","category":"Night","description":"Night color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.1004,"contrast":1.2968,"saturation":1.0553,"gamma":0.909,"lift":-0.0008,"temperature":-0.3373,"tint":-0.0556,"fade":0.1377,"shadow":[0.075,-0.0375,-0.0375],"highlight":[-0.0075,0.075,0.0255],"split":0.5354,"hue":-2.873}};

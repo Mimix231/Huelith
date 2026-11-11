@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"portrait-rose-quartz","name":"Rose Quartz","category":"Portrait","description":"Portrait color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.1877,"contrast":1.0465,"saturation":0.8683,"gamma":1.1355,"lift":0.0099,"temperature":0.3764,"tint":-0.1629,"fade":0.0214,"shadow":[0.075,-0.0375,0.0377],"highlight":[0.0147,0.075,-0.0075],"split":0.5043,"hue":4.979}};

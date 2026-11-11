@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"monochrome-warm-ink","name":"Warm Ink","category":"Monochrome","description":"Monochrome color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0571,"contrast":1.2109,"saturation":0.0266,"gamma":0.9884,"lift":0.01,"temperature":0.3414,"tint":0.059,"fade":0.0375,"shadow":[-0.0183,0.075,-0.0375],"highlight":[0.0115,-0.0075,0.075],"split":0.1235,"hue":-5.114}};

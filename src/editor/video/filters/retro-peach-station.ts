@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"retro-peach-station","name":"Peach Station","category":"Retro","description":"Retro color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.1169,"contrast":0.9761,"saturation":1.0898,"gamma":1.1645,"lift":0.0249,"temperature":0.3941,"tint":0.2828,"fade":0.1221,"shadow":[-0.0375,0.0097,0.075],"highlight":[0.075,-0.0075,-0.0059],"split":0.5702,"hue":-3.0}};

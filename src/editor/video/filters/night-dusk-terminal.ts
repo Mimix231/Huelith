@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"night-dusk-terminal","name":"Dusk Terminal","category":"Night","description":"Night color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1955,"contrast":1.1934,"saturation":0.938,"gamma":0.9303,"lift":-0.0313,"temperature":-0.153,"tint":0.2166,"fade":0.1148,"shadow":[-0.0375,0.075,0.0418],"highlight":[0.075,-0.0075,0.0663],"split":0.5065,"hue":-5.502}};

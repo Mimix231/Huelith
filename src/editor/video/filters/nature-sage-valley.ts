@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"nature-sage-valley","name":"Sage Valley","category":"Nature","description":"Nature color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1378,"contrast":1.1842,"saturation":1.1183,"gamma":0.9793,"lift":0.0019,"temperature":-0.3956,"tint":0.0679,"fade":0.0338,"shadow":[0.075,-0.0375,0.0001],"highlight":[-0.0075,0.075,-0.0021],"split":0.5995,"hue":2.899}};

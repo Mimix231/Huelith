@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"night-purple-metro","name":"Purple Metro","category":"Night","description":"Night color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0113,"contrast":1.2687,"saturation":1.0493,"gamma":1.0028,"lift":-0.0325,"temperature":-0.4035,"tint":0.099,"fade":0.1126,"shadow":[0.075,-0.0375,0.0001],"highlight":[-0.0075,0.075,-0.0021],"split":0.352,"hue":5.118}};

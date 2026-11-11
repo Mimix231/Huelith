@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"cinematic-silver-ember","name":"Silver Ember","category":"Cinematic","description":"Cinematic color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1123,"contrast":1.0776,"saturation":0.912,"gamma":1.0114,"lift":0.0352,"temperature":0.2154,"tint":0.2976,"fade":0.0588,"shadow":[0.0282,0.075,-0.0375],"highlight":[-0.0075,0.0076,0.075],"split":0.1693,"hue":3.602}};

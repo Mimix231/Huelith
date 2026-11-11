@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"nature-summer-marsh","name":"Summer Marsh","category":"Nature","description":"Nature color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.2077,"contrast":1.0669,"saturation":1.0965,"gamma":1.0063,"lift":-0.0139,"temperature":-0.2248,"tint":0.1351,"fade":0.0687,"shadow":[0.075,-0.0375,0.0145],"highlight":[-0.0024,0.075,-0.0075],"split":0.2058,"hue":-2.947}};

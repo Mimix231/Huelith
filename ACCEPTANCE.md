@@ -1,3 +1,5 @@
+> **Current v0.3-alpha evidence, 3 Nov 2026:** [Stage D–G implementation and acceptance results](docs/HUELITH_V03_STAGE_D_G_IMPLEMENTATION.md) records the passing 777-test release gate, native video/audio/animation exports, recovery/relinking, legacy compatibility, packaged application and MSI/NSIS builds. Heavy video stack synchronization, broad artistic review and clean install/upgrade/uninstall remain open qualification items. The historical v0.2 checklist below is preserved.
+
 > **Development continuation, 30 Oct 2026:** All 120 expanded Creativity operations now route to individually named TypeScript processors under `src/editor/effects/`; the old 120-way placeholder switch has been removed. This is a **tested integration checkpoint, not artistic-completion or 25–30ms FPS certification**. See `docs/HUELITH_DEDICATED_MIGRATION_CONTINUATION_2026_10_30.md` for known limitations and measured CPU render times.
 
 # Huelith 0.2 — Release Acceptance Checklist

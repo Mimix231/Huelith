@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"nature-mossy-trail","name":"Mossy Trail","category":"Nature","description":"Nature color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0351,"contrast":1.2056,"saturation":1.0646,"gamma":0.9591,"lift":-0.0046,"temperature":-0.2398,"tint":-0.0374,"fade":0.0392,"shadow":[-0.0095,-0.0375,0.075],"highlight":[0.075,0.0461,-0.0075],"split":0.4324,"hue":-3.788}};

@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"film-evergreen-print","name":"Evergreen Print","category":"Film","description":"Film color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.2097,"contrast":1.0791,"saturation":0.9638,"gamma":1.1427,"lift":0.024,"temperature":0.0591,"tint":0.3237,"fade":0.1582,"shadow":[0.075,0.009,-0.0375],"highlight":[-0.0075,0.075,0.0596],"split":0.5435,"hue":-5.511}};

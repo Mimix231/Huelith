@@ -16,9 +16,10 @@ const v02 = read('docs/changelog/v0.2-alpha.md');
 
 test('0.1 alpha inventory individually lists all 101 registered filters, Effects and FX',()=>{
   const bullets = new Set(v01.split('\n').filter(line=>line.startsWith('- ')).map(line=>line.slice(2).trim().toLowerCase()));
-  const notFound = catalogExports.FILTER_CATALOG.filter(entry=>!bullets.has(entry.label.toLowerCase()));
+  const released = [...catalogExports.FILTER_CATALOG,{...catalogExports.LEGACY_CUTOUT,label:'Remove background'}];
+  const notFound = released.filter(entry=>!bullets.has(entry.label.toLowerCase()));
   assert.deepEqual(Array.from(notFound, item=>item.label),[]);
-  assert.equal(catalogExports.FILTER_CATALOG.length,101);
+  assert.equal(released.length,101);
 });
 test('0.1 includes user historical tool list, animation, Studio and 13 theme families',()=>{
   for(const item of ['Spectrum Studio','Move & Transform','Edit Bézier Nodes','Rectangular Selection','Pan / Hand','Brush','Eraser',

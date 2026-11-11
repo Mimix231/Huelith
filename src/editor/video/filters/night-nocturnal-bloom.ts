@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"night-nocturnal-bloom","name":"Nocturnal Bloom","category":"Night","description":"Night color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1074,"contrast":1.0938,"saturation":1.0409,"gamma":0.8857,"lift":-0.0055,"temperature":-0.564,"tint":-0.0469,"fade":0.1141,"shadow":[-0.0238,-0.0375,0.075],"highlight":[0.075,0.0355,-0.0075],"split":0.371,"hue":-3.442}};

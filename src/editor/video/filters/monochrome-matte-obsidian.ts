@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"monochrome-matte-obsidian","name":"Matte Obsidian","category":"Monochrome","description":"Monochrome color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0303,"contrast":1.2709,"saturation":0.071,"gamma":1.0076,"lift":0.0241,"temperature":0.2121,"tint":-0.3255,"fade":0.0443,"shadow":[0.0049,0.075,-0.0375],"highlight":[-0.0056,-0.0075,0.075],"split":0.1501,"hue":6.638}};

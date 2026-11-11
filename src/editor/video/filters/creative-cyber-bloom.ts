@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"creative-cyber-bloom","name":"Cyber Bloom","category":"Creative","description":"Creative color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0768,"contrast":1.1861,"saturation":1.1189,"gamma":1.0504,"lift":0.0317,"temperature":-0.1045,"tint":0.2354,"fade":0.176,"shadow":[0.0282,0.075,-0.0375],"highlight":[-0.0075,0.0076,0.075],"split":0.4803,"hue":6.179}};

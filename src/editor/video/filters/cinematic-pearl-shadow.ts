@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"cinematic-pearl-shadow","name":"Pearl Shadow","category":"Cinematic","description":"Cinematic color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0152,"contrast":1.1253,"saturation":0.9712,"gamma":0.9951,"lift":0.0203,"temperature":-0.1469,"tint":-0.0857,"fade":0.064,"shadow":[-0.0375,-0.0279,0.075],"highlight":[0.075,0.0185,-0.0075],"split":0.2313,"hue":-2.362}};

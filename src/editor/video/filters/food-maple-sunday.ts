@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"food-maple-sunday","name":"Maple Sunday","category":"Food","description":"Food color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.2037,"contrast":0.9923,"saturation":1.24,"gamma":0.963,"lift":0.0071,"temperature":0.38,"tint":0.1251,"fade":0.0617,"shadow":[0.0425,0.075,-0.0375],"highlight":[-0.0075,0.0182,0.075],"split":0.5046,"hue":4.255}};

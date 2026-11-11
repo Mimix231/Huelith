@@ -1,7 +1,7 @@
 {
   "name": "huelith-editor",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.3.0-alpha.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
@@ -57,7 +57,12 @@
     "clean:migrated": "node scripts/cleanup-migrated.mjs --apply",
     "clean:migrated:dry": "node scripts/cleanup-migrated.mjs --dry-run",
     "predesktop:dev": "node scripts/cleanup-migrated.mjs --apply",
-    "test:animation-dock": "node --test tests/animation-dock-release.test.cjs && python tests/animation-dock-geometry-browser.py && python tests/timeline-css.py"
+    "test:animation-dock": "node --test tests/animation-dock-release.test.cjs && python tests/animation-dock-geometry-browser.py && python tests/timeline-css.py",
+    "test:creative-hub": "node --test tests/creative-hub-stage-a.test.cjs tests/window-close.test.cjs tests/animation-dock-release.test.cjs",
+    "test:stage-b": "node --test tests/native-media-stage-b.test.cjs tests/creative-hub-stage-a.test.cjs tests/window-close.test.cjs && node scripts/check-stage-b.cjs",
+    "test:stage-c": "node --test tests/video-editor-stage-c.test.cjs tests/native-media-stage-b.test.cjs tests/creative-hub-stage-a.test.cjs tests/window-close.test.cjs",
+    "test:stage-dg": "node --test tests/video-effects-stage-d.test.cjs tests/video-streaming-stage-e.test.cjs tests/creative-precision-stage-f.test.cjs tests/project-reliability-stage-g.test.cjs",
+    "test:native-media": "cargo test --manifest-path src-tauri/Cargo.toml --lib media:: -- --nocapture"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -65,14 +70,16 @@
     "@mui/icons-material": "^7.3.2",
     "@mui/material": "^7.3.2",
     "@tauri-apps/api": "^2.8.0",
+    "@tauri-apps/plugin-clipboard-manager": "^2.3.0",
     "@tauri-apps/plugin-dialog": "^2.4.0",
     "@tauri-apps/plugin-fs": "^2.4.0",
+    "gifuct-js": "^2.1.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "zustand": "^5.0.8",
-    "@tauri-apps/plugin-clipboard-manager": "^2.3.0"
+    "zustand": "^5.0.8"
   },
   "devDependencies": {
+    "@napi-rs/canvas": "^1.1.0",
     "@tauri-apps/cli": "^2.8.4",
     "@types/react": "^19.1.13",
     "@types/react-dom": "^19.1.9",

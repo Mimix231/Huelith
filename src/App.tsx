@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode, type MouseEvent as ReactMouseEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type MouseEvent as ReactMouseEvent } from 'react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import {
   Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton,
@@ -7,15 +7,15 @@ import {
 import {
   Add, ArrowDownward, ArrowUpward, AutoAwesome, Brush, Close, Download, Edit,
   Colorize, ContentCopy, Create, Delete, Gradient, SwapHoriz, RestartAlt, Diamond, ChatBubbleOutline,
-  FlipToFront, GridOn, History, Image, Layers,
+  CheckCircleOutline, FlipToFront, GridOn, History, Image, IosShare, Layers,
   Lock, LockOpen, Menu as MenuIcon, Mouse, Palette, PanTool,
   RadioButtonUnchecked, Rectangle, Redo, Save, Settings, ShapeLine,
-  TextFields, Undo, Visibility, VisibilityOff, ZoomIn, ZoomOut, HorizontalRule, CropFree, Tune, ViewSidebar, Gesture, AutoFixHigh, FormatColorFill, BlurOn, WbSunny, Whatshot, MovieFilter,
+  TextFields, Undo, Visibility, VisibilityOff, ZoomIn, ZoomOut, HorizontalRule, CropFree, Tune, ViewSidebar, Gesture, AutoFixHigh, FormatColorFill, BlurOn, WbSunny, Whatshot, MovieFilter, Home,
 } from '@mui/icons-material';
 import { activeLayer, activeTab, useEditor, type EditorStore } from './editor/store';
 import { flattenLayers, validSize, type BlendMode, type Tool, type Workspace } from './editor/types';
 import { scaleShape, shapeBounds, translateShape } from './editor/geometry';
-import { exportImage, exportSvg, importImage, openProject, saveProject } from './editor/files';
+import { exportImage, exportSvg, importImage, openCreativeProject, openProjectPath, saveBytes, saveProject, writeProjectFile, readProjectFile } from './editor/files';
 import { getRecovery, storeRecovery } from './editor/recovery';
 import { handlePaste, pasteFromSystem, copySelected, insertImage } from './editor/clipboard';
 import FxStudio from './components/FxStudio';
@@ -44,6 +44,9 @@ import {alignLayer, rasterAssets, commitRasterize} from './editor/layer-actions'
 import {prepareSelectionEdit,type SelectionAction} from './editor/selection-actions';
 import {applyDocumentAction, prepareRasterAction, swapRasterSources, transparentTrimBounds, type DocumentAction, type ResampleMode} from './editor/document-actions';
 import AnimationTimeline from './components/AnimationTimeline';
+import CreativeHub from './components/CreativeHub';
+import VideoWorkspace from './components/VideoWorkspace';
+import { bindOpenedDocumentRecentId, isVideoProject, newVideoProject, readRecentSnapshot, recordRecentProject, touchRecentProject, type HubProjectKind, type RecentProject, type VideoProject } from './editor/project-hub';
 import CreativeLab from './components/CreativeLab';
 import BrushStudio from './components/BrushStudio';
 import AuroraSettings from './components/settings/AuroraSettings';
@@ -52,6 +55,9 @@ import { configureNativeBackend, configureNativeCacheBudget } from './settings/n
 import { CREATIVE_DEFINITIONS } from './editor/creative';
 import { MENUS, type MenuAction } from './commands/menus';
 import { exportAnimation } from './editor/animation-export';
+import {exportAnimationMp4} from './editor/animation-video-export';
+import VideoExportDialog from './components/VideoExportDialog';
+import {storeVideoRecovery,readVideoRecovery,clearVideoRecovery,type VideoRecovery} from './editor/video/recovery';
 import './styles/app.css';
 import './styles/glass.css';
 import './styles/material.css';
@@ -75,6 +81,8 @@ import './styles/wxy.css';
 import './styles/theme-identities.css';
 import './styles/workspace-modern.css';
 import './styles/huelith-hybrid-shell.css';
+import './styles/theme-workspaces.css';
+import {THEME_COLLECTIONS,THEME_IDENTITIES,themeVariables} from './settings/theme-catalog';
 
 interface ToolEntry {
   id: Tool;
@@ -125,63 +133,36 @@ const tools: ToolEntry[] = [
   { id: 'text', label: 'Text', icon: <TextFields />, shortcut: 'T' },
 ];
 
-function makeTheme(workspace: Workspace, appearanceMode: AppearanceMode) {
-  const material = workspace === 'material';
-  const classic = workspace === 'classic';
-  const studio = workspace === 'studio';
-  const midnight = workspace === 'midnight';
-  const themedAccents: Record<string, string> = {
-    strawberry: '#ba315e', melon: '#167e68', peach: '#cb6b57', lemon: '#9b7d00',
-    mango: '#bd681f', sakura: '#ac6ca1', blossom: '#8158b5', shadow: '#b9b7fa',
-  };
-  const darkAccents: Record<string, string> = {
-    strawberry: '#ff7eaa', melon: '#66dbac', peach: '#ffac90', lemon: '#ffdc64',
-    mango: '#ffb45e', sakura: '#dd9ecf', blossom: '#b49cf1', shadow: '#c9c5ff',
-    material: '#d4b8ff', studio: '#8bd1e5', classic: '#bbd8f5', midnight: '#84aaff', glass: '#b7b6ff',
-  };
-  const primary = (appearanceMode === 'dark' ? darkAccents[workspace] : themedAccents[workspace])
-    ?? (material ? '#6750a4' : studio ? '#176e8d'
-    : classic ? '#b4c7df' : midnight ? '#80b4ff' : '#a5a5ff');
+const VIDEO_STUDIO_PALETTE=['#bc94f5','#16171f','#1e1f29'] as const;
+function makeTheme(workspace: Workspace, appearanceMode: AppearanceMode,videoStudio=false) {
+  const {radius,[appearanceMode]:colors}=THEME_IDENTITIES[workspace];
+  const [primary,ground,paper]=videoStudio?VIDEO_STUDIO_PALETTE:colors;
   const isLight = appearanceMode === 'light';
-  const lightSurfaces:Record<string,[string,string]>={
-    glass:['#f4f7ff','#ffffff'],material:['#f7f4fb','#ffffff'],classic:['#f5f5f5','#ffffff'],
-    midnight:['#ebf0fa','#f7faff'],studio:['#f2f9f9','#ffffff'],
-    strawberry:['#fff4f6','#fffafb'],melon:['#f1fff9','#fbfffd'],peach:['#fff6f1','#fffaf7'],
-    lemon:['#fffdf0','#fffef9'],mango:['#fff7e8','#fffaf3'],sakura:['#fff8fc','#fffafd'],
-    blossom:['#f8f4ff','#fdfbff'],shadow:['#f5f4fa','#fafaff'],
-  };
-  const darkSurfaces:Record<string,[string,string]>={
-    glass:['#16192a','#24283a'],material:['#1c1a22','#292633'],classic:['#171b23','#292b33'],
-    midnight:['#10182a','#1c2740'],studio:['#151c23','#222e36'],
-    strawberry:['#291921','#3b2734'],melon:['#142922','#223c35'],peach:['#2b201e','#40302d'],
-    lemon:['#292714','#3a3825'],mango:['#2c2118','#423022'],sakura:['#231829','#33233b'],
-    blossom:['#241b34','#362841'],shadow:['#171721','#252431'],
-  };
-  const surfaces=(isLight?lightSurfaces:darkSurfaces)[workspace];
   return createTheme({
     palette: {
       mode: isLight ? 'light' : 'dark',
       primary: { main: primary },
       secondary: { main: isLight ? '#435d77' : '#a5bad4' },
-      background: {
-        default: surfaces?.[0] ?? (isLight ? '#faf9fc' : '#171924'),
-        paper: surfaces?.[1] ?? (isLight ? '#ffffff' : '#242738'),
-      },
+      background: {default:ground,paper},
     },
-    shape: { borderRadius: material ? 18 : classic || studio || workspace === 'shadow' ? 4 : 12 },
+    shape: { borderRadius: radius },
     typography: {
       fontFamily: 'Inter, system-ui, -apple-system, Segoe UI, sans-serif',
       fontSize: 12,
       button: { textTransform: 'none', fontWeight: 600 },
     },
     components: {
+      MuiPaper: { styleOverrides: { root: {
+        colorScheme:appearanceMode,'--hv-surface':ground,'--hv-border':isLight?'#0003':'#fff3',
+        '--hv-quiet':isLight?'#4b4658':'#d6cce6','--accent':primary,
+      } } },
       MuiButton: {
         styleOverrides: {
-          root: { minWidth: 0, borderRadius: material ? 15 : classic || studio ? 3 : midnight ? 5 : 8, boxShadow: 'none' },
+          root: { minWidth: 0, borderRadius: Math.max(3,radius-3), boxShadow: 'none' },
         },
       },
       MuiIconButton: {
-        styleOverrides: { root: { borderRadius: material ? 11 : classic || studio ? 3 : midnight ? 5 : 8 } },
+        styleOverrides: { root: { borderRadius: Math.max(3,radius-5) } },
       },
       MuiSlider: { styleOverrides: { root: { paddingTop: 11, paddingBottom: 11 } } },
       MuiMenu: { defaultProps: { slotProps: { paper: { className: 'huelith-popup' } } } },
@@ -1019,16 +1000,60 @@ function Inspector({ state }: { state: EditorStore }) {
 export default function App() {
   const state = useEditor();
   const theme = useMemo(() => makeTheme(state.workspace, state.appearanceMode), [state.workspace, state.appearanceMode]);
+  const studioTheme=useMemo(()=>makeTheme('studio','dark',true),[]);
   const tab = activeTab(state);
   const doc = tab.doc;
   const [newOpen, setNewOpen] = useState(false);
   const [newAnimation, setNewAnimation] = useState(false);
+  const [newVideo, setNewVideo] = useState(false);
+  const [videoFps, setVideoFps] = useState(30);
+  const [homeOpen, setHomeOpen] = useState(true);
+  const [canResume, setCanResume] = useState(false);
+  const [videoProject, setVideoProject] = useState<VideoProject | null>(null);
+  const [videoPath, setVideoPath] = useState<string | undefined>();
+  const [videoSaved, setVideoSaved] = useState(true);
+  const [videoMenu,setVideoMenu]=useState<HTMLElement|null>(null);
+  const [videoHistory,setVideoHistory]=useState({undo:false,redo:false});
+  const videoCurrent=useRef(videoProject);videoCurrent.current=videoProject;
+  const [videoRecoveries,setVideoRecoveries]=useState<VideoRecovery[]>([]);
+  const [videoRecoveryIndex,setVideoRecoveryIndex]=useState(0);
+  const pendingVideoRecovery=useRef<{project:VideoProject;path?:string}|undefined>(undefined);
+  const videoRecoveryTimer=useRef<ReturnType<typeof setTimeout>|undefined>(undefined);
+  useEffect(()=>{void readVideoRecovery().then(setVideoRecoveries).catch(()=>{});},[]);
+  const flushVideoRecovery=useCallback(()=>{
+    clearTimeout(videoRecoveryTimer.current);videoRecoveryTimer.current=undefined;
+    const pending=pendingVideoRecovery.current;
+    pendingVideoRecovery.current=undefined;
+    if(pending)void storeVideoRecovery(pending.project,pending.path).catch(()=>setNotice('Video recovery storage unavailable; save your project regularly.'));
+  },[]);
+  useEffect(()=>{
+    const hidden=()=>{if(document.visibilityState==='hidden')flushVideoRecovery();};
+    document.addEventListener('visibilitychange',hidden);
+    return()=>{document.removeEventListener('visibilitychange',hidden);flushVideoRecovery();};
+  },[flushVideoRecovery,videoProject?.id]);
+  useEffect(()=>{
+    if(!videoProject||videoSaved){
+      pendingVideoRecovery.current=undefined;
+      clearTimeout(videoRecoveryTimer.current);videoRecoveryTimer.current=undefined;
+      return;
+    }
+    pendingVideoRecovery.current={project:videoProject,path:videoPath};
+    videoRecoveryTimer.current??=setTimeout(flushVideoRecovery,950);
+  },[videoProject,videoPath,videoSaved,flushVideoRecovery]);
+  // Protect Stage A video project metadata against browser refresh/close before its first save.
+  useEffect(() => {
+    if (!videoProject || videoSaved) return;
+    const preventLostVideo = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
+    window.addEventListener('beforeunload', preventLostVideo);
+    return () => window.removeEventListener('beforeunload', preventLostVideo);
+  }, [videoProject, videoSaved]);
   const [name, setName] = useState('Untitled artwork');
   const [width, setWidth] = useState(1280);
   const [height, setHeight] = useState(800);
   const [background, setBackground] = useState('#ffffff');
   const [menuAnchor, setMenuAnchor] = useState<{ element: HTMLElement; category: string } | null>(null);
   const [exportAnchor, setExportAnchor] = useState<HTMLElement | null>(null);
+  const [animationExportOpen,setAnimationExportOpen]=useState(false);
   const [themeAnchor, setThemeAnchor] = useState<HTMLElement | null>(null);
   const [notice, setNotice] = useState('Ready to create');
   const [errorText, setErrorText] = useState<string | null>(null);
@@ -1085,6 +1110,7 @@ export default function App() {
       const items = event.clipboardData?.items;
       const hasImage = Boolean(items && [...items].some(item => item.type.startsWith('image/')));
       const hasInternal = Boolean(event.clipboardData?.types.includes('application/x-huelith-object'));
+      if (homeOpen || videoProject) return;
       if (hasImage || hasInternal) {
         event.preventDefault();
         void handlePaste(event).then(ok => { if (ok) setNotice('Pasted as editable layer'); }).catch(handleError);
@@ -1096,6 +1122,7 @@ export default function App() {
       }
     };
     const receiveCopy = (event: ClipboardEvent): void => {
+      if (homeOpen || videoProject) return;
       const target = event.target as HTMLElement | null;
       if (target?.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target?.tagName ?? '')) return;
       event.preventDefault();
@@ -1104,12 +1131,14 @@ export default function App() {
       }).catch(handleError);
     };
     const drop = (event: DragEvent): void => {
+      if (homeOpen || videoProject) return;
       if (!event.dataTransfer?.files.length) return;
       event.preventDefault();
       const file = [...event.dataTransfer.files].find(item => item.type.startsWith('image/'));
       if (file) void insertImage(file, file.name).then(ok => { if (ok) setNotice('Image dropped onto canvas'); }).catch(handleError);
     };
     const dragOver = (event: DragEvent): void => {
+      if (homeOpen || videoProject) return;
       if (event.dataTransfer?.types.includes('Files')) event.preventDefault();
     };
     window.addEventListener('paste', receivePaste);
@@ -1124,7 +1153,7 @@ export default function App() {
       window.removeEventListener('drop', drop);
       window.removeEventListener('dragover', dragOver);
     };
-  }, []);
+  }, [homeOpen, videoProject]);
 
   useEffect(() => {
     function handleKey(event: KeyboardEvent): void {
@@ -1134,20 +1163,21 @@ export default function App() {
       const modifier = event.ctrlKey || event.metaKey;
       const key = event.key.toLowerCase();
       const current = useEditor.getState();
+      if ((homeOpen || videoProject) && !(modifier && (key === 'n' || key === 'o' || key === 's'))) return;
 
       if (modifier) {
         switch (key) {
           case 'n':
             event.preventDefault();
-            setNewOpen(true);
+            startNew('image');
             return;
           case 'o':
             event.preventDefault();
-            guarded(openProject(), 'Project opened');
+            if (videoProject && !homeOpen) { void openVideoFile().catch(handleError); } else { openImageFromHome(); }
             return;
           case 's':
             event.preventDefault();
-            guarded(saveProject(event.shiftKey), 'Project saved');
+            if (videoProject) { void saveVideoProject().catch(handleError); } else if (!homeOpen) { guarded(saveProject(event.shiftKey), 'Project saved'); }
             return;
           case 'z':
             event.preventDefault();
@@ -1188,6 +1218,7 @@ export default function App() {
         return;
       }
 
+      if (homeOpen || videoProject) return;
       if (key === 'tab' && target?.tagName === 'CANVAS') {
         event.preventDefault();
         current.setFocusMode(!current.focusMode);
@@ -1209,7 +1240,7 @@ export default function App() {
 
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [shortcuts]);
+  }, [shortcuts, homeOpen, videoProject]);
 
   useEffect(() => {
     let mounted = true;
@@ -1222,6 +1253,7 @@ export default function App() {
       // Remove the untouched starter canvas after restoring the real project tabs.
       useEditor.getState().closeDoc(current.tabs[0].doc.id);
       setNotice(`${documents.length} document(s) automatically recovered`);
+      setCanResume(true);
     }).catch(() => {
       // Private browsing can block IndexedDB. Editing remains available.
     });
@@ -1237,14 +1269,117 @@ export default function App() {
     return () => window.clearTimeout(timer);
   }, [state.tabs]);
 
+  function canReplaceVideo(): boolean {
+    return !videoProject || videoSaved || window.confirm('This video project has not been saved. Discard it and open another project?');
+  }
+
+  function startNew(kind: HubProjectKind): void {
+    if (!canReplaceVideo()) return;
+    setNewAnimation(kind === 'animation');
+    setNewVideo(kind === 'video');
+    setName(kind === 'image' ? 'Untitled artwork' : kind === 'animation' ? 'Untitled animation' : 'Untitled video');
+    setWidth(kind === 'video' ? 1920 : 1280);
+    setHeight(kind === 'video' ? 1080 : 800);
+    setVideoFps(kind === 'animation' ? 24 : 30);
+    setNewOpen(true);
+  }
+
+  function openImageFromHome(): void {
+    if (!canReplaceVideo()) return;
+    void openCreativeProject().then(result => {
+      if (!result) return;
+      setVideoProject(result.video ?? null); setVideoPath(result.path); setVideoSaved(true);
+      setHomeOpen(false); setCanResume(true); setNotice('Project opened');
+    }).catch(handleError);
+  }
+
+  async function openVideoFile(): Promise<void> {
+    if (!canReplaceVideo()) return;
+    // All project types share the same validated .huelith Open workflow.
+    // Existing image/animation documents are still opened by their own store.
+    const result = await openCreativeProject();
+    if (!result) return;
+    setVideoProject(result.video ?? null);
+    setVideoPath(result.video ? result.path : undefined);
+    setVideoSaved(true);
+    setHomeOpen(false);
+    setCanResume(true);
+    setNotice(`Opened ${result.kind} project`);
+  }
+
+  async function saveVideoProject(): Promise<boolean> {
+    if (!videoProject) return false;
+    const updated: VideoProject = { ...videoProject, updatedAt: new Date().toISOString() };
+    const bytes = new TextEncoder().encode(JSON.stringify(updated, null, 2));
+    let path = videoPath;
+    if (path && /\.huelith$/i.test(path) && '__TAURI_INTERNALS__' in window) {
+      await writeProjectFile(path, bytes);
+    } else {
+      const chosen = await saveBytes(bytes, `${updated.name.replace(/[^\w .-]/g, '_').replace(/\.(?:huelith|huelithvideo)$/i, '')}.huelith`, 'application/json',
+        [{ name: 'Huelith project', extensions: ['huelith'] }]);
+      if (!chosen) return false;
+      path = '__TAURI_INTERNALS__' in window ? chosen : undefined;
+    }
+    const sameProject=videoCurrent.current?.id===updated.id;
+    const unchanged=videoCurrent.current===videoProject;
+    if(sameProject){setVideoPath(path);if(unchanged){setVideoProject(updated);setVideoSaved(true);await clearVideoRecovery(updated.id).catch(()=>{});setVideoRecoveries(items=>items.filter(item=>item.project.id!==updated.id));}}
+    let thumbnail:string|undefined;
+    if(unchanged){const source=document.querySelector<HTMLCanvasElement>('.hv-preview-canvas');if(source){
+      const thumb=document.createElement('canvas');thumb.width=240;thumb.height=144;const ctx=thumb.getContext('2d');
+      if(ctx){ctx.fillStyle='#0b0e18';ctx.fillRect(0,0,240,144);const scale=Math.min(240/source.width,144/source.height);
+        ctx.drawImage(source,(240-source.width*scale)/2,(144-source.height*scale)/2,source.width*scale,source.height*scale);thumbnail=thumb.toDataURL('image/webp',.74);}
+    }}
+    await recordRecentProject(updated, path,thumbnail).catch(console.warn);
+    setNotice(unchanged?'Video project saved':'Saved snapshot; newer video edits still need saving.');
+    return unchanged;
+  }
+
+  async function openRecent(entry: RecentProject): Promise<void> {
+    if (!canReplaceVideo()) return;
+    try {
+      if (entry.path && '__TAURI_INTERNALS__' in window) {
+        if (entry.kind === 'video') {
+          const parsed: unknown = JSON.parse(await readProjectFile(entry.path));
+          if (!isVideoProject(parsed)) throw new Error('The recent video project is invalid.');
+          setVideoProject(parsed); setVideoPath(entry.path);
+        } else {
+          await openProjectPath(entry.path);
+          setVideoProject(null);
+        }
+      } else if (entry.snapshot) {
+        const project = await readRecentSnapshot(entry.id);
+        if (!project) throw new Error('The recent project snapshot is unavailable. Use Open project to select your saved file.');
+        if (isVideoProject(project)) { setVideoProject(project); setVideoPath(undefined); }
+        else { useEditor.getState().openDoc(project); bindOpenedDocumentRecentId(activeTab(useEditor.getState()).doc.id, entry.id); setVideoProject(null); }
+      } else {
+        throw new Error('This project cannot be reopened automatically. Use Open project to choose its saved file.');
+      }
+      setVideoSaved(true);
+      touchRecentProject(entry.id);
+      setHomeOpen(false); setCanResume(true); setNotice(`Opened ${entry.name}`);
+    } catch (error) { handleError(error); }
+  }
+
   function create(): void {
     if (!validSize(width, height)) {
       handleError(new Error('Canvas must be 1–16384 pixels per side and at most 64 million pixels.'));
       return;
     }
-    state.newDoc(name, width, height, background, newAnimation);
+    if ((newVideo || newAnimation) && (!Number.isInteger(videoFps) || videoFps < 1 || videoFps > 120)) {
+      handleError(new Error('Frame rate must be between 1 and 120 fps.')); return;
+    }
+    if (newVideo) {
+      setVideoProject(newVideoProject(name, width, height, videoFps));
+      setVideoPath(undefined); setVideoSaved(false);
+    } else {
+      state.newDoc(name, width, height, background, newAnimation);
+      if (newAnimation) state.setAnimationFps(videoFps);
+      setVideoProject(null);
+    }
     setNewOpen(false);
-    setNotice('New canvas created');
+    setHomeOpen(false);
+    setCanResume(true);
+    setNotice(newVideo ? 'New video project created' : 'New canvas created');
   }
 
   async function commitDocumentAction(action:DocumentAction, resampling:ResampleMode='smooth'):Promise<void>{
@@ -1349,9 +1484,9 @@ export default function App() {
   function runMenuCommand(id: MenuAction, anchor?: HTMLElement): void {
     setMenuAnchor(null);
     switch (id) {
-      case 'new-document': setNewAnimation(false); setNewOpen(true); break;
-      case 'new-animation': setNewAnimation(true); setNewOpen(true); break;
-      case 'open': guarded(openProject(), 'Project opened'); break;
+      case 'new-document': startNew('image'); break;
+      case 'new-animation': startNew('animation'); break;
+      case 'open': openImageFromHome(); break;
       case 'import': guarded(importImage(), 'Image imported'); break;
       case 'copy': guarded(copySelected(), 'Copied'); break;
       case 'paste': guarded(pasteFromSystem(), 'Image pasted'); break;
@@ -1360,6 +1495,7 @@ export default function App() {
       case 'export-png': guarded(exportImage('png'), 'PNG exported'); break;
       case 'export-svg': guarded(exportSvg(), 'SVG exported'); break;
       case 'export-apng': guarded(exportAnimation('apng'), 'Animation exported'); break;
+      case 'export-mp4': state.commitTextDraft();setAnimationExportOpen(true);break;
       case 'export-sheet': guarded(exportAnimation('sheet'), 'Sprite sheet exported'); break;
       case 'export-frames': guarded(exportAnimation('sequence'), 'Animation frames exported'); break;
       case 'undo': state.undo(); break;
@@ -1414,12 +1550,12 @@ export default function App() {
       case 'focus': state.setFocusMode(!state.focusMode); break;
       case 'settings': setSettingsOpen(true); break;
       case 'theme': if (anchor) setThemeAnchor(anchor); break;
-      case 'help': setNotice('Huelith 0.2 · Free and open source · Keyboard shortcuts in Preferences'); break;
+      case 'help': setNotice('Huelith 0.3-alpha · Free and open source · Keyboard shortcuts in Preferences'); break;
     }
   }
 
   function menuDisabled(id: MenuAction): boolean {
-    if (id.startsWith('export-') && ['export-apng', 'export-sheet', 'export-frames'].includes(id)) return !doc.animation;
+    if (id.startsWith('export-') && ['export-apng', 'export-mp4', 'export-sheet', 'export-frames'].includes(id)) return !doc.animation;
     if (id === 'undo') return !tab.past.length;
     if (id === 'redo') return !tab.future.length;
     if (id === 'deselect' || id === 'mask-selection') return !state.selection;
@@ -1434,61 +1570,116 @@ export default function App() {
     return false;
   }
 
+  const studioProject=homeOpen?null:videoProject;
+  const studioStyle=studioProject?{
+    '--theme-accent':VIDEO_STUDIO_PALETTE[0],'--theme-ground':VIDEO_STUDIO_PALETTE[1],
+    '--theme-paper':VIDEO_STUDIO_PALETTE[2],'--theme-radius':'8px',
+  }:themeVariables(state.workspace,state.appearanceMode);
   return (
-    <ThemeProvider theme={theme}>
-      <div className={`app theme-${state.workspace} tone-${state.appearanceMode} ${state.focusMode ? 'focus-mode' : ''}`}>
+    <ThemeProvider theme={studioProject?studioTheme:theme}>
+      <div className={`app ${studioProject?'is-video-studio theme-studio tone-dark':`theme-${state.workspace} tone-${state.appearanceMode}`} ${state.focusMode ? 'focus-mode' : ''}`}
+        style={studioStyle as CSSProperties}>
 
-        <header className="titlebar" data-tauri-drag-region>
+        {studioProject?<header className="titlebar hv-studio-titlebar" data-tauri-drag-region>
+          <button type="button" className="hv-studio-brand" aria-label="Huelith project menu" aria-expanded={!!videoMenu}
+            onClick={event=>setVideoMenu(event.currentTarget)}>Huelith</button>
+          <span className="hv-title-divider"/>
+          <span className="hv-studio-project" data-tauri-drag-region>{studioProject.name} · {studioProject.sequence?.name??'Timeline 01'}</span>
+          {videoSaved?<span className="hv-studio-save"><CheckCircleOutline/> Saved</span>
+            :<button type="button" className="hv-studio-save is-dirty" title="Save project"
+              onClick={()=>void saveVideoProject().catch(handleError)}>Unsaved</button>}
+          <div className="titlebar-drag-space" data-tauri-drag-region aria-hidden="true"/>
+          <div className="hv-studio-window-actions">
+            <ActionIcon title="Undo (Ctrl+Z)" disabled={!videoHistory.undo}
+              onClick={()=>window.dispatchEvent(new Event('huelith-video-undo'))}><Undo fontSize="small"/></ActionIcon>
+            <ActionIcon title="Redo (Ctrl+Y)" disabled={!videoHistory.redo}
+              onClick={()=>window.dispatchEvent(new Event('huelith-video-redo'))}><Redo fontSize="small"/></ActionIcon>
+            <Button className="huelith-video-export" variant="contained" startIcon={<IosShare/>}
+              onClick={()=>window.dispatchEvent(new Event('huelith-video-export'))}>Export</Button>
+            <span className="hv-title-divider"/>
+            <WindowControls extraDirty={!videoSaved} onSaveExtra={saveVideoProject}/>
+          </div>
+          <Menu anchorEl={videoMenu} open={!!videoMenu} onClose={()=>setVideoMenu(null)}>
+            <MenuItem onClick={()=>{setVideoMenu(null);setHomeOpen(true);}}>Home</MenuItem>
+            <MenuItem onClick={()=>{setVideoMenu(null);void openVideoFile().catch(handleError);}}>Open project</MenuItem>
+            <MenuItem onClick={()=>{setVideoMenu(null);void saveVideoProject().catch(handleError);}}>Save project</MenuItem>
+            <MenuItem onClick={()=>{setVideoMenu(null);setSettingsOpen(true);}}>Settings</MenuItem>
+          </Menu>
+        </header>:<header className="titlebar" data-tauri-drag-region>
           <div className="brand" data-tauri-drag-region>
-            <div className="brand-mark" aria-label={`${state.workspace} theme emblem`}><span className="brand-mark__glyph" aria-hidden="true">{({sakura:"❀",blossom:"✿",strawberry:"♥",melon:"◈",peach:"✦",lemon:"☼",mango:"✺",shadow:"◐",midnight:"☾",material:"◆",classic:"▦",studio:"▥",glass:"✧"} as Record<string,string>)[state.workspace]??"✦"}</span></div>
+            <div className="brand-mark" aria-label={`${state.workspace} theme emblem`}><span className="brand-mark__glyph" aria-hidden="true">{THEME_IDENTITIES[state.workspace].glyph}</span></div>
             <span>Huelith</span>
-            <span className="badge">0.2</span>
+            <span className="badge">0.3 dev</span>
           </div>
           <div className="title-actions">
-            <nav className="huelith-command-bar" aria-label="Huelith commands">
+            <button className="hub-home-return" type="button" onClick={() => { setHomeOpen(true); setNewOpen(false); setMenuAnchor(null); setCanvasMenu(null); setActionMode(null); setMemeOpen(false); }} aria-label="Open Huelith Home"><Home fontSize="small" /> Home</button>
+            {!homeOpen && !videoProject && <nav className="huelith-command-bar" aria-label="Huelith commands">
               {Object.keys(MENUS).map(category => (
                 <button type="button" className={`command-menu-trigger ${menuAnchor?.category === category ? 'active' : ''}`}
                   aria-expanded={menuAnchor?.category === category} key={category}
                   onClick={event => setMenuAnchor(previous => previous?.category === category
                     ? null : { category, element: event.currentTarget })}>{category}</button>
               ))}
-            </nav>
-            <button type="button" className="huelith-create-launcher" onClick={() => setMemeOpen(true)}
+            </nav>}
+            {!homeOpen && !videoProject && <button type="button" className="huelith-create-launcher" onClick={() => setMemeOpen(true)}
               aria-label="Open Huelith Meme Creator" title="Open Meme Creator">
               <MovieFilter aria-hidden="true" fontSize="small"/><span>Meme Creator</span><span className="huelith-create-key">✦</span>
-            </button>
-            <span className="title-sep" />
+            </button>}
+            {!homeOpen && !videoProject && <><span className="title-sep" />
             <ActionIcon title="Undo (Ctrl+Z)" onClick={state.undo} disabled={!tab.past.length}><Undo fontSize="small" /></ActionIcon>
             <ActionIcon title="Redo (Ctrl+Y)" onClick={state.redo} disabled={!tab.future.length}><Redo fontSize="small" /></ActionIcon>
             <Button variant="contained" size="small" startIcon={<Save />}
               onClick={() => guarded(saveProject(), 'Project saved')}>Save</Button>
             <Button size="small" startIcon={<Download />}
-              onClick={event => setExportAnchor(event.currentTarget)}>Export</Button>
+              onClick={event => setExportAnchor(event.currentTarget)}>Export</Button></>}
           </div>
           <div className="titlebar-drag-space" data-tauri-drag-region aria-hidden="true" />
           <div className="title-right">
             <span className="live-dot" />
             <span>Free & open source</span>
-            <ActionIcon title="Toggle left tools" onClick={() => state.setToolsOpen(!state.toolsOpen)}><MenuIcon fontSize="small" /></ActionIcon>
+            {!homeOpen && !videoProject && <><ActionIcon title="Toggle left tools" onClick={() => state.setToolsOpen(!state.toolsOpen)}><MenuIcon fontSize="small" /></ActionIcon>
             <ActionIcon title="Toggle inspector" onClick={() => state.setInspectorOpen(!state.inspectorOpen)}><ViewSidebar fontSize="small" /></ActionIcon>
             <ActionIcon title="Focus mode (Tab on canvas)" active={state.focusMode}
               onClick={() => state.setFocusMode(!state.focusMode)}><FlipToFront fontSize="small" /></ActionIcon>
-            <ActionIcon title="Customize workspace and shortcuts" onClick={() => setSettingsOpen(true)}>
+            </>}<ActionIcon title="Customize workspace and shortcuts" onClick={() => setSettingsOpen(true)}>
               <Settings fontSize="small" />
             </ActionIcon>
             <ActionIcon title="Choose appearance"  onClick={event => {
               setThemeAnchor(event.currentTarget);
             }}><Palette fontSize="small" /></ActionIcon>
-            <ActionIcon title="Huelith Originals · Create and animate" onClick={() => state.setCreativePanelOpen(!state.creativePanelOpen)}>
+            {!homeOpen && !videoProject && <ActionIcon title="Huelith Originals · Create and animate" onClick={() => state.setCreativePanelOpen(!state.creativePanelOpen)}>
               <AutoAwesome fontSize="small" />
-            </ActionIcon>
-            <WindowControls />
+            </ActionIcon>}
+            <WindowControls extraDirty={Boolean(videoProject && !videoSaved)} onSaveExtra={saveVideoProject} />
           </div>
-        </header>
+        </header>}
 
-        <DocumentTabs state={state} openNew={() => setNewOpen(true)} />
+        {homeOpen&&videoRecoveries.length>0&&<Alert severity="info" action={<><Button onClick={()=>{
+          if(!canReplaceVideo())return;
+          const recovery=videoRecoveries[videoRecoveryIndex]??videoRecoveries[0];
+          setVideoProject(recovery.project);setVideoPath(recovery.path);setVideoSaved(false);setHomeOpen(false);setCanResume(true);
+          setVideoRecoveries(items=>items.filter(item=>item.project.id!==recovery.project.id));setVideoRecoveryIndex(0);
+        }}>Restore video</Button><Button onClick={()=>{
+          const recovery=videoRecoveries[videoRecoveryIndex]??videoRecoveries[0];
+          void clearVideoRecovery(recovery.project.id);
+          setVideoRecoveries(items=>items.filter(item=>item.project.id!==recovery.project.id));setVideoRecoveryIndex(0);
+        }}>Dismiss project recovery</Button></>}>
+          Unsaved video recovery{' '}
+          <select aria-label="Video recovery version" value={Math.min(videoRecoveryIndex,videoRecoveries.length-1)} onChange={event=>setVideoRecoveryIndex(Number(event.target.value))}>
+            {videoRecoveries.map((item,index)=><option key={`${item.project.id}-${item.savedAt}`} value={index}>
+              {item.project.name} · {new Date(item.savedAt).toLocaleString()}{item.version?' · Earlier version':''}
+            </option>)}
+          </select>
+        </Alert>}
+        {homeOpen ? <CreativeHub onCreate={startNew} onOpen={openImageFromHome}
+          onResume={canResume ? () => setHomeOpen(false) : undefined}
+          onOpenRecent={entry => { void openRecent(entry); }} onOpenVideo={() => { void openVideoFile().catch(handleError); }}/>
+        : videoProject ? <VideoWorkspace project={videoProject} onHistoryChange={setVideoHistory} onChange={next => { setVideoProject(next); setVideoSaved(false); }}
+          onOpenCopy={next=>{setVideoProject(next);setVideoPath(undefined);setVideoSaved(false);}}/>
+        : <>
+        <DocumentTabs state={state} openNew={() => startNew('image')} />
         <div className="editor-grid">
-          {state.toolsOpen && !state.focusMode && <ToolRail state={state} openNew={() => setNewOpen(true)} />}
+          {state.toolsOpen && !state.focusMode && <ToolRail state={state} openNew={() => startNew('image')} />}
           <main className="main-editor">
             {(state.tool === 'gradient' || (() => { const layer = activeLayer(state); return layer?.type === 'gradient' || layer?.type === 'vector' && layer.shapes.some(shape => shape.kind === 'gradient' && shape.id === state.selectedShapeId); })())
               ? <GradientDesignerToolbar state={state} /> : <ContextToolbar state={state} />}
@@ -1503,12 +1694,12 @@ export default function App() {
                 {doc.width} × {doc.height} px
                 <span className="status-sep">|</span>{doc.layers.length} layers
                 <span className="status-sep">|</span>{state.workspace} theme
-                <span className="status-sep">|</span>Huelith 0.2
+                <span className="status-sep">|</span>Huelith 0.3 dev
               </div>
             </footer>
           </main>
           {state.inspectorOpen && !state.focusMode && <Inspector state={state} />}
-        </div>
+        </div></>}
 
 
         <AuroraSettings open={settingsOpen} onClose={() => setSettingsOpen(false)}
@@ -1516,7 +1707,7 @@ export default function App() {
           shortcutTools={tools.filter(tool => !['roundedRect', 'triangle', 'polygon', 'star', 'arrow', 'heart', 'ring'].includes(tool.id))} />
 
         <Dialog open={newOpen} onClose={() => setNewOpen(false)} fullWidth maxWidth="xs">
-          <DialogTitle>{newAnimation ? 'New animation' : 'New document'}</DialogTitle>
+          <DialogTitle>{newVideo ? 'New video project' : newAnimation ? 'New animation' : 'New image project'}</DialogTitle>
           <DialogContent>
             <Stack spacing={2} sx={{ pt: 1 }}>
               <TextField label="Document name" value={name} onChange={event => setName(event.target.value)} />
@@ -1526,10 +1717,15 @@ export default function App() {
                 <TextField label="Height (px)" type="number" value={height}
                   onChange={event => setHeight(Number(event.target.value))} />
               </Stack>
-              <label className="project-kind"><input aria-label="Create animation project" type="checkbox"
-                checked={newAnimation} onChange={event => setNewAnimation(event.target.checked)} />
-                Frame-by-frame animation project (timeline & onion skins)</label>
-              <Typography variant="body2">Background</Typography>
+              {(newAnimation || newVideo) && <><Stack direction="row" spacing={2}>
+                <TextField sx={{flex:1,minWidth:0}} label="Frame rate (fps)" type="number" value={videoFps} slotProps={{ htmlInput: { min: 1, max: 120, step: 1 } }}
+                  onChange={event => setVideoFps(Number(event.target.value))} />
+                {newVideo && <TextField sx={{flex:1,minWidth:0}} label="Aspect ratio" select defaultValue="16:9" onChange={event => {
+                  const presets: Record<string,[number,number]> = { '16:9':[1920,1080], '9:16':[1080,1920], '1:1':[1080,1080], '4:3':[1440,1080] };
+                  const preset=presets[event.target.value]; if(preset){setWidth(preset[0]);setHeight(preset[1]);}
+                }}><MenuItem value="16:9">16:9</MenuItem><MenuItem value="9:16">9:16</MenuItem><MenuItem value="1:1">1:1</MenuItem><MenuItem value="4:3">4:3</MenuItem></TextField>}
+              </Stack>{newVideo&&<Typography variant="caption">Import your media, arrange tracks, and add music, text, effects and captions. Your source files stay untouched.</Typography>}</>}
+              {!newVideo && <><Typography variant="body2">Background</Typography>
               <Stack direction="row" spacing={1} alignItems="center">
                 <Button variant={background === '#ffffff' ? 'contained' : 'outlined'} size="small"
                   onClick={() => setBackground('#ffffff')}>White</Button>
@@ -1538,12 +1734,12 @@ export default function App() {
                 <input aria-label="Custom background" title="Custom background" type="color"
                   value={background === 'transparent' ? '#ffffff' : background}
                   onChange={event => setBackground(event.target.value)} />
-              </Stack>
+              </Stack></>}
             </Stack>
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setNewOpen(false)}>Cancel</Button>
-            <Button variant="contained" onClick={create}>{newAnimation ? 'Create animation' : 'Create document'}</Button>
+            <Button variant="contained" onClick={create}>{newVideo ? 'Create video project' : newAnimation ? 'Create animation' : 'Create image project'}</Button>
           </DialogActions>
         </Dialog>
 
@@ -1591,7 +1787,8 @@ export default function App() {
         </Snackbar>
 
         <Menu anchorEl={themeAnchor} open={Boolean(themeAnchor)} onClose={() => setThemeAnchor(null)}
-          slotProps={{ paper: { className: `theme-menu-popup theme-${state.workspace} tone-${state.appearanceMode}` } }}>
+          slotProps={{ paper: { className: `theme-menu-popup theme-${state.workspace} tone-${state.appearanceMode}`,
+            style:themeVariables(state.workspace,state.appearanceMode) as CSSProperties } }}>
           <div className="theme-menu-heading">Appearance <span>Choose a mood</span></div>
           <div className="theme-tone-switch" role="group" aria-label="Appearance brightness">
             <button type="button" className={state.appearanceMode === 'light' ? 'active' : ''}
@@ -1599,46 +1796,25 @@ export default function App() {
             <button type="button" className={state.appearanceMode === 'dark' ? 'active' : ''}
               onClick={() => state.setAppearanceMode('dark')}>☾ Dark</button>
           </div>
-          <div className="theme-menu-subheading">COLORFUL COLLECTION</div>
-          {([ 
-            { id: 'strawberry', name: 'Strawberry', subtitle: 'Berry milk · fresh pink' },
-            { id: 'melon', name: 'Melon', subtitle: 'Mint · airy · botanical' },
-            { id: 'peach', name: 'Peach', subtitle: 'Warm coral · creamy' },
-            { id: 'lemon', name: 'Lemon', subtitle: 'Citrus · bright · crisp' },
-            { id: 'mango', name: 'Mango', subtitle: 'Golden · playful' },
-            { id: 'sakura', name: 'Sakura', subtitle: 'Petals · pearl · delicate' },
-            { id: 'blossom', name: 'Blossom', subtitle: 'Lavender · floral' },
-            { id: 'shadow', name: 'Shadow', subtitle: 'Graphite · subdued' },
-          ] as const).map(choice => (
-            <MenuItem key={choice.id} selected={state.workspace === choice.id} onClick={() => {
-              state.setWorkspace(choice.id);
-              setThemeAnchor(null);
-            }}>
-              <span className={`theme-preview theme-preview-${choice.id}`} />
-              <span className="theme-option"><strong>{choice.name}</strong><small>{choice.subtitle}</small></span>
-              {state.workspace === choice.id && <span className="theme-tick">✓</span>}
-            </MenuItem>
-          ))}
-          <div className="theme-menu-subheading">WORKSPACE ORIGINALS</div>
-          {([
-            { id: 'glass', name: 'Spectrum Glass', subtitle: 'Luminous translucent surfaces' },
-            { id: 'material', name: 'Material You', subtitle: 'Soft material shapes' },
-            { id: 'classic', name: 'Classic Desktop', subtitle: 'Dense traditional chrome' },
-            { id: 'midnight', name: 'Spectrum Midnight', subtitle: 'Quiet darkroom' },
-            { id: 'studio', name: 'Spectrum Studio', subtitle: 'Professional utility' },
-          ] as const).map(choice => (
-            <MenuItem key={choice.id} selected={state.workspace === choice.id} onClick={() => {
-              state.setWorkspace(choice.id);
-              setThemeAnchor(null);
-            }}>
-              <span className={`theme-preview theme-preview-${choice.id}`} />
-              <span className="theme-option"><strong>{choice.name}</strong><small>{choice.subtitle}</small></span>
-              {state.workspace === choice.id && <span className="theme-tick">✓</span>}
-            </MenuItem>
-          ))}
+          {THEME_COLLECTIONS.flatMap(collection=>[
+            <ListSubheader key={collection.name} className="theme-menu-subheading">{collection.name}</ListSubheader>,
+            ...collection.themes.map(id=>{
+              const choice=THEME_IDENTITIES[id];
+              return <MenuItem key={id} selected={state.workspace===id} onClick={()=>{
+                state.setWorkspace(id);
+                setThemeAnchor(null);
+              }}>
+                <span className={`theme-preview theme-preview-${id}`} aria-hidden="true"
+                  style={themeVariables(id,state.appearanceMode) as CSSProperties}>{choice.glyph}</span>
+                <span className="theme-option"><strong>{choice.name}</strong><small>{choice.subtitle}</small></span>
+                {state.workspace===id&&<span className="theme-tick">✓</span>}
+              </MenuItem>;
+            }),
+          ])}
         </Menu>
 
         <Menu anchorEl={exportAnchor} open={Boolean(exportAnchor)} onClose={() => setExportAnchor(null)}>
+          {doc.animation&&<MenuItem onClick={()=>{state.commitTextDraft();setExportAnchor(null);setAnimationExportOpen(true);}}>Animation MP4…</MenuItem>}
           {(['png', 'jpeg', 'webp', 'svg'] as const).map(format => (
             <MenuItem key={format} onClick={() => {
               setExportAnchor(null);
@@ -1648,6 +1824,9 @@ export default function App() {
             </MenuItem>
           ))}
         </Menu>
+        <VideoExportDialog open={animationExportOpen} name={doc.name} width={doc.width} height={doc.height} fps={doc.animation?.fps??24}
+          onClose={()=>setAnimationExportOpen(false)} onExport={(settings,signal,progress)=>exportAnimationMp4(activeTab(useEditor.getState()).doc,settings,progress,signal)}
+          onComplete={report=>setNotice(`Animation MP4 exported · ${report.framesWritten} frames`)}/>
       </div>
     </ThemeProvider>
   );

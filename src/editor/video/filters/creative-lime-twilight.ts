@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"creative-lime-twilight","name":"Lime Twilight","category":"Creative","description":"Creative color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1144,"contrast":0.9848,"saturation":1.2619,"gamma":0.9973,"lift":0.0318,"temperature":-0.0287,"tint":0.3371,"fade":0.1949,"shadow":[0.0049,0.075,-0.0375],"highlight":[-0.0056,-0.0075,0.075],"split":0.3044,"hue":-6.767}};

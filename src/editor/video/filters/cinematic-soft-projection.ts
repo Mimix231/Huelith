@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"cinematic-soft-projection","name":"Soft Projection","category":"Cinematic","description":"Cinematic color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0797,"contrast":1.2109,"saturation":1.0073,"gamma":1.0441,"lift":0.0058,"temperature":-0.1328,"tint":0.158,"fade":0.0963,"shadow":[0.0425,0.075,-0.0375],"highlight":[-0.0075,0.0182,0.075],"split":0.3425,"hue":2.752}};

@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"food-lemon-picnic","name":"Lemon Picnic","category":"Food","description":"Food color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0649,"contrast":1.1414,"saturation":1.2,"gamma":1.0469,"lift":0.0238,"temperature":0.6305,"tint":0.1261,"fade":0.0316,"shadow":[0.075,-0.0143,-0.0375],"highlight":[-0.0075,0.075,0.0425],"split":0.3917,"hue":-4.885}};

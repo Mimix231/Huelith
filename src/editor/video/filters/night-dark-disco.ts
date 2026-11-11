@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"night-dark-disco","name":"Dark Disco","category":"Night","description":"Night color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0154,"contrast":1.2584,"saturation":0.984,"gamma":0.9237,"lift":-0.0224,"temperature":-0.1358,"tint":-0.1273,"fade":0.1225,"shadow":[0.075,-0.0143,-0.0375],"highlight":[-0.0075,0.075,0.0425],"split":0.4668,"hue":-5.063}};

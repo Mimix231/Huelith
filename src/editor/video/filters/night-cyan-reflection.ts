@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"night-cyan-reflection","name":"Cyan Reflection","category":"Night","description":"Night color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1672,"contrast":1.2123,"saturation":0.9292,"gamma":1.0047,"lift":-0.0058,"temperature":-0.5138,"tint":0.2855,"fade":0.1476,"shadow":[0.0747,-0.0375,0.075],"highlight":[0.0423,0.075,-0.0075],"split":0.3159,"hue":5.476}};

@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"retro-copper-cassette","name":"Copper Cassette","category":"Retro","description":"Retro color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.188,"contrast":1.0282,"saturation":0.9709,"gamma":1.1822,"lift":0.0634,"temperature":0.3969,"tint":-0.1903,"fade":0.1367,"shadow":[-0.0375,0.075,0.0562],"highlight":[0.075,-0.0075,0.0558],"split":0.257,"hue":-5.467}};

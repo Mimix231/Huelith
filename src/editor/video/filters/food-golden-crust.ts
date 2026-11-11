@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"food-golden-crust","name":"Golden Crust","category":"Food","description":"Food color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1052,"contrast":1.0848,"saturation":1.0824,"gamma":0.9614,"lift":0.0025,"temperature":0.5134,"tint":-0.0259,"fade":0.0305,"shadow":[-0.0327,0.075,-0.0375],"highlight":[0.022,-0.0075,0.075],"split":0.271,"hue":1.68}};

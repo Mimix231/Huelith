@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"retro-honey-vinyl","name":"Honey Vinyl","category":"Retro","description":"Retro color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0595,"contrast":0.9061,"saturation":1.005,"gamma":1.1,"lift":0.0549,"temperature":0.4339,"tint":-0.0346,"fade":0.1467,"shadow":[0.0658,0.075,-0.0375],"highlight":[-0.0075,0.0352,0.075],"split":0.2727,"hue":1.756}};

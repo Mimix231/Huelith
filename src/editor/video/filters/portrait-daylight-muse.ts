@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"portrait-daylight-muse","name":"Daylight Muse","category":"Portrait","description":"Portrait color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1313,"contrast":1.0383,"saturation":1.0236,"gamma":1.0086,"lift":0.0383,"temperature":0.0982,"tint":0.3379,"fade":0.02,"shadow":[-0.0375,0.075,0.0186],"highlight":[0.0666,-0.0075,0.075],"split":0.2079,"hue":3.391}};

@@ -82,11 +82,13 @@ test('Transform grip outside document is actionable; other outside selections re
 test('Theme-specific surface and emblem system including Sakura blossom has distinct palettes',()=>{
  const css=fs.readFileSync(path.join(root,'../styles/workspace-modern.css'),'utf8');
  const app=fs.readFileSync(path.join(root,'../App.tsx'),'utf8');
+ const identities=fs.readFileSync(path.join(root,'../settings/theme-catalog.ts'),'utf8');
  for(const theme of ['sakura','blossom','strawberry','melon','peach','lemon','mango','shadow','material','glass','midnight','classic','studio']){
    assert.match(css,new RegExp('theme-'+theme));
  }
  assert.match(css,/#fff8fc/);assert.match(css,/#9e53b3/);assert.match(css,/--accent/);
- assert.match(app,/sakura:"❀"/);
+ assert.match(identities,/sakura:\{[^\n]*glyph:'❀'/);
+ assert.match(app,/THEME_IDENTITIES\[state.workspace\]\.glyph/);
 });
 
 test('Animation Studio idle-timer fallback uses a supported global timer (no never-typed window narrowing)',()=>{

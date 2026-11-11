@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"retro-lilac-replay","name":"Lilac Replay","category":"Retro","description":"Retro color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1231,"contrast":0.8736,"saturation":1.0432,"gamma":1.159,"lift":0.0644,"temperature":0.1786,"tint":0.2325,"fade":0.1382,"shadow":[0.075,-0.0375,0.061],"highlight":[0.0317,0.075,-0.0075],"split":0.3194,"hue":-3.023}};

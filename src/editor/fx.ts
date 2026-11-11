@@ -1,6 +1,6 @@
 import { createSurface } from './canvas-surface';
 import { uid, type Effect, type EffectKind, type Layer } from './types';
-import { FILTER_CATALOG, FILTER_CONTROL_MAP } from './effect-catalog';
+import { FILTER_CATALOG, FILTER_CONTROL_MAP, LEGACY_CUTOUT } from './effect-catalog';
 import { applyEffect } from './effect-ops';
 import { EFFECT_PARAMETER_SCHEMA, defaultParameters } from './effect-schema';
 import { effectPreviewScale, previewCacheVictim, isInteractiveEffectPreview } from './preview-quality';
@@ -54,7 +54,7 @@ export const FX_PRESETS: Record<string, { kind: EffectKind; amount: number; colo
 
 
 export function newEffect(kind: EffectKind, amount?: number, color?: string, parameters?: Effect['parameters']): Effect {
-  const definition = FILTERS.find(item => item.kind === kind);
+  const definition = kind === 'cutout' ? LEGACY_CUTOUT : FILTERS.find(item => item.kind === kind);
   return {
     id: uid(), kind, enabled: true,
     amount: clampEffectAmount(kind, amount ?? definition?.initial ?? 100),

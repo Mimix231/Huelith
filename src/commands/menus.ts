@@ -2,7 +2,7 @@ import { CREATIVE_DEFINITIONS, type CreativeKind } from '../editor/creative';
 /** One action registry for compact native-style menu categories. No hidden placeholder actions. */
 export type MenuAction =
   | 'new-document' | 'new-animation' | 'open' | 'import' | 'paste' | 'copy'
-  | 'save' | 'save-as' | 'export-png' | 'export-svg' | 'export-apng' | 'export-sheet' | 'export-frames'
+  | 'save' | 'save-as' | 'export-png' | 'export-svg' | 'export-apng' | 'export-mp4' | 'export-sheet' | 'export-frames'
   | 'create-meme' | 'export-meme-png' | 'export-meme-jpeg' | 'export-meme-webp' | 'resize-image' | 'resize-canvas' | 'crop-selection' | 'trim-transparent'
   | 'rotate-cw' | 'rotate-ccw' | 'rotate-180' | 'flip-horizontal' | 'flip-vertical' | 'precision-transform'
   | 'rasterize-layer' | 'align-horizontal' | 'align-vertical' | 'fit-layer'
@@ -37,6 +37,7 @@ export const MENUS: Record<string, MenuSection[]> = {
       { id: 'export-png', label: 'Export PNG' },
       { id: 'export-svg', label: 'Export SVG' },
       { id: 'export-apng', label: 'Export animation (APNG)' },
+      { id: 'export-mp4', label: 'Export animation (MP4)' },
       { id: 'export-sheet', label: 'Export sprite sheet' },
       { id: 'export-frames', label: 'Export frame ZIP' },
     ] },

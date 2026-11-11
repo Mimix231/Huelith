@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"creative-solar-orchid","name":"Solar Orchid","category":"Creative","description":"Creative color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0144,"contrast":1.1268,"saturation":1.1307,"gamma":1.0514,"lift":0.002,"temperature":0.0824,"tint":0.0042,"fade":0.2025,"shadow":[0.075,0.009,-0.0375],"highlight":[-0.0075,0.075,0.0596],"split":0.5148,"hue":-17.198}};

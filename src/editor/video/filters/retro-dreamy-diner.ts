@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"retro-dreamy-diner","name":"Dreamy Diner","category":"Retro","description":"Retro color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.2198,"contrast":0.9495,"saturation":0.9782,"gamma":1.1892,"lift":0.0567,"temperature":-0.0141,"tint":-0.0613,"fade":0.1543,"shadow":[-0.0183,0.075,-0.0375],"highlight":[0.0115,-0.0075,0.075],"split":0.2899,"hue":2.065}};

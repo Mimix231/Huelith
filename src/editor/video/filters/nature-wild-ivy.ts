@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"nature-wild-ivy","name":"Wild Ivy","category":"Nature","description":"Nature color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.1616,"contrast":1.1785,"saturation":1.1212,"gamma":1.072,"lift":0.0093,"temperature":0.0964,"tint":0.2002,"fade":0.0523,"shadow":[-0.0183,0.075,-0.0375],"highlight":[0.0115,-0.0075,0.075],"split":0.2946,"hue":3.91}};

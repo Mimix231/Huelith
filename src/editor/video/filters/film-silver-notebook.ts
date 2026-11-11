@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"film-silver-notebook","name":"Silver Notebook","category":"Film","description":"Film color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.192,"contrast":0.9266,"saturation":0.8792,"gamma":1.1128,"lift":0.058,"temperature":0.1446,"tint":0.0344,"fade":0.1354,"shadow":[0.075,-0.0375,0.0145],"highlight":[-0.0024,0.075,-0.0075],"split":0.3427,"hue":-2.265}};

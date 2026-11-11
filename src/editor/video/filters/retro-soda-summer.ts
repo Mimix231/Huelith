@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"retro-soda-summer","name":"Soda Summer","category":"Retro","description":"Retro color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0853,"contrast":0.9511,"saturation":1.1099,"gamma":1.134,"lift":0.0493,"temperature":0.0191,"tint":-0.3458,"fade":0.1334,"shadow":[-0.0095,-0.0375,0.075],"highlight":[0.075,0.0461,-0.0075],"split":0.1094,"hue":3.565}};

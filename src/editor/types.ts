@@ -67,6 +67,8 @@ export interface BackgroundMaskStroke {
 }
 
 export interface EffectParameters {
+  /** Explicit discrete palette size; older colorMix values retain their mapping. */
+  paletteSize?: number;
   /** 0 = manual mask only, 1 = conservative border-connected detection. */
   backgroundAuto?: number;
   /** New Phase AJ engine. Missing value retains the legacy color selection behavior. */
@@ -392,12 +394,13 @@ export interface Document {
 
 export type Tool = 'roundedRect' | 'triangle' | 'polygon' | 'star' | 'arrow' | 'heart' | 'ring' | 'diamond' | 'speechBubble' | 'crescent' | 'cross' | 'gradient' | 'pencil' | 'freehand' | 'move' | 'node' | 'marquee' | 'magicWand' | 'lassoSelect' | 'polySelect' | 'magneticLasso' | 'bucket' | 'smudge' | 'blurBrush' | 'sharpenBrush' | 'dodge' | 'burn' | 'patternBrush' | 'symmetryBrush' | 'hand' | 'brush' | 'ink' | 'eraser' | 'eyedropper' | 'rectangle' | 'ellipse' | 'line' | 'pen' | 'text';
 export type Workspace = 'glass' | 'material' | 'classic' | 'midnight' | 'studio'
-  | 'strawberry' | 'melon' | 'peach' | 'lemon' | 'mango' | 'sakura' | 'blossom' | 'shadow';
+  | 'strawberry' | 'melon' | 'peach' | 'lemon' | 'mango' | 'sakura' | 'blossom' | 'shadow'
+  | 'forest' | 'ember' | 'blueprint' | 'porcelain';
 export type AppearanceMode = 'light' | 'dark';
 
 const blendModes: ReadonlySet<string> = new Set(['source-over', 'multiply', 'screen', 'overlay', 'darken', 'lighten']);
 import { FILTER_CATALOG } from './effect-catalog';
-const effectKinds = new Set<string>(FILTER_CATALOG.map(item => item.kind));
+const effectKinds = new Set<string>([...FILTER_CATALOG.map(item => item.kind),'cutout']);
 const kinds: ReadonlySet<string> = new Set(['gradient', 'diamond', 'speechBubble', 'crescent', 'cross', 'rect', 'ellipse', 'line', 'path', 'text', 'roundedRect', 'triangle', 'polygon', 'star', 'arrow', 'heart', 'ring']);
 const MAX_PIXELS = 64_000_000;
 

@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"portrait-soft-lavender","name":"Soft Lavender","category":"Portrait","description":"Portrait color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.1983,"contrast":1.0455,"saturation":1.0169,"gamma":1.1124,"lift":0.0267,"temperature":-0.0443,"tint":0.1351,"fade":0.028,"shadow":[0.075,0.0466,-0.0375],"highlight":[-0.0075,0.0628,0.075],"split":0.3881,"hue":-4.697}};

@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"film-bronze-keepsake","name":"Bronze Keepsake","category":"Film","description":"Film color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.0332,"contrast":1.0571,"saturation":0.9659,"gamma":1.0939,"lift":0.0497,"temperature":0.0277,"tint":-0.3291,"fade":0.141,"shadow":[0.0514,-0.0375,0.075],"highlight":[0.0593,0.075,-0.0075],"split":0.3857,"hue":4.431}};

@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"monochrome-platinum-paper","name":"Platinum Paper","category":"Monochrome","description":"Monochrome color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.1797,"contrast":1.2446,"saturation":0,"gamma":1.0513,"lift":0.0083,"temperature":0.0907,"tint":0.1016,"fade":0.0363,"shadow":[0.0282,0.075,-0.0375],"highlight":[-0.0075,0.0076,0.075],"split":0.3779,"hue":-2.076}};

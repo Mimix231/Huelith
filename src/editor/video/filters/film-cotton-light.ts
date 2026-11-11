@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"film-cotton-light","name":"Cotton Light","category":"Film","description":"Film color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0818,"contrast":1.1271,"saturation":0.838,"gamma":1.049,"lift":0.0582,"temperature":0.3892,"tint":-0.2563,"fade":0.1122,"shadow":[-0.0095,-0.0375,0.075],"highlight":[0.075,0.0461,-0.0075],"split":0.539,"hue":-4.795}};

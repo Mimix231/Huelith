@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"cinematic-violet-district","name":"Violet District","category":"Cinematic","description":"Cinematic color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.176,"contrast":1.173,"saturation":0.9928,"gamma":0.9107,"lift":0.0046,"temperature":0.242,"tint":-0.0649,"fade":0.0504,"shadow":[0.0138,-0.0375,0.075],"highlight":[0.075,0.0631,-0.0075],"split":0.4761,"hue":6.926}};

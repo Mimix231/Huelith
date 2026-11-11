@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"night-starlit-glass","name":"Starlit Glass","category":"Night","description":"Night color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.1783,"contrast":1.1829,"saturation":1.0637,"gamma":0.9955,"lift":0.0093,"temperature":-0.4507,"tint":0.1972,"fade":0.1189,"shadow":[-0.0375,0.0706,0.075],"highlight":[0.075,-0.0075,0.0387],"split":0.5252,"hue":-1.429}};

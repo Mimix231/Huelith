@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"night-blue-neon","name":"Blue Neon","category":"Night","description":"Night color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0186,"contrast":1.1374,"saturation":0.9345,"gamma":0.8839,"lift":-0.0325,"temperature":-0.0168,"tint":0.3464,"fade":0.1206,"shadow":[0.0514,-0.0375,0.075],"highlight":[0.0593,0.075,-0.0075],"split":0.3821,"hue":-2.921}};

@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"portrait-velvet-blush","name":"Velvet Blush","category":"Portrait","description":"Portrait color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.2198,"contrast":0.9272,"saturation":0.8838,"gamma":1.0393,"lift":0.0244,"temperature":0.122,"tint":-0.0691,"fade":0.0239,"shadow":[0.0282,0.075,-0.0375],"highlight":[-0.0075,0.0076,0.075],"split":0.3674,"hue":6.171}};

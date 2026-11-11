@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"night-electric-horizon","name":"Electric Horizon","category":"Night","description":"Night color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.1187,"contrast":1.1755,"saturation":1.015,"gamma":0.9525,"lift":-0.019,"temperature":-0.5178,"tint":0.2306,"fade":0.1469,"shadow":[0.075,-0.0375,0.0145],"highlight":[-0.0024,0.075,-0.0075],"split":0.2175,"hue":5.187}};

@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"nature-botanical-shade","name":"Botanical Shade","category":"Nature","description":"Nature color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":0.0819,"contrast":1.0905,"saturation":1.1109,"gamma":1.0861,"lift":0.0065,"temperature":-0.393,"tint":0.1757,"fade":0.0259,"shadow":[-0.0375,0.075,0.0418],"highlight":[0.075,-0.0075,0.0663],"split":0.5155,"hue":5.109}};

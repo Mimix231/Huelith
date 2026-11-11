@@ -107,6 +107,7 @@ type RetainedMatte = {
   data: Uint8ClampedArray;
   matte: { foreground: Uint8Array; mode: SilhouetteSource };
   distances?: Float32Array;
+  edgeDistances?: {sensitivity:number;distance:Float32Array};
 };
 const retainedMattes = new WeakMap<HTMLCanvasElement, RetainedMatte>();
 const matteLRU: HTMLCanvasElement[] = [];
@@ -119,12 +120,12 @@ function rememberMatte(canvas: HTMLCanvasElement, value: RetainedMatte): void {
   let bytes = 0;
   for (const item of matteLRU) {
     const entry = retainedMattes.get(item);
-    if (entry) bytes += entry.data.byteLength + entry.matte.foreground.byteLength + (entry.distances?.byteLength ?? 0);
+    if (entry) bytes += entry.data.byteLength + entry.matte.foreground.byteLength + (entry.distances?.byteLength ?? 0) + (entry.edgeDistances?.distance.byteLength ?? 0);
   }
   while (bytes > MATTE_CACHE_BUDGET && matteLRU.length > 1) {
     const victim = matteLRU.shift()!;
     const entry = retainedMattes.get(victim);
-    bytes -= (entry?.data.byteLength ?? 0) + (entry?.matte.foreground.byteLength ?? 0) + (entry?.distances?.byteLength ?? 0);
+    bytes -= (entry?.data.byteLength ?? 0) + (entry?.matte.foreground.byteLength ?? 0) + (entry?.distances?.byteLength ?? 0) + (entry?.edgeDistances?.distance.byteLength ?? 0);
     retainedMattes.delete(victim);
   }
 }
@@ -172,6 +173,7 @@ export function renderSubjectOutline(source: HTMLCanvasElement, effect: Effect):
     // Draw meaningful object contours instead of highlighting its rectangle.
     const at = (x: number, y: number): number => (y * width + x) * 4;
     const lum = (i: number): number => (data[i] * 0.2126 + data[i + 1] * 0.7152 + data[i + 2] * 0.0722);
+    const ridge=advanced?new Uint8Array(width*height):null;
     for (let y = 1; y < height - 1; y++) for (let x = 1; x < width - 1; x++) {
       const left = lum(at(x - 1, y));
       const right = lum(at(x + 1, y));
@@ -179,9 +181,30 @@ export function renderSubjectOutline(source: HTMLCanvasElement, effect: Effect):
       const down = lum(at(x, y + 1));
       const edge = limit((Math.hypot(right - left, down - up) - (advanced ? 75 - sensitivity * 0.65 : 30)) / 85, 0, 1);
       if (edge < 0.08) continue;
+      if(ridge){ridge[y*width+x]=1;continue;}
       const i = at(x, y);
       pix[i] = color[0]; pix[i + 1] = color[1]; pix[i + 2] = color[2];
       pix[i + 3] = Math.round(edge * opacity * strength * 245);
+    }
+    if(ridge){
+      // Dilate actual internal contours by the requested stroke width. Previously
+      // every opaque-image width rendered the same one-pixel Sobel ridge.
+      const distance=geometry.edgeDistances?.sensitivity===sensitivity?geometry.edgeDistances.distance:distanceToForeground(ridge,width,height);
+      geometry.edgeDistances={sensitivity,distance};
+      if(isImmutableEffectSource(source))rememberMatte(source,geometry);
+      const halfWidth=radius*.5;
+      for(let k=0;k<ridge.length;k++){
+        const d=distance[k],core=limit(halfWidth+.5-d,0,1);
+        const soft=softness>0?Math.exp(-((Math.max(0,d-halfWidth)/softness)**2)*2):0;
+        const secondStart=halfWidth+gap;
+        const secondary=['double','neon','electric','gradient'].includes(style)?limit(Math.min(d-secondStart+1,secondStart+secondWidth-d),0,1):0;
+        const luminous=['neon','soft','electric'].includes(style)?soft*.3:style==='soft'?soft*.2:0;
+        const electric=style==='electric'?.55+.45*Math.sin(k*.013+d*1.8):1;
+        const alpha=limit((core*(style==='soft'?.53:.92)+secondary*.85+luminous)*opacity*electric,0,1);
+        if(alpha<=.005)continue;
+        const c=secondary>.35||style==='gradient'&&d>halfWidth*.55?edgeColor:color,i=k*4;
+        pix[i]=c[0];pix[i+1]=c[1];pix[i+2]=c[2];pix[i+3]=Math.round(alpha*255);
+      }
     }
   } else {
     const distances = geometry.distances ?? distanceToForeground(matte.foreground, width, height);

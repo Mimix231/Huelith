@@ -1,5 +1,5 @@
 /** Hyper Outline (layer version): editable true-distance alpha contour. Advanced
- * gradient/double/electric styles retain the existing subject-outline engine.
+ * gradient/double/electric styles use width-aware internal contours on opaque art.
  */
 import type {Effect} from '../types';
 import {read,write} from './detail-core';

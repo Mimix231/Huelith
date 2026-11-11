@@ -1,0 +1,2 @@
+import type {VideoFilter} from './types';
+export const look:VideoFilter={"id":"film-golden-diary","name":"Golden Diary","category":"Film","description":"Film color treatment with balanced tonal curves and split-color shadows.","recipe":{"exposure":-0.1415,"contrast":1.0401,"saturation":0.8439,"gamma":1.0995,"lift":0.0334,"temperature":0.0555,"tint":-0.3235,"fade":0.1173,"shadow":[-0.0238,-0.0375,0.075],"highlight":[0.075,0.0355,-0.0075],"split":0.4145,"hue":0.087}};
