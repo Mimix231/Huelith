@@ -7,7 +7,7 @@ const read = name => fs.readFileSync(path.join(root, name), 'utf8');
 
 test('Studio queues worker results AND invalidates canvas when setting changes', () => {
   const store = read('src/editor/store.ts');
-  const dispatch = store.match(/function announceStudioPreview\([\s\S]*?\n}\n/);
+  const dispatch = store.match(/function announceStudioPreview\([\s\S]*?\r?\n}\r?\n/);
   assert.ok(dispatch);
   assert.match(dispatch[0], /queueLayerEffectPreview\(layerId, effects\)/);
   assert.match(dispatch[0], /dispatchEvent\(new Event\('huelith-studio-preview'\)\)/);

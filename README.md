@@ -132,6 +132,17 @@ The native Tauri backend offers CPU processing and optional GPU acceleration for
 
 ## Run from source
 
+### Windows installer warning
+
+The v0.2-alpha Windows installer is unsigned. Windows SmartScreen may show
+"Unknown publisher" for an unsigned or unfamiliar installer. This warning alone
+does not establish that the app is malicious or safe. Download releases only
+from this repository's official Releases page,
+check the file's publisher/signature and scan it with up-to-date security
+software; do not bypass the warning if you cannot verify the file. A trusted
+code-signing certificate and established application reputation are needed to
+reduce these warnings, and signing does not guarantee they will disappear.
+
 Install Node.js and npm, then start the browser-based editor:
 
 ~~~sh

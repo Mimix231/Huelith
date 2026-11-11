@@ -25,7 +25,7 @@ test('Huelith 0.3-alpha package, lock, native Rust and installer versions agree'
   assert.match(rust, /^name = "huelith"$/m);
   assert.match(rust, /^version = "0.3.0-alpha.0"$/m);
   assert.match(rust, /^name = "huelith_lib"$/m);
-  assert.match(rustLock, /name = "huelith"\nversion = "0.3.0-alpha.0"/);
+  assert.match(rustLock, /name = "huelith"\r?\nversion = "0.3.0-alpha.0"/);
 });
 
 test('Huelith visible UI and native entry point are rebranded', () => {

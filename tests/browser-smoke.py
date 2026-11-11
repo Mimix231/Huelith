@@ -18,7 +18,11 @@ with sync_playwright() as playwright:
     try:
         page = browser.new_page()
         page.goto('about:blank')
+        initialization_errors = []
+        page.on('pageerror', lambda error: initialization_errors.append(str(error)))
         page.add_script_tag(content=bundle)
+        if initialization_errors:
+            raise RuntimeError(f'Browser test bundle failed to initialize: {initialization_errors}')
         checks = page.evaluate(r'''async () => {
           const engine = window.HuelithTest;
           const results = [];
@@ -366,6 +370,7 @@ with sync_playwright() as playwright:
             return count;
           };
           assert('FX library includes at least 60 implemented filters', engine.FILTERS.length >= 60);
+          const unchangedFilters = [];
           for (const item of engine.FILTERS) {
             const input = item.kind === 'cutout' ? (() => {
               const frame = canvas(72, 72);
@@ -375,13 +380,23 @@ with sync_playwright() as playwright:
               frameCtx.fillStyle = '#d33a52';
               frameCtx.fillRect(20, 20, 25, 29);
               return frame;
+            })() : item.kind === 'atelier_1_4' ? (() => {
+              const frame = canvas(72, 72);
+              const frameCtx = frame.getContext('2d');
+              frameCtx.drawImage(palette, 0, 0);
+              frameCtx.fillStyle = '#ffffff';
+              frameCtx.fillRect(32, 32, 8, 8);
+              return frame;
             })() : palette;
             const result = engine.processEffects(input, [engine.newEffect(item.kind, item.initial)]);
+            const inputPixels = input.getContext('2d').getImageData(0, 0, 72, 72).data;
             const difference = item.kind === 'cutout'
               ? pixel(result, 0, 0)[3] !== pixel(input, 0, 0)[3]
-              : countDifferences(result) > 0;
-            assert(`${item.label} modifies actual pixels`, difference);
+              : result.getContext('2d').getImageData(0, 0, 72, 72).data.some(
+                (value, index) => value !== inputPixels[index]);
+            if (!difference) unchangedFilters.push(`${item.label} (${item.kind})`);
           }
+          assert(`filters modify actual pixels: ${unchangedFilters.join(', ')}`, unchangedFilters.length === 0);
           for (const [name, preset] of Object.entries(engine.FX_PRESETS)) {
             const result = engine.processEffects(palette, preset.map(item => engine.newEffect(
               item.kind, item.amount, item.color, item.parameters)));
@@ -491,16 +506,24 @@ with sync_playwright() as playwright:
           assert('Watercolor uses a distinct painterly processor', countDifferences(watercolor) > 200);
           // Diagnostic sweep: each visible scalar control must cause a render change.
           const parametersWithNoVisualChange = [];
-          const diagnosticInput = canvas(40, 40);
+          const diagnosticInput = canvas(80, 80);
           const diagnosticCtx = diagnosticInput.getContext('2d');
-          const diagnosticGrad = diagnosticCtx.createLinearGradient(0, 0, 40, 40);
+          const diagnosticGrad = diagnosticCtx.createLinearGradient(0, 0, 80, 80);
           diagnosticGrad.addColorStop(0, '#e45338');
           diagnosticGrad.addColorStop(0.5, '#265bdb');
           diagnosticGrad.addColorStop(1, '#a9e451');
           diagnosticCtx.fillStyle = diagnosticGrad;
-          diagnosticCtx.fillRect(7, 7, 26, 26);
+          diagnosticCtx.fillRect(7, 7, 66, 66);
           diagnosticCtx.fillStyle = '#f5e0a3';
-          diagnosticCtx.fillRect(15, 17, 9, 10);
+          diagnosticCtx.fillRect(35, 37, 10, 10);
+          diagnosticCtx.fillStyle = '#b0b0b0';
+          diagnosticCtx.fillRect(39, 39, 3, 3);
+          for (let y = 10; y < 70; y += 5) for (let x = 10; x < 70; x += 7) {
+            diagnosticCtx.fillStyle = `rgb(${(x * 17 + y * 3) % 256},${(x * 5 + y * 13) % 256},${(x * 11 + y * 7) % 256})`;
+            diagnosticCtx.fillRect(x, y, 2, 2);
+          }
+          diagnosticCtx.fillStyle = '#ffffff';
+          diagnosticCtx.fillRect(61, 15, 1, 1);
           function differentImages(one, two) {
             const a = one.getContext('2d').getImageData(0, 0, one.width, one.height).data;
             const b = two.getContext('2d').getImageData(0, 0, two.width, two.height).data;
@@ -518,6 +541,13 @@ with sync_playwright() as playwright:
               if (['softness', 'blur', 'spread', 'radius', 'radiusY', 'scale'].includes(control.key)) {
                 lowValue = control.min; highValue = Math.min(control.max, 8);
               }
+              if (kind === 'sharpen' && control.key === 'radius') { lowValue = 1; highValue = 32; }
+              if (kind === 'oilpaint' && control.key === 'brushSize') { lowValue = 2; highValue = 16; }
+              if (kind === 'watercolor' && control.key === 'diffusion') { lowValue = 1; highValue = 12; }
+              if (control.key === 'frequency' || control.key === 'threshold') {
+                lowValue = control.min; highValue = control.max;
+              }
+              if (kind === 'sig_1' && control.key === 'frequency') { lowValue = 25; highValue = 75; }
               if (control.key === 'angle') { lowValue = 0; highValue = 60; }
               if (control.key === 'grainSize') { lowValue = 1; highValue = 6; }
               if (control.key === 'gap') { lowValue = 0; highValue = 2; }
@@ -530,7 +560,8 @@ with sync_playwright() as playwright:
               const checkAmount = kind === 'outline' ? 2 : initial;
               const conditional = kind === 'glow' && control.key === 'threshold' ? { glowMode: 'bloom' }
                 : kind === 'backdrop' && control.key === 'angle' ? { backdropMode: 'gradient' }
-                : kind === 'outline' && control.key === 'edgeSensitivity' ? { silhouetteMode: 'edge' } : {};
+                : kind === 'outline' && control.key === 'edgeSensitivity' ? { silhouetteMode: 'edge' }
+                : kind === 'sig_4' ? { density: 100 } : {};
               const low = engine.newEffect(kind, checkAmount, undefined, { ...conditional, [control.key]: lowValue });
               const high = engine.newEffect(kind, checkAmount, undefined, { ...conditional, [control.key]: highValue });
               const one = engine.processEffects(diagnosticInput, [low]);
@@ -553,6 +584,22 @@ with sync_playwright() as playwright:
           assert('outer glow illuminates outside silhouette', pixel(outerGlow, 20, 36)[3] > 0);
           assert('inner glow leaves exterior transparent', pixel(innerGlow, 20, 36)[3] === 0);
           assert('inner glow changes edge interior', differentImages(innerGlow, lightingSource));
+          const sparkEffect = (mode, sparks) => engine.newEffect('glow', 16, '#c22eff',
+            { glowMode: mode, softness: 17, spread: 1, opacity: 100, sparks });
+          const outerSparks = engine.processEffects(lightingSource, [sparkEffect('outer', 100)]);
+          assert('glow sparks change the visible halo', differentImages(outerSparks, outerGlow));
+          assert('glow sparks are deterministic', !differentImages(outerSparks,
+            engine.processEffects(lightingSource, [sparkEffect('outer', 100)])));
+          const innerSparks = engine.processEffects(lightingSource, [sparkEffect('inner', 100)]);
+          assert('inner glow sparks remain inside the silhouette', pixel(innerSparks, 20, 36)[3] === 0);
+          const opaqueGlowSource = canvas(72, 72);
+          opaqueGlowSource.getContext('2d').fillStyle = '#bababa';
+          opaqueGlowSource.getContext('2d').fillRect(0, 0, 72, 72);
+          assert('glow sparks work on opaque artwork', differentImages(
+            engine.processEffects(opaqueGlowSource, [sparkEffect('outer', 0)]),
+            engine.processEffects(opaqueGlowSource, [sparkEffect('outer', 100)])));
+          assert('glow sparks do not paint an empty canvas', !differentImages(
+            canvas(72, 72), engine.processEffects(canvas(72, 72), [sparkEffect('outer', 100)])));
           const bloom = engine.processEffects(lightingSource, [engine.newEffect('glow', 20, '#ffffff',
             { glowMode: 'bloom', softness: 16, threshold: 110, opacity: 100 })]);
           assert('bloom renders highlights beyond source boundaries', pixel(bloom, 20, 36)[3] > 0);
@@ -659,13 +706,11 @@ with sync_playwright() as playwright:
             })]);
             assert(`${kind} ignores obsolete false-color pairs while preserving source-color displacement`, !differentImages(first,second));
           }
-          const neonLow = engine.processEffects(alpha,[engine.newEffect('sig_1',60,'#a824f6',{
-            radius:12,frequency:0,opacity:100,
+          const neonPhase = frequency => engine.processEffects(alpha,[engine.newEffect('sig_1',60,'#a824f6',{
+            radius:12,frequency,opacity:100,
           })]);
-          const neonHigh = engine.processEffects(alpha,[engine.newEffect('sig_1',60,'#a824f6',{
-            radius:12,frequency:100,opacity:100,
-          })]);
-          assert('Neon intensity at max differs from min rather than looping',differentImages(neonLow,neonHigh));
+          assert('Neon pulse phase changes intensity', differentImages(neonPhase(25),neonPhase(75)));
+          assert('Neon pulse phase loops at the endpoints', !differentImages(neonPhase(0),neonPhase(100)));
           return results;
         }''')
         # Execute the same effect-core bundle inside a real OffscreenCanvas Worker.
