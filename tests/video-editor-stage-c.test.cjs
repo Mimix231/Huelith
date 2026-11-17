@@ -75,11 +75,13 @@ test('Video Editor operates on the project and uses native encoded edited frames
   const exporter=file('src/editor/video/export-timeline.ts');
   for(const feature of ['placeLibraryMedia','splitLinkedClips','trimLinkedClips','moveSelectedClips','deleteClips','addTitle','mediaUrl','enqueueDelivery','setPlaying'])
     assert.ok(component.includes(feature),`${feature} not connected`);
-  assert.ok(exporter.includes('streamNativeVideo'));
+  assert.ok(exporter.includes('exportNativeTimeline'));
   assert.match(file('src/editor/video/delivery.ts'),/await exportEditedVideo/);
-  assert.ok(exporter.includes('compositor.render'));
-  assert.ok(file('src/editor/video/compositor.ts').includes('await seekVideo'));
-  assert.ok(file('src/editor/video/compositor.ts').includes('this.effects.process'));
+  assert.doesNotMatch(exporter,/compositor\.render|TimelineCompositor/);
+  assert.match(file('src/editor/video/native-timeline-export.ts'),/media_export_native_timeline/);
+  assert.match(file('src/components/VideoPreviewCanvas.tsx'),/renderBrowserPreviewFrame/);
+  assert.match(file('src/editor/video/preview-media-sources.ts'),/readNativeTimelineFrame/);
+  assert.match(file('src/editor/video/frame-png.ts'),/renderNativeTimelinePng/);
   assert.ok(file('src/editor/video/effects-worker.ts').includes('processVideoEffects'));
   assert.doesNotMatch(exporter,/(?:from .*ffmpeg|exec\(|exportNativeTestPattern)/i);
   assert.match(component,/mixes audible tracks/);

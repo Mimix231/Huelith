@@ -20,8 +20,12 @@ tauri-plugin-clipboard-manager = "2"
 
 # Enumerate native fonts on Windows, macOS and Linux without hard-coded font lists.
 fontdb = "0.23"
+# Rasterize timeline titles from installed system fonts in the native engine.
+fontdue = "0.9.4"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+# Decode imported still images entirely in the native export process.
+image = { version = "0.25.10", default-features = false, features = ["png", "jpeg", "bmp"] }
 
 # Aurora D: native cross-platform compute backend, no requirement for a dGPU.
 # The CPU backend remains available if no compatible adapter exists.
@@ -35,5 +39,15 @@ windows = { version = "0.62.2", features = [
   "Win32_Foundation", "Win32_System_Com", "Win32_Media_MediaFoundation",
   "Win32_System_Ole", "Win32_System_Com_StructuredStorage", "Win32_System_Variant",
   "Win32_Storage_FileSystem",
+  "Win32_Graphics_Direct3D", "Win32_Graphics_Direct3D11",
+  "Win32_Graphics_Dxgi", "Win32_Graphics_Dxgi_Common",
   "Win32_UI_Shell", "Win32_UI_WindowsAndMessaging",
 ] }
+
+# The Video Editor's exported frames run through the same Media Foundation
+# pixel conversion kernels in desktop development builds. Without this, 1080p
+# debug exports pay unoptimized per-pixel costs and are not representative of
+# the actual release. This only applies to `tauri dev`, not the release profile.
+[profile.dev]
+opt-level = 2
+debug = 1

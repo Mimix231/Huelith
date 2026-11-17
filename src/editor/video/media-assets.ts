@@ -1,5 +1,5 @@
 import type { MediaKind, VideoAsset } from './timeline';
-import { isNativeMediaDesktop } from './native-media';
+import { isNativeMediaDesktop,probeNativeMedia } from './native-media';
 import { convertFileSrc, invoke } from '@tauri-apps/api/core';
 import {libraryMediaUrl} from './library';
 import {loadRasterMedia,GifSource} from './raster-media';
@@ -40,7 +40,16 @@ export async function mediaUrl(asset:VideoAsset):Promise<string> {
   const url=URL.createObjectURL(blob.type?blob:new Blob([blob],{type:mimeOf(asset.name,asset.kind)}));
   paths.set(asset.id,url);sourcePaths.set(asset.id,identity);return url;
 }
-export async function mediaMetadata(url:string,kind:MediaKind,name=''):Promise<{duration:number;width?:number;height?:number;animated?:boolean;animationDuration?:number}> {
+export async function mediaMetadata(url:string,kind:MediaKind,name='',nativePath?:string):Promise<{duration:number;width?:number;height?:number;animated?:boolean;animationDuration?:number}> {
+  if(kind==='video'){
+    // No WebView video decoder is used for imports or metadata probing.
+    if(!nativePath||!isNativeMediaDesktop())throw Error('Video metadata requires a local native Windows media source.');
+    const native=await probeNativeMedia(nativePath);
+    const duration=(native.duration100ns??0)/10_000_000;
+    if(!Number.isFinite(duration)||duration<=0||!native.width||!native.height)
+      throw Error('Media Foundation could not determine the video duration and dimensions.');
+    return {duration,width:native.width,height:native.height};
+  }
   if(kind==='image'){
     const raster=await loadRasterMedia(url,name);
     if(raster)return {duration:5,width:raster.width,height:raster.height,animated:raster instanceof GifSource,animationDuration:raster instanceof GifSource?raster.duration:undefined};
@@ -50,14 +59,13 @@ export async function mediaMetadata(url:string,kind:MediaKind,name=''):Promise<{
     image.onerror=()=>reject(Error('Cannot decode this image'));image.src=url;
   });
   return new Promise((resolve,reject)=>{
-    const element=document.createElement(kind==='video'?'video':'audio');
+    const element=document.createElement('audio');
     let finished=false;
     const done=(err?:Error)=>{if(finished)return;finished=true;clearTimeout(timer);
       const metadata={duration:Number.isFinite(element.duration)?element.duration:0,
-        width:kind==='video'?(element as HTMLVideoElement).videoWidth:undefined,
-        height:kind==='video'?(element as HTMLVideoElement).videoHeight:undefined};
+        width:undefined,height:undefined};
       element.removeAttribute('src');element.load();if(err)reject(err);else resolve(metadata);};
-    element.preload='metadata';element.onloadedmetadata=()=>done();element.onerror=()=>done(Error('This media codec cannot be previewed by the system WebView.'));
+    element.preload='metadata';element.onloadedmetadata=()=>done();element.onerror=()=>done(Error('This media metadata could not be read.'));
     const timer=setTimeout(()=>done(Error('Timed out reading media metadata')),15000);element.src=url;
   });
 }

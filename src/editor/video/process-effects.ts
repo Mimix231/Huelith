@@ -42,7 +42,16 @@ function atResolution(effect:VideoEffect,width:number,referenceWidth:number|unde
 /** The same ordered stack is used for playback, seeking and encoded frames. */
 export async function processVideoEffects(source: HTMLCanvasElement, effects: readonly VideoEffect[], context: VideoFrameContext): Promise<HTMLCanvasElement> {
   let output=source;
+  let lastYield=performance.now();
   for(let index=0;index<effects.length;index++){
+    // Large stacks can contain hundreds of CPU/Canvas operations. Yield
+    // between operations after a budget expires so the export dialog, cancel
+    // button and AudioContext are not starved by a single long frame.
+    // Never skip or approximate an effect to satisfy that budget.
+    if(performance.now()-lastYield>24){
+      await new Promise<void>(resolve=>setTimeout(resolve,0));
+      lastYield=performance.now();
+    }
     context.signal?.throwIfAborted();
     const effect=atResolution(evaluateVideoEffect(effects[index],context.timestamp),source.width,context.referenceWidth);
     if(!effect.enabled)continue;

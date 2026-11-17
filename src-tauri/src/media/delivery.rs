@@ -51,6 +51,7 @@ pub(super) fn deliver(
         }
     };
     let mut count=0;
+    let mut previous_rgba:Option<Vec<u8>>=None;
     let total=config.frame_count;
     let mut input=encoder.as_mut().and_then(|child|child.stdin.take());
     if ready.send(Ok(())).is_ok(){
@@ -63,9 +64,25 @@ pub(super) fn deliver(
                         else if let Some(pipe)=input.as_mut(){pipe.write_all(&rgba).map_err(|e|format!("WebM encoder stopped: {e}"))}
                         else{Err("WAV export accepts audio only".into())};
                     let failed=result.is_err();
-                    let _=ack.send(result);
+                    let _=ack.send(result.map(|_|super::stream::NativeFrameStages::default()));
                     if failed{break;}
-                    count+=1;
+                    count+=1;previous_rgba=Some(rgba);
+                }
+                ExportPacket::Repeat{index,count:repeat_count,ack}=>{
+                    let result=(||{
+                        if index!=count||repeat_count==0||repeat_count>120||repeat_count>total-count{
+                            return Err("Repeated frames are out of sequence".to_string());
+                        }
+                        let rgba=previous_rgba.as_ref().ok_or("No frame to repeat")?;
+                        let pipe=input.as_mut().ok_or("WAV export accepts audio only")?;
+                        for _ in 0..repeat_count{
+                            if cancelled.load(Ordering::Relaxed){return Err("Export cancelled".into());}
+                            pipe.write_all(rgba).map_err(|e|format!("WebM encoder stopped: {e}"))?;
+                            count+=1;
+                        }
+                        Ok(super::stream::NativeFrameStages::default())
+                    })();
+                    let failed=result.is_err();let _=ack.send(result);if failed{break;}
                 }
                 ExportPacket::Finish(ack)=>{
                     let result=(||{

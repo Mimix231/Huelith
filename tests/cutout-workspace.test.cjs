@@ -18,7 +18,7 @@ test('cutout is accessible through Inspector, not new Effect choices', () => {
 test('mask workspace offers explicit selection tools and Process only', () => {
   const ui = read('src/components/CutoutWorkspace.tsx');
   for (const text of ['Keep brush','Remove brush','Erase selection','Line','Freehand lasso','Polygon lasso',
-    'Rectangle','Ellipse','Pan','Process mask','Reset selection','Undo','Redo','Original','Mask']) {
+    'Rectangle','Ellipse','Pan','Apply mask','Reset selection','Undo','Redo','Original','Mask']) {
     assert.ok(ui.toLowerCase().includes(text.toLowerCase()),text);
   }
   assert.match(ui,/onProcess\(output.toDataURL\('image\/png'\)/);

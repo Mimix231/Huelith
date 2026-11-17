@@ -4,7 +4,7 @@ const {animationFrameAt}=loadTypeScript(require('node:path').join(__dirname,'../
 function bridge(invoke){
   const module={exports:{}};const source=fs.readFileSync(require('node:path').join(__dirname,'../src/editor/video/native-media.ts'),'utf8');
   vm.runInNewContext(ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,
-    {exports:module.exports,module,window:{__TAURI_INTERNALS__:{}},require:()=>({invoke}),Uint8Array,Uint8ClampedArray,DataView,BigInt,Number,DOMException});return module.exports;
+    {exports:module.exports,module,window:{__TAURI_INTERNALS__:{}},require:id=>id==='./export-verification'?loadTypeScript(require('node:path').join(__dirname,'../src/editor/video/export-verification.ts')):id==='./export-pipeline'?loadTypeScript(require('node:path').join(__dirname,'../src/editor/video/export-pipeline.ts')):id==='./export-liveness'?loadTypeScript(require('node:path').join(__dirname,'../src/editor/video/export-liveness.ts')):id==='./export-fidelity'?loadTypeScript(require('node:path').join(__dirname,'../src/editor/video/export-fidelity.ts')):({invoke}),Uint8Array,Uint8ClampedArray,DataView,BigInt,Number,DOMException,performance});return module.exports;
 }
 test('binary frames preserve 64-bit session IDs, index and every RGBA byte',()=>{
   const api=bridge(()=>{}),pixels=new Uint8ClampedArray([3,4,5,17,20,19,12,255]);
@@ -17,12 +17,14 @@ test('native export awaits each encoded frame and finalizes only a complete stre
   const api=bridge(async(command,args)=>{
     order.push(command);if(command==='media_begin_export')return 5;
     if(command==='media_push_export_frame'){active++;maximum=Math.max(maximum,active);await new Promise(r=>setTimeout(r,2));active--;return;}
-    if(command==='media_finish_export'){assert.equal(active,0);return {framesWritten:4};}
+    if(command==='media_finish_export'){assert.equal(active,0);return {framesWritten:4,width:16,height:16,outputPath:'out.mp4',fps:30};}
+    if(command==='media_probe_file')return {width:16,height:16,frameRateNumerator:30,frameRateDenominator:1,duration100ns:4/30*10_000_000,pixelFormat:'NV12'};
+    if(command==='media_decode_preview')return {width:4,height:4,rgba:Array(64).fill(0)};
     throw Error(`Unexpected ${command}`);
   });
   const canvas={width:16,height:16,getContext:()=>({getImageData:()=>({data:new Uint8ClampedArray(16*16*4)})})};
   const report=await api.streamNativeVideo({outputPath:'out.mp4',width:16,height:16,fps:30,frameCount:4},async()=>canvas,()=>{});
-  assert.equal(maximum,1);assert.equal(report.framesWritten,4);assert.deepEqual(order,['media_begin_export',...Array(4).fill('media_push_export_frame'),'media_finish_export']);
+  assert.equal(maximum,1);assert.equal(report.framesWritten,4);assert.deepEqual(order,['media_begin_export',...Array(4).fill('media_push_export_frame'),'media_finish_export','media_probe_file','media_decode_preview']);
 });
 test('cancellation disposes the native session and never finalizes partial video',async()=>{
   const calls=[],controller=new AbortController();

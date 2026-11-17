@@ -3,7 +3,8 @@ import {manualTransformAt,transformAt,transformEdit} from '../editor/video/motio
 import {clipCrop,fittedSize} from '../editor/video/clip-layout';
 import {keyFrame,putKey} from '../editor/video/parameter-keys';
 import type {VideoAsset,VideoClip} from '../editor/video/timeline';
-import VideoKeyedValue,{VideoKeyButtons,type KeyClock} from './VideoKeyedValue';
+import VideoKeyedValue,{type KeyClock} from './VideoKeyedValue';
+import VideoPositionSliders from './VideoPositionSliders';
 
 const asPercent=(value:number)=>value*100;
 const fromPercent=(value:number)=>value/100;
@@ -56,14 +57,9 @@ export default function VideoTransformControls({clip,asset,width,height,clock,on
     <label className="hv-source-favorite"><input type="checkbox" checked={linked} onChange={event=>{
       onChange(event.target.checked?{scaleY:undefined,keyframes:keys.filter(key=>key.parameter!=='scaleY')}:{scaleY:manual.scale});
     }}/> Uniform scale</label>
-    <div className="hv-position-controls">
-      <span>Position</span>
-      {(['x','y'] as const).map(name=><input key={name} type="number" min={-200} max={200} step={1} aria-label={`Position ${name.toUpperCase()}`}
-        value={Number((manual[name]*100).toFixed(2))} disabled={alignDisabled} onChange={event=>{
-          if(Number.isFinite(event.target.valueAsNumber))edit({[name]:Math.max(-2,Math.min(2,event.target.valueAsNumber/100))},true);
-        }} onBlur={onCommit} onKeyUp={event=>{if(event.key==='Enter')event.currentTarget.blur();}}/>)}
-      <VideoKeyButtons label="Position" clock={clock} keys={position} onToggle={togglePosition}/>
-    </div>
+    <VideoPositionSliders clip={clip} values={{x:manual.x,y:manual.y}} clock={clock}
+      keys={keys} disabled={alignDisabled} onToggle={togglePosition} onCommit={onCommit}
+      onEdit={(axis,value)=>edit({[axis]:Math.max(-2,Math.min(2,value))},true)}/>
     {field('rotation','Rotation',-3600,3600,false)}
     <div className="hv-inline-actions hv-align-controls">
       {([['x',-1,'Left'],['x',0,'Center'],['x',1,'Right'],['y',-1,'Top'],['y',0,'Middle'],['y',1,'Bottom']] as const)

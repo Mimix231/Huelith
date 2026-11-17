@@ -1,0 +1,29 @@
+.hv-focus-backdrop{position:fixed;inset:0;z-index:12000;display:grid;place-items:center;padding:20px;isolation:isolate;font-family:inherit;color:var(--text,#eee)}
+.hv-focus-dismiss{position:absolute;inset:0;border:0;background:rgba(3,6,18,.76);backdrop-filter:blur(12px);cursor:default}
+.hv-focus-card{position:relative;display:flex;flex-direction:column;overflow:hidden;width:min(810px,96vw);max-height:min(780px,94vh);border-radius:20px;border:1px solid color-mix(in srgb,var(--accent,#a88cff) 32%,#ffffff20);background:linear-gradient(145deg,color-mix(in srgb,var(--panel-bg,#1e2030) 92%,#584c8e),var(--panel-bg,#151827));box-shadow:0 30px 95px #000a,0 0 0 1px #ffffff0d}
+.hv-focus-header{display:flex;align-items:center;justify-content:space-between;padding:17px 21px;border-bottom:1px solid #ffffff16}
+.hv-focus-heading{display:flex;gap:11px;align-items:center}.hv-focus-heading strong{font-size:16px}.hv-focus-heading small{display:block;margin-top:3px;letter-spacing:.1em;color:var(--muted,#b0adc3);font-size:10px}.hv-focus-mark{width:34px;height:34px;display:grid;place-items:center;border-radius:11px;color:#211836;background:linear-gradient(130deg,#d5adff,#8bd6ec);font-weight:800;font-size:21px}
+.hv-focus-close{border:1px solid #ffffff30!important;border-radius:9px!important;background:#ffffff0e!important;color:inherit!important;font-size:22px!important;line-height:26px;min-width:34px}
+.hv-focus-tools{padding:12px 18px;display:flex;flex-wrap:wrap;align-items:end;gap:7px;background:#ffffff05;border-bottom:1px solid #ffffff12}
+.hv-focus-tools label,.hv-focus-fine-controls label{display:flex;align-items:center;gap:7px;color:var(--muted,#c5bed4);font-size:11px}.hv-focus-tools select,.hv-focus-tools input[type=number]{min-height:32px;border:1px solid #ffffff2a;border-radius:7px;padding:6px 9px;color:inherit;background:var(--control-bg,#292b3d);font:inherit;max-width:200px}.hv-focus-tools select{min-width:125px}.hv-focus-size input{width:68px}
+.hv-focus-tools button,.hv-focus-align button,.hv-focus-footer button{border:1px solid #ffffff23;border-radius:8px;background:#ffffff0e;color:inherit;cursor:pointer;min-height:32px;padding:6px 11px;font:inherit}.hv-focus-tools button[aria-pressed=true],.hv-focus-align button[aria-pressed=true]{border-color:var(--accent,#b69dff);background:color-mix(in srgb,var(--accent,#a98bf6) 27%,transparent)}.hv-focus-color input,.hv-focus-stroke input{border:0;width:34px;height:30px;background:transparent;cursor:pointer}
+.hv-focus-preview{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:220px;flex:1;background:radial-gradient(ellipse at center,#41406155,transparent 64%),linear-gradient(115deg,#171e2d,#1b1a2c);padding:18px 15px;overflow:auto}
+.hv-focus-preview-caption{align-self:flex-start;letter-spacing:.08em;text-transform:uppercase;color:#d8caef88;font-size:10px;margin:0 0 10px 12px}
+.hv-focus-preview textarea{display:block;width:var(--hv-title-width,85%);min-height:150px;max-height:38vh;resize:vertical;outline:0;border:1px solid #b8a4e540;border-radius:12px;padding:24px 14px;background:#090b17ac;box-shadow:0 15px 28px #0004;line-height:1.25;overflow:auto;color:inherit;word-break:break-word;white-space:pre-wrap}
+.hv-focus-preview textarea:focus-visible{border-color:#bc99ff;box-shadow:0 0 0 3px #ab88fa29,0 15px 28px #0004}
+.hv-focus-fine-controls{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;padding:12px 20px;border-top:1px solid #ffffff18}.hv-focus-fine-controls label span{font-variant-numeric:tabular-nums;color:#e8dcff}.hv-focus-fine-controls input[type=range]{width:90px;accent-color:var(--accent,#b795ff)}.hv-focus-align{display:flex;gap:3px}.hv-focus-align button{font-size:11px;min-height:28px}
+.hv-focus-footer{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:13px 20px;border-top:1px solid #ffffff16}.hv-focus-footer small{font-size:10px;color:var(--muted,#bdb1cc)}.hv-focus-footer>div{display:flex;gap:8px}.hv-focus-footer .hv-focus-apply{border-color:#b9a4f2;background:linear-gradient(115deg,#bba7fe,#a4c8f9);color:#17142c;font-weight:750}.hv-focus-footer button:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:620px){.hv-focus-backdrop{padding:7px}.hv-focus-card{max-height:96vh;border-radius:12px}.hv-focus-header{padding:11px}.hv-focus-tools{padding:10px}.hv-focus-preview{min-height:130px;padding:10px}.hv-focus-preview textarea{min-height:110px;font-size:clamp(18px,6vw,46px)!important}.hv-focus-footer{flex-direction:column;align-items:stretch}.hv-focus-footer>div{justify-content:flex-end}}
+
+/* Huelith Video Focus Text: soft portal entrance and deliberate exit. */
+@keyframes hv-focus-enter {from{opacity:0}to{opacity:1}}
+@keyframes hv-focus-card-enter {from{opacity:0;transform:translateY(13px) scale(.976)}to{opacity:1;transform:translateY(0) scale(1)}}
+.hv-focus-backdrop {animation:hv-focus-enter 220ms ease-out both;transition:opacity 180ms ease-in}
+.hv-focus-card {animation:hv-focus-card-enter 235ms cubic-bezier(.19,1,.22,1) both;transition:transform 180ms ease-in,opacity 180ms ease-in}
+.hv-focus-backdrop.is-leaving {animation:none;opacity:0;pointer-events:none}
+.hv-focus-backdrop.is-leaving .hv-focus-card {animation:none;opacity:0;transform:translateY(9px) scale(.982)}
+@media (prefers-reduced-motion:reduce){
+ .hv-focus-backdrop,.hv-focus-card,.hv-focus-backdrop.is-leaving,.hv-focus-backdrop.is-leaving .hv-focus-card{
+   animation:none!important;transition:none!important;transform:none!important;
+ }
+}

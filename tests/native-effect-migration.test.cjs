@@ -17,8 +17,9 @@ test('native binary source transport validates input and raw graph response is r
   assert.match(bridge, /Uint8Array/);assert.match(bridge,/ArrayBuffer/);
   assert.match(bridge,/experimentalNativePreviewEnabled/);
 });
-test('native gate is opt-in until export parity is verified',()=>{
+test('native image-effect gate stays opt-in and cleanup preserves effect modules',()=>{
   assert.match(read('src/editor/native-effect-preview.ts'),/=== '1'/);
-  assert.equal(JSON.parse(read('scripts/obsolete-migration-files.json')).obsolete.length,0);
+  const obsolete=JSON.parse(read('scripts/obsolete-migration-files.json')).obsolete;
+  assert.ok(obsolete.every(file=>!file.startsWith('src-tauri/src/aurora/native_effects/')));
   assert.match(read('package.json'),/"pretauri": "node scripts\/cleanup-migrated.mjs --apply"/);
 });

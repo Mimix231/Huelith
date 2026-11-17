@@ -28,9 +28,6 @@
 .hv-safe-guide i,.hv-safe-guide b{position:absolute;background:#fff8}
 .hv-safe-guide i{height:1px;width:12px;left:calc(50% - 6px);top:50%}
 .hv-safe-guide b{width:1px;height:12px;top:calc(50% - 6px);left:50%}
-.hv-canvas-text-edit{position:absolute;z-index:9;transform:translate(-50%,-50%);display:grid;gap:3px}
-.hv-canvas-text-edit textarea{width:100%;min-height:55px;resize:vertical;color:var(--text);background:var(--panel-bg);border:2px solid var(--accent);padding:8px;font:inherit;text-align:center}
-.hv-canvas-text-edit small{color:#fff;background:#141322dc;padding:3px 6px;justify-self:center;border-radius:3px}
 .hv-transform-width{pointer-events:auto;cursor:ew-resize}
 .hv-catalog-pinnable{display:block;position:relative;min-width:0}
 .hv-catalog-pinnable .hv-catalog-card{width:100%;height:100%}

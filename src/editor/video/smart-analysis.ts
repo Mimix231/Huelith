@@ -1,5 +1,6 @@
-import { seekVideo } from './compositor';
-import { mediaUrl } from './media-assets';
+import {probeNativeMedia} from './native-media';
+import {resolvedAssetPath} from './library';
+import {nativeSingleSourcePlan,openNativeTimelinePreview,readNativeTimelineFrame,closeNativeTimelinePreview} from './native-frame-renderer';
 import { sourceBounds } from './clip-timing';
 import { segmentSubject } from '../subject-segmentation';
 import { encodeMatte, estimateTranslation, frameLuma, stabilizePath, type MotionSample, type SmartFootage, type MatteFrame } from './smart-footage';
@@ -10,40 +11,38 @@ export type FootageJob = 'stabilize' | 'track' | 'cutout' | 'reframe';
 const bound = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
 export const MAX_ANALYSIS_SECONDS = 150;
 
-async function openVideo(asset: VideoAsset, signal: AbortSignal) {
-  const url = await mediaUrl(asset);
+/** All Smart Footage video frames originate in the persistent native reader.
+ * Canvas2D here only stores the received pixels for numerical analysis;
+ * it neither seeks nor decodes videos.
+ */
+async function openVideo(asset: VideoAsset,signal:AbortSignal,maxDimension:number){
   signal.throwIfAborted();
-  const video = document.createElement('video');
-  video.preload = 'auto'; video.muted = true; video.playsInline = true; video.crossOrigin = 'anonymous';
-  await new Promise<void>((resolve, reject) => {
-    const cleanup = () => {
-      clearTimeout(timer);
-      video.onloadedmetadata = null; video.onerror = null;
-      signal.removeEventListener('abort', aborted);
-    };
-    const aborted = () => { cleanup(); video.removeAttribute('src'); video.load(); reject(signal.reason); };
-    const timer = setTimeout(() => { cleanup(); video.removeAttribute('src'); video.load(); reject(Error('The source did not open in time.')); }, 15_000);
-    video.onloadedmetadata = () => { cleanup(); resolve(); };
-    video.onerror = () => { cleanup(); reject(Error(`Could not decode ${asset.name} for analysis.`)); };
-    signal.addEventListener('abort', aborted, { once: true });
-    video.src = url;
-  });
-  return video;
+  const path=await resolvedAssetPath(asset);
+  const metadata=await probeNativeMedia(path);
+  const duration=Math.max(.001,(metadata.duration100ns??21600*10_000_000)/10_000_000);
+  const scale=Math.min(1,maxDimension/Math.max(metadata.width,metadata.height));
+  const width=Math.max(2,Math.round(metadata.width*scale));
+  const height=Math.max(2,Math.round(metadata.height*scale));
+  const id=crypto.randomUUID();
+  const plan=nativeSingleSourcePlan(path,'video',0,width,height);
+  plan.clips[0].duration=Math.min(21600,Math.max(1,duration));
+  await openNativeTimelinePreview(id,plan);
+  if(signal.aborted){await closeNativeTimelinePreview(id);signal.throwIfAborted();}
+  return {id,width,height,videoWidth:metadata.width,videoHeight:metadata.height,duration,
+    frame:(time:number)=>readNativeTimelineFrame(id,time,width,height,signal)};
 }
-
-function closeVideo(video: HTMLVideoElement) {
-  video.pause(); video.removeAttribute('src'); video.load();
+async function closeVideo(source:Awaited<ReturnType<typeof openVideo>>){
+  await closeNativeTimelinePreview(source.id);
 }
 
 export async function footagePoster(asset: VideoAsset, clip: VideoClip, signal: AbortSignal) {
-  const video = await openVideo(asset, signal);
+  const video = await openVideo(asset, signal,480);
   try {
-    await seekVideo(video, sourceBounds(clip)[0], signal);
-    const canvas = document.createElement('canvas'), scale = Math.min(1, 480 / Math.max(video.videoWidth, video.videoHeight));
-    canvas.width = Math.max(2, Math.round(video.videoWidth * scale));
-    canvas.height = Math.max(2, Math.round(video.videoHeight * scale));
+    const image=await video.frame(sourceBounds(clip)[0]);
+    const canvas = document.createElement('canvas');
+    canvas.width = video.width;canvas.height=video.height;
     const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    ctx.putImageData(image,0,0);
     const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const mask = segmentSubject(data, { quality: 96, strength: 80, edgeProtection: 65, strokes: [] });
     let left = canvas.width, right = 0, top = canvas.height, bottom = 0, count = 0;
@@ -56,7 +55,7 @@ export async function footagePoster(asset: VideoAsset, clip: VideoClip, signal: 
       ? { x: left / canvas.width, y: top / canvas.height, width: (right-left+1) / canvas.width, height: (bottom-top+1) / canvas.height }
       : undefined;
     return { url: canvas.toDataURL('image/jpeg', .82), box };
-  } finally { closeVideo(video); }
+  } finally { await closeVideo(video); }
 }
 
 export async function analyzeFootage(asset: VideoAsset, clip: VideoClip, kind: FootageJob, box: CropRegion | undefined,
@@ -65,12 +64,10 @@ export async function analyzeFootage(asset: VideoAsset, clip: VideoClip, kind: F
   const span = end - start;
   if (span < .08 || span > MAX_ANALYSIS_SECONDS) throw Error(`Choose a source range between 0.08 and ${MAX_ANALYSIS_SECONDS} seconds for footage analysis.`);
   if (kind !== 'stabilize' && (!box || box.width < .04 || box.height < .04)) throw Error('Draw a box around the subject before analysis.');
-  const video = await openVideo(asset, signal);
+  const video = await openVideo(asset, signal,176);
   const result: SmartFootage = clip.smart?.revision === (asset.revision ?? 0) ? { ...clip.smart } : { revision: asset.revision ?? 0 };
   try {
-    const scale = Math.min(1, 176 / Math.max(video.videoWidth, video.videoHeight));
-    const canvas = document.createElement('canvas'), width = Math.max(2, Math.round(video.videoWidth * scale)),
-      height = Math.max(2, Math.round(video.videoHeight * scale));
+    const canvas = document.createElement('canvas'), width = video.width, height=video.height;
     canvas.width = width; canvas.height = height;
     const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
     const frames = Math.min(1800, Math.max(2, Math.ceil(span * 12) + 1));
@@ -83,8 +80,7 @@ export async function analyzeFootage(asset: VideoAsset, clip: VideoClip, kind: F
       signal.throwIfAborted();
       const time = Math.min(video.duration - .0001, start + (span - .0002) * i / (frames - 1));
       if (time < 0 || points.length && time <= points.at(-1)!.time) break;
-      await seekVideo(video, time, signal);
-      ctx.drawImage(video, 0, 0, width, height);
+      ctx.putImageData(await video.frame(time),0,0);
       const data = ctx.getImageData(0, 0, width, height), luma = frameLuma(data);
       let confidence = 1;
       if (previous) {
@@ -136,5 +132,5 @@ export async function analyzeFootage(asset: VideoAsset, clip: VideoClip, kind: F
     }
     progress(1);
     return result;
-  } finally { closeVideo(video); }
+  } finally { await closeVideo(video); }
 }

@@ -133,10 +133,9 @@ const tools: ToolEntry[] = [
   { id: 'text', label: 'Text', icon: <TextFields />, shortcut: 'T' },
 ];
 
-const VIDEO_STUDIO_PALETTE=['#bc94f5','#16171f','#1e1f29'] as const;
-function makeTheme(workspace: Workspace, appearanceMode: AppearanceMode,videoStudio=false) {
+function makeTheme(workspace: Workspace, appearanceMode: AppearanceMode) {
   const {radius,[appearanceMode]:colors}=THEME_IDENTITIES[workspace];
-  const [primary,ground,paper]=videoStudio?VIDEO_STUDIO_PALETTE:colors;
+  const [primary,ground,paper]=colors;
   const isLight = appearanceMode === 'light';
   return createTheme({
     palette: {
@@ -1000,7 +999,6 @@ function Inspector({ state }: { state: EditorStore }) {
 export default function App() {
   const state = useEditor();
   const theme = useMemo(() => makeTheme(state.workspace, state.appearanceMode), [state.workspace, state.appearanceMode]);
-  const studioTheme=useMemo(()=>makeTheme('studio','dark',true),[]);
   const tab = activeTab(state);
   const doc = tab.doc;
   const [newOpen, setNewOpen] = useState(false);
@@ -1324,11 +1322,22 @@ export default function App() {
     const unchanged=videoCurrent.current===videoProject;
     if(sameProject){setVideoPath(path);if(unchanged){setVideoProject(updated);setVideoSaved(true);await clearVideoRecovery(updated.id).catch(()=>{});setVideoRecoveries(items=>items.filter(item=>item.project.id!==updated.id));}}
     let thumbnail:string|undefined;
-    if(unchanged){const source=document.querySelector<HTMLCanvasElement>('.hv-preview-canvas');if(source){
-      const thumb=document.createElement('canvas');thumb.width=240;thumb.height=144;const ctx=thumb.getContext('2d');
-      if(ctx){ctx.fillStyle='#0b0e18';ctx.fillRect(0,0,240,144);const scale=Math.min(240/source.width,144/source.height);
-        ctx.drawImage(source,(240-source.width*scale)/2,(144-source.height*scale)/2,source.width*scale,source.height*scale);thumbnail=thumb.toDataURL('image/webp',.74);}
-    }}
+    if(unchanged){
+      // Prefer the visible GPU surface; don't make saving depend on whether
+      // this WebView permits copying a WebGPU presentation texture to Canvas2D.
+      const previews=[document.querySelector<HTMLCanvasElement>('.hv-preview-gpu[data-active="true"]'),
+        document.querySelector<HTMLCanvasElement>('.hv-preview-canvas')].filter((source):source is HTMLCanvasElement=>!!source);
+      const thumb=document.createElement('canvas');thumb.width=240;thumb.height=144;
+      const ctx=thumb.getContext('2d');
+      if(ctx)for(const source of previews){
+        try{
+          ctx.fillStyle='#0b0e18';ctx.fillRect(0,0,240,144);
+          const scale=Math.min(240/source.width,144/source.height);
+          ctx.drawImage(source,(240-source.width*scale)/2,(144-source.height*scale)/2,source.width*scale,source.height*scale);
+          thumbnail=thumb.toDataURL('image/webp',.74);break;
+        }catch{/* An unavailable GPU snapshot must never prevent saving. */}
+      }
+    }
     await recordRecentProject(updated, path,thumbnail).catch(console.warn);
     setNotice(unchanged?'Video project saved':'Saved snapshot; newer video edits still need saving.');
     return unchanged;
@@ -1571,13 +1580,10 @@ export default function App() {
   }
 
   const studioProject=homeOpen?null:videoProject;
-  const studioStyle=studioProject?{
-    '--theme-accent':VIDEO_STUDIO_PALETTE[0],'--theme-ground':VIDEO_STUDIO_PALETTE[1],
-    '--theme-paper':VIDEO_STUDIO_PALETTE[2],'--theme-radius':'8px',
-  }:themeVariables(state.workspace,state.appearanceMode);
+  const studioStyle=themeVariables(state.workspace,state.appearanceMode);
   return (
-    <ThemeProvider theme={studioProject?studioTheme:theme}>
-      <div className={`app ${studioProject?'is-video-studio theme-studio tone-dark':`theme-${state.workspace} tone-${state.appearanceMode}`} ${state.focusMode ? 'focus-mode' : ''}`}
+    <ThemeProvider theme={theme}>
+      <div className={`app ${`${studioProject?'is-video-studio ':''}theme-${state.workspace} tone-${state.appearanceMode}`} ${state.focusMode ? 'focus-mode' : ''}`}
         style={studioStyle as CSSProperties}>
 
         {studioProject?<header className="titlebar hv-studio-titlebar" data-tauri-drag-region>
@@ -1594,6 +1600,11 @@ export default function App() {
               onClick={()=>window.dispatchEvent(new Event('huelith-video-undo'))}><Undo fontSize="small"/></ActionIcon>
             <ActionIcon title="Redo (Ctrl+Y)" disabled={!videoHistory.redo}
               onClick={()=>window.dispatchEvent(new Event('huelith-video-redo'))}><Redo fontSize="small"/></ActionIcon>
+            <button type="button" className="hv-studio-theme-button" aria-label="Choose Video Editor theme"
+              title="Choose Huelith theme" aria-expanded={Boolean(themeAnchor)} aria-haspopup="menu"
+              onClick={event=>setThemeAnchor(themeAnchor?null:event.currentTarget)}>
+              <Palette fontSize="small"/><span>Themes</span>
+            </button>
             <Button className="huelith-video-export" variant="contained" startIcon={<IosShare/>}
               onClick={()=>window.dispatchEvent(new Event('huelith-video-export'))}>Export</Button>
             <span className="hv-title-divider"/>

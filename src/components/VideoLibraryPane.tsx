@@ -1,4 +1,5 @@
 import {createContext,memo,useContext,useEffect,useMemo,useRef,useState,type ReactNode} from 'react';
+import {motion,useReducedMotion} from 'motion/react';
 import {catalogChanged,noteCatalogUse,readCatalogPreferences,toggleCatalogPin} from '../editor/video/catalog-preferences';
 import type {VideoJobTask} from './useVideoJobs';
 import {Add,AutoAwesomeOutlined,ClosedCaptionOutlined,ColorLensOutlined,GridViewOutlined,MovieOutlined,MusicNoteOutlined,Search,SentimentSatisfiedAltOutlined,TextFields,Tune,WallpaperOutlined,AnimationOutlined,VideoLibraryOutlined} from '@mui/icons-material';
@@ -102,6 +103,7 @@ const CatalogCard=memo(function CatalogCard({name,image,motion,description,disab
    onClick={()=>toggleCatalogPin(identity)}>{pinned.includes(identity)?'★':'☆'}</button></span>:control;
 });
 export default function VideoLibraryPane(props:Props){
+ const reducedMotion=useReducedMotion();
  const [tab,setTab]=useState<Tab>('media'),[category,setCategory]=useState('All'),[query,setQuery]=useState('');
  const [libraryMenu,setLibraryMenu]=useState<HTMLElement|null>(null);
  const [catalog,setCatalog]=useState(readCatalogPreferences),[catalogView,setCatalogView]=useState<'all'|'pinned'|'recent'>('all');
@@ -111,7 +113,7 @@ export default function VideoLibraryPane(props:Props){
  const audition=liveAudition&&!props.playing?props.onAudition:undefined;
  const [bin, setBin] = useState('');
  const [mediaView,setMediaView]=useState<typeof MEDIA_VIEWS[number]>('Project Media');
- const [mediaLayout,setMediaLayout]=useState<'grid'|'list'>('grid'),[sort,setSort]=useState('added');
+ const [mediaLayout,setMediaLayout]=useState<'grid'|'list'>('list'),[sort,setSort]=useState('added');
  const [localMedia,setLocalMedia]=useState(readLocalMedia);
  const [transitionGroup,setTransitionGroup]=useState<TransitionGroup>('Fade In');
  const [sourceId, setSourceId] = useState<string>();
@@ -172,7 +174,8 @@ export default function VideoLibraryPane(props:Props){
     {!!categories.length&&(tab!=='media'||mediaView==='Project Media'||mediaView==='Used in Timeline')&&<nav className="hv-category-rail" aria-label={`${tab} categories`}>{categories.map(name=>
       <button className={category===name?'is-active':''} aria-pressed={category===name} key={name} onClick={()=>setCategory(name)}>{name}</button>)}</nav>}
     {['adjustment','color'].includes(tab)&&!visual&&<p className="hv-selection-hint">Select an unlocked visual clip on the timeline to apply {tab}.</p>}
-    <div className="hv-library-scroll">
+    <motion.div key={tab} className="hv-library-scroll" initial={reducedMotion?false:{opacity:0,y:7}}
+      animate={{opacity:1,y:0}} transition={{duration:reducedMotion?0:.2,ease:"easeOut"}}>
      {tab==='media'&&(mediaView==='Project Media'||mediaView==='Used in Timeline')&&<>
        <div className="hv-inline-actions hv-media-actions">
          {props.onImportFolder&&<button disabled={props.busy} onClick={props.onImportFolder}>Import folder</button>}
@@ -258,7 +261,7 @@ export default function VideoLibraryPane(props:Props){
         onKeyDown={event=>{if(event.key==='Enter')event.currentTarget.blur();}}
         onBlur={event=>{const name=event.currentTarget.value.trim()||props.project.name;event.currentTarget.value=name;if(name!==props.project.name)props.onProject({name});}}/></label>
      </div>}
-    </div>
+    </motion.div>
    </section>
   </div>
  </aside></CatalogContext.Provider>;

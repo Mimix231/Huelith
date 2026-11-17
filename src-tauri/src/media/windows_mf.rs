@@ -16,7 +16,7 @@ pub(super) fn available() -> bool { MfRuntime::new().is_ok() }
 fn wide(path: &Path) -> Vec<u16> {
     path.as_os_str().encode_wide().chain(std::iter::once(0)).collect()
 }
-fn media_url(path:&Path)->Vec<u16>{
+pub(super) fn media_url(path:&Path)->Vec<u16>{
     // Win32 canonicalization adds an extended-path prefix. MF's URL resolver
     // treats that prefix as a network URL, even though File::open accepts it.
     // Keep canonical paths for file operations and pass ordinary drive/UNC
@@ -46,9 +46,9 @@ fn get_dimensions(media_type: &IMFMediaType) -> Result<(u32, u32), String> {
     Ok((w, h))
 }
 
-struct MfRuntime { started: bool }
+pub(super) struct MfRuntime { started: bool }
 impl MfRuntime {
-    fn new() -> Result<Self, String> {
+    pub(super) fn new() -> Result<Self, String> {
         unsafe {
             CoInitializeEx(None, COINIT_MULTITHREADED).ok().map_err(|e| media_error("COM initialization failed", e))?;
             if let Err(err) = MFStartup(MF_VERSION, 0) {
@@ -136,11 +136,17 @@ fn copy_rgb_sample(sample: &IMFSample, width: u32, height: u32, default_stride:i
         let result=(||{
             if row_zero.is_null()||pitch.unsigned_abs()<(width*4)||pitch.unsigned_abs()>40_000_000{return Err("Invalid decoded image stride".to_string());}
             let mut rgba=vec![0;required];
-            for y in 0..height as usize {for x in 0..width as usize {
-                let pixel=unsafe{row_zero.offset(y as isize*pitch as isize).add(x*4)};
-                let d=(y*width as usize+x)*4;
-                unsafe{rgba[d]=*pixel.add(2);rgba[d+1]=*pixel.add(1);rgba[d+2]=*pixel;rgba[d+3]=255;}
-            }}
+            let row_bytes=width as usize*4;
+            if (pitch.unsigned_abs() as usize).checked_mul(height as usize).is_none_or(|total|total>40_000_000){
+                return Err("Decoded frame pitch exceeds the bounded frame memory".into());
+            }
+            for y in 0..height as usize {
+                // SAFETY: IMF2DBuffer::Lock2D gives a pointer to the top row;
+                // each signed pitch points to a valid subsequent scanline.
+                let input=unsafe{std::slice::from_raw_parts(row_zero.offset(y as isize*pitch as isize),row_bytes)};
+                let output=&mut rgba[y*row_bytes..(y+1)*row_bytes];
+                super::pixel_convert::bgrx_to_rgba(input,output).map_err(str::to_owned)?;
+            }
             Ok(rgba)
         })();
         let _=unsafe{two_d.Unlock2D()};return result;
@@ -158,11 +164,9 @@ fn copy_rgb_sample(sample: &IMFSample, width: u32, height: u32, default_stride:i
         for y in 0..height as usize {
             let row = if default_stride<0{height as usize-1-y}else{y} * stride;
             let dst = y * width as usize*4;
-            for x in 0..width as usize {
-                let s = row + x * 4;
-                let d = dst + x * 4;
-                rgba[d] = bytes[s+2]; rgba[d+1] = bytes[s+1]; rgba[d+2] = bytes[s]; rgba[d+3] = 255;
-            }
+            let row_bytes=width as usize*4;
+            super::pixel_convert::bgrx_to_rgba(&bytes[row..row+row_bytes],&mut rgba[dst..dst+row_bytes])
+                .map_err(str::to_owned)?;
         }
         Ok(rgba)
     })();
@@ -201,9 +205,83 @@ pub fn decode_preview(path: &Path) -> Result<PreviewFrame, String> {
     Err("No decodable video frames found".into())
 }
 
-/// A deliberately narrow encoder: H.264/MP4 with RGB32 input. Video effects
-/// and the timeline compositor will supply frames through this interface later.
+/// Persistent frame reader. It must be created, used and dropped on the same
+/// MTA thread owned by the native timeline renderer because COM interfaces are thread bound.
+/// Every request is for a source-local timestamp, not timeline time.
+pub(super) struct NativeFrameReader {
+    reader:IMFSourceReader,
+    width:u32,height:u32,fps:u32,
+    last_timestamp:Option<i64>,
+    last_rgba:std::sync::Arc<Vec<u8>>,
+    // Struct fields drop in declaration order: release the COM decoder before
+    // MFShutdown/CoUninitialize. The old order could crash after a full export.
+    _runtime:MfRuntime,
+}
+impl NativeFrameReader {
+    pub fn open(path:&Path)->Result<Self,String>{
+        let runtime=MfRuntime::new()?;
+        let reader=open_reader(path)?;
+        let (width,height,fps)=configure_rgb_reader(&reader)?;
+        Ok(Self{_runtime:runtime,reader,width,height,fps,last_timestamp:None,last_rgba:std::sync::Arc::new(vec![])})
+    }
+    pub fn decode_at(&mut self,time:f64)->Result<Vec<u8>,String>{
+        self.advance(time)?;Ok(self.packet())
+    }
+    pub fn frame_at(&mut self,time:f64)->Result<(std::sync::Arc<Vec<u8>>,u32,u32),String>{
+        self.advance(time)?;Ok((std::sync::Arc::clone(&self.last_rgba),self.width,self.height))
+    }
+    fn advance(&mut self,time:f64)->Result<(),String>{
+        if !time.is_finite()||!(0.0..=21600.0).contains(&time){return Err("Invalid source timestamp".into());}
+        let target=(time*10_000_000.0).floor() as i64;
+        let frame_duration=(10_000_000i64 / i64::from(self.fps.max(1))).max(1);
+        if let Some(last)=self.last_timestamp {
+            if (last-target).abs()<=frame_duration/3 && !self.last_rgba.is_empty(){
+                return Ok(());
+            }
+        }
+        let needs_seek=self.last_timestamp.is_none_or(|last|target+frame_duration/3<last||target-last>10_000_000);
+        if needs_seek {
+            // Ask for the preceding frame boundary so Media Foundation can
+            // seek to a keyframe, then advance to the precise requested sample.
+            let position=PROPVARIANT::from(target.saturating_sub(frame_duration).max(0));
+            unsafe{self.reader.SetCurrentPosition(&GUID::zeroed(),&position)}
+                .map_err(|error|media_error("Cannot seek native video reader",error))?;
+        }
+        for _ in 0..600 {
+            let mut flags=0u32;
+            let mut timestamp=0i64;
+            let mut sample=None;
+            unsafe{self.reader.ReadSample(MF_SOURCE_READER_FIRST_VIDEO_STREAM.0 as u32,0,None,
+                Some(&mut flags),Some(&mut timestamp),Some(&mut sample))}
+                .map_err(|error|media_error("Native frame decoder failed",error))?;
+            if flags&(MF_SOURCE_READERF_ENDOFSTREAM.0 as u32)!=0{return Err("Video ended before the requested frame".into());}
+            if let Some(frame)=sample {
+                // The source sample covers a duration. Pick it only if its
+                // presentation interval contains the requested timestamp.
+                if timestamp+frame_duration/2<target {continue;}
+                self.last_rgba=std::sync::Arc::new(copy_rgb_sample(&frame,self.width,self.height,decoded_stride(&self.reader,self.width))?);
+                self.last_timestamp=Some(timestamp);
+                return Ok(());
+            }
+        }
+        Err("Native decoder did not reach the requested video frame".into())
+    }
+    fn packet(&self)->Vec<u8>{
+        // Little-endian width/height header followed by top-down tight RGBA8.
+        let mut bytes=Vec::with_capacity(8+self.last_rgba.len());
+        bytes.extend_from_slice(&self.width.to_le_bytes());
+        bytes.extend_from_slice(&self.height.to_le_bytes());
+        bytes.extend_from_slice(&self.last_rgba);
+        bytes
+    }
+}
+
+/// H.264/MP4 sink writer with a proven RGB32 input path and an optional
+/// native NV12 path for Windows hardware encoding trials.
+#[derive(Clone,Copy)]
+enum EncoderInput{Rgb32,Nv12}
 struct Encoder {
+    input_kind:EncoderInput,
     writer: IMFSinkWriter,
     stream: u32,
     width: u32,
@@ -219,9 +297,22 @@ impl Encoder {
         check_dimensions(width,height,fps,1)?;
         let wide_output = media_url(path);
         unsafe {
-            let writer = MFCreateSinkWriterFromURL(PCWSTR(wide_output.as_ptr()),
-                None::<&IMFByteStream>, None::<&IMFAttributes>)
-                .map_err(|e| media_error("Windows MP4 sink initialization failed", e))?;
+            // Offline export: disable Media Foundation's *real-time rate*
+            // throttle. By default WriteSample can deliberately block to
+            // prevent applications from submitting frames faster than playback.
+            // This is an export sink, not a realtime video display sink.
+            // Hardware transforms remain permitted (selection is verified
+            // separately; this does NOT claim hardware encoding or zero copy).
+            let mut attributes=None;
+            MFCreateAttributes(&mut attributes,2).map_err(|e|e.to_string())?;
+            let encoder_attributes=attributes.ok_or("Cannot create encoder attributes")?;
+            encoder_attributes.SetUINT32(&MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS,1)
+                .map_err(|e|e.to_string())?;
+            encoder_attributes.SetUINT32(&MF_SINK_WRITER_DISABLE_THROTTLING,1)
+                .map_err(|e|e.to_string())?;
+            let writer=MFCreateSinkWriterFromURL(PCWSTR(wide_output.as_ptr()),
+                None::<&IMFByteStream>,Some(&encoder_attributes))
+                .map_err(|e| media_error("Windows unthrottled MP4 sink initialization failed", e))?;
             let out = MFCreateMediaType().map_err(|e| e.to_string())?;
             out.SetGUID(&MF_MT_MAJOR_TYPE, &MFMediaType_Video).map_err(|e| e.to_string())?;
             out.SetGUID(&MF_MT_SUBTYPE, &MFVideoFormat_H264).map_err(|e| e.to_string())?;
@@ -232,16 +323,32 @@ impl Encoder {
             out.SetUINT64(&MF_MT_FRAME_RATE, packed_pair(fps,1)).map_err(|e| e.to_string())?;
             out.SetUINT64(&MF_MT_PIXEL_ASPECT_RATIO, packed_pair(1,1)).map_err(|e| e.to_string())?;
             let stream = writer.AddStream(&out).map_err(|e| media_error("H.264 stream unavailable",e))?;
-            let input = MFCreateMediaType().map_err(|e| e.to_string())?;
-            input.SetGUID(&MF_MT_MAJOR_TYPE, &MFMediaType_Video).map_err(|e| e.to_string())?;
-            input.SetGUID(&MF_MT_SUBTYPE, &MFVideoFormat_RGB32).map_err(|e| e.to_string())?;
-            input.SetUINT32(&MF_MT_DEFAULT_STRIDE,width*4).map_err(|e|e.to_string())?;
-            input.SetUINT32(&MF_MT_INTERLACE_MODE,2).map_err(|e| e.to_string())?;
-            input.SetUINT64(&MF_MT_FRAME_SIZE, packed_pair(width,height)).map_err(|e| e.to_string())?;
-            input.SetUINT64(&MF_MT_FRAME_RATE, packed_pair(fps,1)).map_err(|e| e.to_string())?;
-            input.SetUINT64(&MF_MT_PIXEL_ASPECT_RATIO, packed_pair(1,1)).map_err(|e| e.to_string())?;
-            writer.SetInputMediaType(stream, &input, None::<&IMFAttributes>)
-                .map_err(|e| media_error("RGB32 input conversion unavailable", e))?;
+            // NV12 is the preferred input for the hardware H.264 MFT. RGB32
+            // traditionally incurs a hidden RGB->YUV conversion inside MF.
+            // RGB32 remains the default until Windows visual parity and
+            // throughput comparisons certify NV12 across common GPU drivers.
+            // Use HUELITH_ENCODER_INPUT=auto to try NV12 with fallback,
+            // or =nv12 to fail closed if native NV12 is unsupported.
+            let preference=std::env::var("HUELITH_ENCODER_INPUT")
+                .unwrap_or_else(|_|"rgb32".to_string()).to_ascii_lowercase();
+            let set_input=|kind:EncoderInput|->Result<(),String>{
+                let input=MFCreateMediaType().map_err(|e|e.to_string())?;
+                input.SetGUID(&MF_MT_MAJOR_TYPE,&MFMediaType_Video).map_err(|e|e.to_string())?;
+                input.SetGUID(&MF_MT_SUBTYPE,match kind{EncoderInput::Rgb32=>&MFVideoFormat_RGB32,
+                    EncoderInput::Nv12=>&MFVideoFormat_NV12}).map_err(|e|e.to_string())?;
+                input.SetUINT32(&MF_MT_DEFAULT_STRIDE,match kind{EncoderInput::Rgb32=>width*4,
+                    EncoderInput::Nv12=>width}).map_err(|e|e.to_string())?;
+                input.SetUINT32(&MF_MT_INTERLACE_MODE,2).map_err(|e|e.to_string())?;
+                input.SetUINT64(&MF_MT_FRAME_SIZE,packed_pair(width,height)).map_err(|e|e.to_string())?;
+                input.SetUINT64(&MF_MT_FRAME_RATE,packed_pair(fps,1)).map_err(|e|e.to_string())?;
+                input.SetUINT64(&MF_MT_PIXEL_ASPECT_RATIO,packed_pair(1,1)).map_err(|e|e.to_string())?;
+                writer.SetInputMediaType(stream,&input,None::<&IMFAttributes>)
+                    .map_err(|e|media_error("Input format negotiation failed",e))
+            };
+            let input_kind=if preference=="rgb32"{set_input(EncoderInput::Rgb32)?;EncoderInput::Rgb32}
+                else{match set_input(EncoderInput::Nv12){Ok(())=>EncoderInput::Nv12,
+                    Err(error) if preference=="nv12"=>return Err(error),
+                    Err(_)=>{set_input(EncoderInput::Rgb32)?;EncoderInput::Rgb32}}};
             let audio_stream=if audio {
                 let output=MFCreateMediaType().map_err(|e|e.to_string())?;
                 output.SetGUID(&MF_MT_MAJOR_TYPE,&MFMediaType_Audio).map_err(|e|e.to_string())?;
@@ -257,31 +364,40 @@ impl Encoder {
                 Some(audio_index)
             }else{None};
             writer.BeginWriting().map_err(|e| media_error("H.264 encoder could not start", e))?;
-            Ok(Self { writer, stream, width,height,fps,audio_stream })
+            Ok(Self {input_kind, writer, stream, width,height,fps,audio_stream })
         }
     }
     fn write_rgba(&self, rgba: &[u8], frame_index: u32) -> Result<(), String> {
-        let stride = self.width as usize * 4;
-        let len = stride * self.height as usize;
-        if rgba.len() != len { return Err("Frame data is not width × height × RGBA".into()); }
+        self.write_rgba_stages(rgba, frame_index).map(|_| ())
+    }
+    fn write_rgba_stages(&self, rgba: &[u8], frame_index: u32)
+        -> Result<super::stream::NativeFrameStages, String> {
+        let pixels=self.width as usize*self.height as usize;
+        if rgba.len()!=pixels*4 {return Err("Frame data is not width × height × RGBA".into());}
+        let len=match self.input_kind{EncoderInput::Rgb32=>pixels*4,EncoderInput::Nv12=>pixels*3/2};
+        let mut stages = super::stream::NativeFrameStages::default();
         unsafe {
+            let buffer_started = Instant::now();
             let buf = MFCreateMemoryBuffer(len as u32).map_err(|e| e.to_string())?;
             let mut ptr = std::ptr::null_mut();
             buf.Lock(&mut ptr, None, None).map_err(|e| e.to_string())?;
             if ptr.is_null() { let _ = buf.Unlock(); return Err("Encoder buffer is null".into()); }
-            // Explicit positive stride: top-down BGRX, alpha composited on black.
-            for y in 0..self.height as usize {
-                for x in 0..self.width as usize {
-                    let src = (y * self.width as usize + x) * 4;
-                    let dst = src;
-                    let a = u16::from(rgba[src+3]);
-                    *ptr.add(dst) = ((u16::from(rgba[src+2]) * a + 127) / 255) as u8;
-                    *ptr.add(dst+1) = ((u16::from(rgba[src+1]) * a + 127) / 255) as u8;
-                    *ptr.add(dst+2) = ((u16::from(rgba[src]) * a + 127) / 255) as u8;
-                    *ptr.add(dst+3) = 0;
-                }
-            }
-            buf.Unlock().map_err(|e| e.to_string())?;
+            stages.buffer_ms = buffer_started.elapsed().as_secs_f64() * 1000.0;
+            // Pixel conversion is the largest avoidable CPU operation in the
+            // old encoder. The new kernel uses an exact opaque SSSE3 fast path
+            // and the original premultiplied black composition for alpha.
+            let convert_started = Instant::now();
+            let output = std::slice::from_raw_parts_mut(ptr, len);
+            let conversion=match self.input_kind{
+                EncoderInput::Rgb32=>super::pixel_convert::rgba_to_bgrx(rgba,output),
+                EncoderInput::Nv12=>super::pixel_convert::rgba_to_nv12(rgba,output,self.width,self.height),
+            };
+            let unlock = buf.Unlock();
+            conversion.map_err(|error|error.to_string())?;
+            unlock.map_err(|e|e.to_string())?;
+            stages.convert_ms = convert_started.elapsed().as_secs_f64() * 1000.0;
+            stages.input_format=Some(match self.input_kind{EncoderInput::Rgb32=>"RGB32",EncoderInput::Nv12=>"NV12"});
+            let write_started = Instant::now();
             buf.SetCurrentLength(len as u32).map_err(|e| e.to_string())?;
             let sample = MFCreateSample().map_err(|e| e.to_string())?;
             sample.AddBuffer(&buf).map_err(|e| e.to_string())?;
@@ -289,9 +405,11 @@ impl Encoder {
             let next = (frame_index as i64 + 1) * 10_000_000 / i64::from(self.fps);
             sample.SetSampleTime(timestamp).map_err(|e| e.to_string())?;
             sample.SetSampleDuration(next - timestamp).map_err(|e| e.to_string())?;
-            self.writer.WriteSample(self.stream, &sample).map_err(|e| media_error("Video encoding failed", e))?;
+            self.writer.WriteSample(self.stream, &sample)
+                .map_err(|e| media_error("Video encoding failed", e))?;
+            stages.submit_ms = write_started.elapsed().as_secs_f64() * 1000.0;
         }
-        Ok(())
+        Ok(stages)
     }
     fn finish(&self) -> Result<(), String> {
         unsafe { self.writer.Finalize() }.map_err(|e| media_error("MP4 finalization failed",e))
@@ -776,6 +894,59 @@ pub(super) fn mix_wav(path:&Path,audio:&[super::AudioSource],duration:f64,cancel
     file.sync_all().map_err(|e|e.to_string())
 }
 
+/// Audio decoding, automation and voice processing run ahead on their own
+/// Media Foundation MTA thread. This removes the PCM mixer from the video
+/// encoder's critical path while keeping a bounded six-frame queue.
+/// The sink writer remains on its original thread and writes audio in order.
+struct AudioLookahead {
+    frames:Option<std::sync::mpsc::Receiver<Result<(u32,Vec<u8>),String>>>,
+    stop:std::sync::Arc<std::sync::atomic::AtomicBool>,
+    worker:Option<std::thread::JoinHandle<()>>,
+}
+impl AudioLookahead {
+    fn start(sources:Vec<super::stream::AudioSource>,count:u32,fps:u32,
+        cancelled:std::sync::Arc<std::sync::atomic::AtomicBool>)->Self {
+        use std::sync::{mpsc,atomic::{AtomicBool,Ordering}};
+        let (tx,rx)=mpsc::sync_channel(6);
+        let stop=std::sync::Arc::new(AtomicBool::new(false));
+        let quitting=stop.clone();
+        let worker=std::thread::spawn(move||{
+            let process=(||{
+                // COM media readers are created and destroyed on this thread.
+                let _runtime=MfRuntime::new()?;
+                let mut mixer=AudioMixer::new(&sources);
+                for index in 0..count {
+                    if quitting.load(Ordering::Relaxed)||cancelled.load(Ordering::Relaxed){return Ok(());}
+                    let first=u64::from(index)*48000/u64::from(fps);
+                    let last=u64::from(index+1)*48000/u64::from(fps);
+                    let pcm=mixer.block(first,last)?;
+                    if tx.send(Ok((index,pcm))).is_err(){return Ok(());}
+                }
+                Ok::<(),String>(())
+            })();
+            if let Err(err)=process {let _=tx.send(Err(err));}
+        });
+        Self{frames:Some(rx),stop,worker:Some(worker)}
+    }
+    fn take(&self,index:u32)->Result<Vec<u8>,String>{
+        let (actual,pcm)=self.frames.as_ref().ok_or("Audio worker has stopped")?
+            .recv_timeout(std::time::Duration::from_secs(120))
+            .map_err(|_|"Native audio preparation failed or timed out")??;
+        if actual!=index{return Err("Prepared audio became misaligned with video frames".into());}
+        Ok(pcm)
+    }
+}
+impl Drop for AudioLookahead {
+    fn drop(&mut self){
+        use std::sync::atomic::Ordering;
+        self.stop.store(true,Ordering::Relaxed);
+        // Disconnect bounded sender before joining, otherwise a worker that
+        // filled its six-frame queue could wait forever on send().
+        drop(self.frames.take());
+        if let Some(worker)=self.worker.take(){let _=worker.join();}
+    }
+}
+
 pub(super) fn stream_export(
     destination:&Path,config:&super::stream::StreamConfig,
     receiver:std::sync::mpsc::Receiver<super::stream::ExportPacket>,
@@ -803,7 +974,12 @@ pub(super) fn stream_export(
     // Runtime must be dropped after every COM interface on this thread.
     let _runtime=runtime;
     if ready.send(Ok(())).is_err(){drop(encoder);let _=std::fs::remove_file(&temporary);return;}
-    let audio_included=!audio.is_empty();let mut mixer=AudioMixer::new(&audio);let mut count=0u32;
+    let audio_included=!audio.is_empty();
+    let audio_lookahead=audio_included.then(||AudioLookahead::start(audio,config.frame_count,config.fps,cancelled.clone()));
+    let mut count=0u32;
+    // Retain the last accepted frame. A repeated frame is still encoded with
+    // its own timestamp and synchronized audio, without an 8 MiB IPC transfer.
+    let mut previous_rgba:Option<Vec<u8>>=None;
     let mut last_packet=Instant::now();
     loop {
         if cancelled.load(Ordering::Relaxed){break;}
@@ -816,13 +992,42 @@ pub(super) fn stream_export(
                 let result=(||{
                     if cancelled.load(Ordering::Relaxed){return Err("Export cancelled".into());}
                     if index!=count||index>=config.frame_count{return Err("Video frames arrived out of sequence".into());}
-                    encoder.write_rgba(&rgba,index)?;
+                    let mut stages=encoder.write_rgba_stages(&rgba,index)?;
                     if audio_included{
+                        let audio_started=Instant::now();
                         let first=u64::from(index)*48000/u64::from(config.fps);
-                        let last=u64::from(index+1)*48000/u64::from(config.fps);
-                        encoder.write_pcm(&mixer.block(first,last)?,first)?;
+                        encoder.write_pcm(&audio_lookahead.as_ref().unwrap().take(index)?,first)?;
+                        stages.audio_ms=audio_started.elapsed().as_secs_f64()*1000.0;
                     }
-                    count+=1;Ok(())
+                    count+=1;previous_rgba=Some(rgba);Ok(stages)
+                })();
+                let failed=result.is_err();let _=ack.send(result);if failed{break;}
+            }
+            ExportPacket::Repeat{index,count:repeat_count,ack}=>{
+                let result=(||{
+                    if cancelled.load(Ordering::Relaxed){return Err("Export cancelled".into());}
+                    if index!=count || repeat_count==0 || repeat_count>120
+                        ||repeat_count>config.frame_count-count {
+                        return Err("Repeated frames are out of sequence or exceed export duration".into());
+                    }
+                    let rgba=previous_rgba.as_ref().ok_or("Cannot repeat before a source frame has been encoded")?;
+                    let mut accumulated=super::stream::NativeFrameStages::default();
+                    for _ in 0..repeat_count {
+                        if cancelled.load(Ordering::Relaxed){return Err("Export cancelled".into());}
+                        let stages=encoder.write_rgba_stages(rgba,count)?;
+                        accumulated.buffer_ms+=stages.buffer_ms;
+                        accumulated.convert_ms+=stages.convert_ms;
+                        accumulated.submit_ms+=stages.submit_ms;
+                        accumulated.input_format=stages.input_format;
+                        if audio_included {
+                            let audio_started=Instant::now();
+                            let first=u64::from(count)*48000/u64::from(config.fps);
+                            encoder.write_pcm(&audio_lookahead.as_ref().unwrap().take(count)?,first)?;
+                            accumulated.audio_ms+=audio_started.elapsed().as_secs_f64()*1000.;
+                        }
+                        count+=1;
+                    }
+                    Ok(accumulated)
                 })();
                 let failed=result.is_err();let _=ack.send(result);if failed{break;}
             }
@@ -832,7 +1037,7 @@ pub(super) fn stream_export(
                     if count!=config.frame_count{return Err(format!("Incomplete export: received {count} of {} frames",config.frame_count));}
                     encoder.finish()?;Ok(())
                 })();
-                drop(mixer);drop(encoder);
+                drop(audio_lookahead);drop(encoder);
                 let result=result.and_then(|_|{
                     if cancelled.load(Ordering::Relaxed){return Err("Export cancelled".into());}
                     if destination.exists(){return Err("Output file already exists; refusing to overwrite".into());}
@@ -845,12 +1050,40 @@ pub(super) fn stream_export(
             ExportPacket::Cancel=>break,
         }
     }
-    drop(mixer);drop(encoder);let _=std::fs::remove_file(&temporary);
+    drop(audio_lookahead);drop(encoder);let _=std::fs::remove_file(&temporary);
 }
 
 #[cfg(test)]
 mod runtime_tests {
     use super::*;
+    /// Actual Windows Media Foundation baseline. This benchmark deliberately
+    /// writes a real H.264/MP4 file and times both WriteSample and Finalize.
+    /// Ignored by normal tests because hardware and encoder availability vary.
+    /// It tests the native encoder ONLY, not decoding, effects or video IPC.
+    #[test]
+    #[ignore = "Run explicitly on Windows to measure actual native encode throughput"]
+    fn native_1080p_h264_encoder_throughput() {
+        let _runtime = MfRuntime::new().expect("Windows Media Foundation unavailable");
+        let nonce = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+        let output = std::env::temp_dir().join(format!("huelith-native-1080p-benchmark-{nonce}.mp4"));
+        let encoder = Encoder::new(&output, 1920, 1080, 120).expect("H.264 encoder unavailable");
+        let mut frame = vec![0u8; 1920*1080*4];
+        for pixel in frame.chunks_exact_mut(4) { pixel.copy_from_slice(&[42, 92, 180, 255]); }
+        let begun = Instant::now();
+        for index in 0u32..240 {
+            frame[0] = (index % 256) as u8;
+            encoder.write_rgba(&frame, index).expect("Native encoder rejected a frame");
+        }
+        encoder.finish().expect("Could not finalize native MP4");
+        let elapsed = begun.elapsed().as_secs_f64();
+        drop(encoder);
+        let bytes = std::fs::metadata(&output).unwrap().len();
+        let _ = std::fs::remove_file(&output);
+        eprintln!("Huelith native-only 1080p H.264 at 120fps test: {:.1} export FPS / {:.2} ms-frame / {:.2} MB output; NOT the full timeline renderer",
+            240.0 / elapsed, 1000.0*elapsed/240.0, bytes as f64/1_000_000.0);
+        assert!(bytes > 1024, "Video output is unexpectedly small");
+    }
+
     #[test]
     fn media_foundation_urls_normalize_canonical_drive_and_unc_paths(){
         for (path,expected) in [(r"\\?\E:\Media\a file.mp4",r"E:\Media\a file.mp4"),
@@ -939,6 +1172,54 @@ mod runtime_tests {
         }
         let (ack,reply)=std::sync::mpsc::channel();tx.send(ExportPacket::Finish(ack)).unwrap();let result=reply.recv().unwrap();worker.join().unwrap();result
     }
+    #[test]
+    fn repeated_native_frames_keep_h264_timestamps_and_contiguous_aac_audio(){
+        use super::super::stream::{StreamConfig,AudioSource,ExportPacket};
+        let folder=Path::new(env!("CARGO_MANIFEST_DIR")).join("../output/media-qa");
+        std::fs::create_dir_all(&folder).unwrap();
+        let nonce=SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+        let wav=folder.join(format!("repeat-source-{nonce}.wav"));wave(&wav);
+        let output=folder.join(format!("repeat-export-{nonce}.mp4"));
+        let config=StreamConfig{output_path:output.display().to_string(),width:160,height:90,
+            fps:30,frame_count:60,bitrate:Some(1_000_000),audio:vec![AudioSource{
+                path:wav.display().to_string(),start:0.,source_in:0.,duration:2.,volume:1.,required:true,
+                ..Default::default()}]};
+        let (tx,rx)=std::sync::mpsc::sync_channel(2);
+        let (ready_tx,ready_rx)=std::sync::mpsc::channel();
+        let cancel=std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let worker_cancel=cancel.clone();let settings=config.clone();
+        let worker=std::thread::spawn(move||stream_export(Path::new(&settings.output_path),&settings,rx,worker_cancel,ready_tx));
+        ready_rx.recv().unwrap().unwrap();
+        let mut red=vec![0u8;160*90*4];
+        for pixel in red.chunks_exact_mut(4){pixel.copy_from_slice(&[220,40,38,255]);}
+        let (ack,reply)=std::sync::mpsc::channel();
+        tx.send(ExportPacket::Frame{index:0,rgba:red,ack}).unwrap();reply.recv().unwrap().unwrap();
+        // 58 full frames of identical source pixels are encoded in Rust with
+        // their own timestamps and PCM; nothing was transferred for them.
+        let (ack,reply)=std::sync::mpsc::channel();
+        tx.send(ExportPacket::Repeat{index:1,count:58,ack}).unwrap();reply.recv().unwrap().unwrap();
+        let mut blue=vec![0u8;160*90*4];
+        for pixel in blue.chunks_exact_mut(4){pixel.copy_from_slice(&[20,45,220,255]);}
+        let (ack,reply)=std::sync::mpsc::channel();
+        tx.send(ExportPacket::Frame{index:59,rgba:blue,ack}).unwrap();reply.recv().unwrap().unwrap();
+        let (ack,reply)=std::sync::mpsc::channel();tx.send(ExportPacket::Finish(ack)).unwrap();
+        let report=reply.recv().unwrap().unwrap();worker.join().unwrap();
+        assert_eq!(report.frames_written,60);assert!(report.audio_included);
+        let _runtime=MfRuntime::new().unwrap();
+        let info=probe(&output).unwrap();
+        assert!((info.duration_100ns.unwrap_or_default() as f64/10_000_000.-2.).abs()<0.12);
+        let first=decode_preview(&output).unwrap();
+        assert!(first.rgba[0]>140&&first.rgba[2]<100,"repeated stream first frame should be red");
+        let source=AudioSource{path:output.display().to_string(),required:true,..Default::default()};
+        let mut reader=AudioReader::new(&source).unwrap().unwrap();
+        let mut rms=|time:f64|{
+            let sum:f32=(0..480).map(|i|reader.at(time+i as f64/48000.).unwrap()[0].powi(2)).sum();
+            (sum/480.).sqrt()
+        };
+        assert!(rms(0.6)<0.02);assert!(rms(1.2)>0.08,"AAC was lost or shifted while video frames repeated");
+        let _=std::fs::remove_file(&output);let _=std::fs::remove_file(&wav);
+    }
+
     #[test]
     fn native_stream_encodes_trimmed_resampled_audio_and_cleans_cancelled_output(){
         use super::super::stream::{StreamConfig,AudioSource};

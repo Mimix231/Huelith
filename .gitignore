@@ -9,3 +9,11 @@ src-tauri/target/
 .env.local
 .vite/
 zips/
+# BiRefNet JSON model metadata is intentionally tracked; only heavyweight
+# ONNX artifacts and generated runtimes are ignored.
+/public/models/birefnet/onnx/
+/public/models/birefnet/checksums.json
+/public/models/runtime/
+
+# Full BiRefNet ONNX input is distributed with the installer, not committed to Git.
+/src-tauri/resources/models/birefnet/model.onnx

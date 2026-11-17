@@ -101,10 +101,15 @@ function Scope({ kind }: { kind: 'waveform'|'vectorscope'|'histogram' }) {
       const time = performance.now();
       if (time-last<140) return;
       last=time;
-      const target=canvas.current, source=document.querySelector<HTMLCanvasElement>('.hv-preview-canvas');
+      const target=canvas.current, source=document.querySelector<HTMLCanvasElement>('.hv-preview-gpu[data-active="true"]')??document.querySelector<HTMLCanvasElement>('.hv-preview-canvas');
       if (!target || !source) return;
       const ctx=target.getContext('2d')!, w=target.width, h=target.height;
-      read.drawImage(source,0,0,128,72);
+      try{read.clearRect(0,0,128,72);read.drawImage(source,0,0,128,72);}
+      catch{
+        const cpu=document.querySelector<HTMLCanvasElement>('.hv-preview-canvas');
+        if(!cpu)return;
+        read.clearRect(0,0,128,72);read.drawImage(cpu,0,0,128,72);
+      }
       const data=read.getImageData(0,0,128,72).data;
       ctx.fillStyle='#15141d';ctx.fillRect(0,0,w,h);
       ctx.strokeStyle='#515064';

@@ -65,7 +65,12 @@ function bridgeMock() {
     exports:module.exports,window:{__TAURI_INTERNALS__:{}},
     ImageData:class ImageData { constructor(bytes,w,h){ this.data=bytes;this.width=w;this.height=h; }},
     Uint8ClampedArray,
-    require:(name)=>{assert.equal(name,'@tauri-apps/api/core');return {invoke:(command,args)=>{calls.push({command,args});return Promise.resolve({});}};},
+    require:(name)=>{
+      if(name==='./export-verification')return {verifyEncodedVideo() {}};
+      if(name==='./export-pipeline')return {overlapRenderAndEncode: async()=>{}};
+      assert.equal(name,'@tauri-apps/api/core');
+      return {invoke:(command,args)=>{calls.push({command,args});return Promise.resolve({});}};
+    },
   },{filename:'native-media.js'});
   return {api:module.exports,calls};
 }

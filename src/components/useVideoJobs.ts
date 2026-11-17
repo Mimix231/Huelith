@@ -4,7 +4,7 @@ import {readDeliveries,removeDelivery,saveDeliveryState} from '../editor/video/d
 import type {NativeExportReport} from '../editor/video/native-media';
 
 export type VideoJobTask=(signal:AbortSignal,progress:(message:string,fraction?:number)=>void)=>Promise<void>;
-export type VideoJob={id:string;name:string;status:'queued'|'running'|'complete'|'failed'|'cancelled';message:string;fraction?:number};
+export type VideoJob={id:string;name:string;status:'queued'|'running'|'complete'|'failed'|'cancelled';message:string;fraction?:number;previewDataUrl?:string};
 type Entry=VideoJob & {
   projectId:string;created:number;task?:VideoJobTask;plan?:DeliveryPlan;cursor:number;
   controller?:AbortController;persisting?:boolean;delivery?:boolean;
@@ -20,7 +20,7 @@ const subscribe=(listener:()=>void)=>{
 };
 const getSnapshot=()=>snapshot;
 const publish=()=>{
-  snapshot=entries.map(({id,name,status,message,fraction,projectId,delivery})=>({id,name,status,message,fraction,projectId,delivery}));
+  snapshot=entries.map(({id,name,status,message,fraction,previewDataUrl,projectId,delivery})=>({id,name,status,message,fraction,previewDataUrl,projectId,delivery}));
   for(const listener of subscribers)listener();
 };
 const active=(entry:Entry)=>entry.status==='running'||entry.status==='queued';
@@ -53,10 +53,11 @@ function startNext(){
   const job=entries.find(entry=>entry.status==='queued'&&!entry.persisting);
   if(!job)return;
   const controller=new AbortController();
-  running=job;job.controller=controller;job.status='running';job.message='Starting…';job.fraction=undefined;publish();
-  const report=(message:string,fraction?:number)=>{
+  running=job;job.controller=controller;job.status='running';job.message='Starting…';job.fraction=undefined;job.previewDataUrl=undefined;publish();
+  const report=(message:string,fraction?:number,previewDataUrl?:string)=>{
     if(controller.signal.aborted||!entries.includes(job))return;
-    job.message=message;job.fraction=fraction;publish();
+    job.message=message;job.fraction=fraction;
+    if(previewDataUrl)job.previewDataUrl=previewDataUrl;publish();
   };
   void (async()=>{
     try{
@@ -77,7 +78,7 @@ function startNext(){
         await job.task(controller.signal,report);
         controller.signal.throwIfAborted();
       }
-      job.status='complete';job.message='Finished';job.fraction=1;
+      job.status='complete';job.message=job.message.includes('Export verified')?job.message:'Finished';job.fraction=1;
     }catch(error){
       job.status=controller.signal.aborted?'cancelled':'failed';
       job.message=controller.signal.aborted?'Cancelled':String(error).replace(/^Error: /,'');

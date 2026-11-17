@@ -325,22 +325,7 @@
   overflow: hidden;
 }
 
-.app.is-video-studio.theme-studio {
-  --app-bg: #16171f;
-  --panel-bg: #1d1e28;
-  --title-bg: #1a1b24;
-  --control-bg: #272834;
-  --canvas-bg: #14151c;
-  --text: #f3f2f7;
-  --muted: #b9b8c6;
-  --border: #333440;
-  --accent: #bc94f5;
-  --accent-soft: #373147;
-  --accent-line: #8e72b4;
-  --theme-pattern: none;
-  background: var(--app-bg);
-  font-family: "Segoe UI", system-ui, sans-serif;
-}
+.app.is-video-studio { font-family: "Segoe UI", system-ui, sans-serif; }
 .app.is-video-studio .hv-studio-titlebar {
   flex: 0 0 45px;
   height: 45px;
@@ -1424,3 +1409,18 @@
     animation: hv-studio-feedback 160ms var(--hv-motion-ease,ease-out);
   }
 }
+
+/* Compact, keyframe-aware position controls (video project only) */
+.hv-position-sliders{display:grid;gap:8px;margin:7px 0 11px;padding:9px;border:1px solid var(--hv-border,#404052);border-radius:10px;background:color-mix(in srgb,var(--hv-surface,#242634) 70%,transparent)}
+.hv-position-slider{display:grid;grid-template-columns:20px minmax(0,1fr) 48px;gap:8px;align-items:center;font-size:11px;color:var(--text,#fff)}
+.hv-position-axis{font-weight:700;color:var(--hv-quiet,#bdb7d6)}
+.hv-position-slider .hv-studio-range{width:100%;min-width:0;margin:0;accent-color:var(--accent,#bba3ff)}
+.hv-position-slider output{text-align:right;font-variant-numeric:tabular-nums;font-size:10px;color:var(--hv-quiet,#d6cfea)}
+.hv-position-key{display:flex;align-items:center;justify-content:space-between;gap:10px;color:var(--hv-quiet,#d6cfea);font-size:10px}
+.hv-position-hint{font-size:10px;color:var(--hv-quiet,#bdb7d6)}
+.hv-timeline-primary .hv-box-select-tool[aria-pressed=true]{border-color:var(--accent,#bba3ff);background:color-mix(in srgb,var(--accent,#bba3ff) 22%,transparent)}
+.hv-timeline-scroll.is-box-select .hv-track-lane,.hv-timeline-scroll.is-box-select .hv-clip{cursor:crosshair}
+.hv-selection-marquee{position:absolute;z-index:10;pointer-events:none;box-sizing:border-box;border:1px solid #d6baff;background:#b292f837;box-shadow:0 0 0 1px #d4c5ff22 inset;border-radius:3px}
+/* Keep timeline ruler and rows aligned with useTimelineNavigation's 200px
+ * header coordinate system. Without this the clip marquee drifts horizontally. */
+.app.is-video-studio .hv-track-name { box-sizing:border-box; flex:0 0 200px; width:200px; min-width:200px; }

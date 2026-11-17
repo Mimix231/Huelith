@@ -1,11 +1,13 @@
 import {invoke} from '@tauri-apps/api/core';
 import {audioGainAt,audioPanAt,audioPositionAt,audioVoiceMixAt} from './audio-plan';
 import {isNativeMediaDesktop,type NativeAudioSource} from './native-media';
+import {AUDIO_PREVIEW_RATE,AUDIO_PREVIEW_WINDOW} from './audio-segment-cursor';
 
-export const AUDIO_RATE=48_000;
-export const AUDIO_WINDOW=AUDIO_RATE;
+export const AUDIO_RATE=AUDIO_PREVIEW_RATE;
+export const AUDIO_WINDOW=AUDIO_PREVIEW_WINDOW;
 export const AUDIO_METER_STEP=2400;
 export type AudioWindow={samples:Int16Array;levels:Record<string,number>[];buffer?:AudioBuffer};
+type VoiceWindowState={sample:number;low:[number,number];band:[number,number];envelope:[number,number]};
 
 function readPacket(data:ArrayBuffer):AudioWindow {
   const header=new DataView(data),size=header.getUint32(0,true);
@@ -36,6 +38,7 @@ export class PreviewAudioWindows {
   private session?:Promise<number>;
   private queue:Promise<unknown>=Promise.resolve();
   private closed=false;
+  private readonly voiceStates=new Map<string,VoiceWindowState>();
 
   constructor(private readonly plan:readonly NativeAudioSource[],private readonly urls:Record<string,string>){
     this.native=isNativeMediaDesktop()&&plan.every(source=>!source.path.startsWith('browser:'));
@@ -60,6 +63,7 @@ export class PreviewAudioWindows {
     this.closed=true;
     this.windows.clear();
     this.decoded.clear();
+    this.voiceStates.clear();
     void this.session?.then(id=>invoke('media_close_preview_audio',{id})).catch(()=>{});
   }
 
@@ -93,14 +97,27 @@ export class PreviewAudioWindows {
     const audible=this.plan.filter(source=>source.start<end&&source.start+source.duration>start);
     for(const source of audible){
       const url=this.urls[source.assetId??''];
-      if(!url)continue;
+      if(!url){
+        if(source.required)throw Error(`Required audio asset ${source.assetId??source.id??'(unknown)'} is unavailable.`);
+        continue;
+      }
       let buffer:AudioBuffer;
       try{buffer=await this.decode(url);}catch(error){if(source.required)throw error;else continue;}
       const begin=Math.max(0,Math.ceil(source.start*AUDIO_RATE)-first);
       const limit=Math.min(AUDIO_WINDOW,Math.ceil((source.start+source.duration)*AUDIO_RATE)-first);
       const channel=[buffer.getChannelData(0),buffer.getChannelData(Math.min(1,buffer.numberOfChannels-1))];
-      const low=[0,0],band=[0,0],envelope=[0,0];
+      const stateKey=source.id??`${source.assetId}:${source.start}`;
+      const previous=this.voiceStates.get(stateKey);
+      const state:VoiceWindowState=previous?.sample===first+begin?previous:
+        {sample:first+begin,low:[0,0],band:[0,0],envelope:[0,0]};
+      const {low,band,envelope}=state;
       for(let i=begin;i<limit;i++){
+        // Decode/mix on the WebView without monopolizing the animation frame.
+        // The same sample-accurate timeline and voice-filter state is preserved.
+        if(i>begin&&(i-begin)%12000===0){
+          await new Promise<void>(resolve=>setTimeout(()=>resolve(),0));
+          if(this.closed)throw new DOMException('Audio preview closed','AbortError');
+        }
         const time=(first+i)/AUDIO_RATE,{sourceTime}=audioPositionAt(source,time);
         const cursor=sourceTime*buffer.sampleRate,index=Math.floor(cursor),blend=cursor-index;
         const frame=channel.map(data=>(data[index]??0)*(1-blend)+(data[index+1]??0)*blend);
@@ -135,6 +152,8 @@ export class PreviewAudioWindows {
         const meter=levels[Math.floor(i/AUDIO_METER_STEP)];
         if(source.trackId)meter[source.trackId]=Math.max(meter[source.trackId]??0,Math.abs(frame[0]*gain),Math.abs(frame[1]*gain));
       }
+      state.sample=first+limit;
+      this.voiceStates.set(stateKey,state);
     }
     return {samples:Int16Array.from(mixed,value=>Math.round(Math.max(-1,Math.min(1,value))*32767)),levels};
   }

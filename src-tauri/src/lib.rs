@@ -51,6 +51,8 @@ async fn list_system_fonts() -> Vec<String> {
 pub fn run() {
     tauri::Builder::default()
         .manage(media::MediaExportSessions::default())
+        .manage(media::NativeTimelineJobs::default())
+        .manage(media::native_timeline::NativeTimelinePreviews::default())
         .manage(media::PreviewAudioSessions::default())
         .manage(video_captions::CaptionJobs::default())
         .manage(media::recording_tools::RecordingJobs::default())
@@ -75,6 +77,10 @@ pub fn run() {
             projects::write_project_atomic,
             projects::read_project_file,
             projects::video_collect_project,
+            media::gpu_scene::media_render_gpu_scene,
+            media::media_gpu_open_sources,
+            media::media_gpu_acquire_frames,
+            media::media_gpu_close_sources,
             media::media_capabilities,
             media::media_probe_file,
             media::media_analyze_audio,
@@ -92,8 +98,15 @@ pub fn run() {
             media::recording_tools::video_recording_timecode,
             media::media_encode_rgba_frames,
             media::media_authorize_source,
+            media::native_timeline::media_export_native_timeline,
+            media::native_timeline::media_open_native_preview,
+            media::native_timeline::media_read_native_preview,
+            media::native_timeline::media_close_native_preview,
+            media::native_timeline::media_render_native_png,
+            media::native_timeline::media_cancel_native_timeline,
             media::media_begin_export,
             media::media_push_export_frame,
+            media::media_repeat_export_frames,
             media::media_finish_export,
             media::media_cancel_export,
             aurora::aurora_cpu_info,

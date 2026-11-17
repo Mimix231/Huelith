@@ -1,0 +1,49 @@
+/* Video Editor's single export surface: settings -> Save As -> native render -> completion.
+   Shadow-only scenic SVG backgrounds live at src/themes/shadow/video-export/. */
+.hv-export-dialog.MuiDialog-paper{width:min(1110px,calc(100vw - 40px));max-width:none;max-height:min(860px,calc(100vh - 32px));margin:16px;background:#101a2e;color:#eef3ff;border:1px solid #5086bc;border-radius:18px;box-shadow:0 25px 90px #030812b8;overflow:hidden}
+.hv-export-window{display:flex;flex-direction:column;min-height:485px;font-family:inherit;background:linear-gradient(128deg,#0e1729,#15253c 65%,#101a30)}
+.hv-export-heading{display:flex;align-items:center;min-height:68px;padding:14px 22px;gap:17px;border-bottom:1px solid #849cbd3b;font-size:16px;white-space:nowrap}
+.hv-export-heading strong{font-size:20px;letter-spacing:.01em}.hv-export-heading-divider{height:24px;width:1px;background:#89a0c36a;margin:0 4px}
+.hv-export-logo{font-size:29px;font-weight:950;line-height:1;letter-spacing:-.16em;padding-right:6px;color:#ac88ff;font-style:italic;text-shadow:1px -2px 8px #4fa9e899}
+.hv-export-heading>span:nth-last-child(2){overflow:hidden;text-overflow:ellipsis}
+.hv-export-heading button{margin-left:auto}
+.hv-export-close{width:37px;height:37px;display:grid;place-items:center;border:1px solid #6e8eae7a;border-radius:9px;color:inherit;background:#ffffff0d;cursor:pointer}
+.hv-export-close:hover{background:#ffffff23}
+.hv-export-layout{display:grid;grid-template-columns:295px minmax(0,1fr);min-height:442px}
+.hv-export-sidebar{padding:25px 21px;min-width:0;border-right:1px solid #849cbd35;display:flex;flex-direction:column;gap:12px}
+.hv-export-cover{position:relative;isolation:isolate;width:100%;aspect-ratio:16/9;border-radius:12px;overflow:hidden;border:1px solid #92a7e74d;background:radial-gradient(ellipse at 60% 35%,#59478b,#172d46 66%,#101a32);background-size:cover;background-position:center}
+.hv-export-theme-shadow .hv-export-art-settings{background-image:url('../themes/shadow/video-export/settings.svg')}
+.hv-export-theme-shadow .hv-export-art-rendering{background-image:url('../themes/shadow/video-export/rendering.svg')}
+.hv-export-theme-shadow .hv-export-art-complete{background-image:url('../themes/shadow/video-export/complete.svg')}
+.hv-export-cover-clock{position:absolute;right:8px;bottom:8px;font-size:11px;font-weight:700;padding:4px 7px;color:white;background:#060919b8;border-radius:5px}
+.hv-export-sidebar-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}.hv-export-sidebar>small{font-size:11px;color:#b7c5e5}
+.hv-export-recent{border-top:1px solid #849cbd38;margin-top:12px;padding-top:11px}.hv-export-recent h3{font-size:12px;color:#becce6;font-weight:600;margin:4px 0 15px}.hv-export-recent>p{font-size:11px;color:#9aa9c1}
+.hv-export-history-row{display:flex;gap:10px;align-items:center;margin-bottom:13px;min-width:0}.hv-export-history-icon{display:grid;place-items:center;flex:none;width:43px;height:32px;border:1px solid #718eab58;border-radius:6px;background:#26334e;color:#b5bffb}
+.hv-export-history-row>span:last-child{min-width:0;display:grid;gap:4px}.hv-export-history-row b{font-size:10px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hv-export-history-row small{display:flex;align-items:center;gap:4px;color:#6fdda7;font-size:10px}
+.hv-export-main{position:relative;min-width:0;display:flex;flex-direction:column;gap:14px;padding:28px 30px 21px;overflow:auto}.hv-export-intro h2,.hv-export-progress-detail h2{font-size:20px;margin:0 0 6px;font-weight:700}.hv-export-intro p{font-size:12px;color:#aebbd3;margin:0}
+.hv-export-settings-grid{display:grid;grid-template-columns:1fr 1fr;column-gap:16px;row-gap:15px}.hv-export-control{display:grid;gap:7px;font-size:12px;color:#c8d4e9;font-weight:600;min-width:0}.hv-export-name{grid-column:1/-1}
+.hv-export-control select,.hv-export-control input{appearance:auto;color:#edf4ff;background:#1b2b43;border:1px solid #547199;border-radius:8px;min-height:41px;padding:8px 12px;width:100%;min-width:0;font:inherit;font-weight:500;outline:none}.hv-export-control :is(select,input):focus-visible{border-color:#b2a0ff;box-shadow:0 0 0 2px #9878f64c}.hv-export-control option{background:#17243b}
+.hv-export-audio{display:flex;align-items:center;gap:9px;font-size:12px;color:#c5d1e4;cursor:pointer}.hv-export-audio input{accent-color:#9383fb;width:15px;height:15px}
+.hv-export-inline-alert{padding:11px;border:1px solid #d4a65873;background:#7a522c21;border-radius:8px;font-size:12px;display:grid;gap:6px}.hv-export-inline-alert button{justify-self:start;border:0;background:transparent;color:#edca9a;text-decoration:underline;cursor:pointer;padding:0}
+.hv-export-error{margin:2px 0 0;font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere;color:#ffc2c7}
+.hv-export-spacer{flex:1;min-height:4px}.hv-export-actions{display:flex;gap:10px;justify-content:flex-end;align-items:center;padding-top:16px;border-top:1px solid #a0b8da30}.hv-export-actions>span{margin-right:auto;font-size:11px;color:#a0afc7}
+.hv-export-actions button{min-height:38px;border-radius:9px;border:1px solid #829bbd7b;color:#edf3ff;font-size:12px;font-weight:600;display:flex;gap:7px;align-items:center;padding:8px 15px;cursor:pointer;white-space:nowrap}
+.hv-export-button-secondary{background:linear-gradient(#243753,#18263e)}.hv-export-button-primary{background:linear-gradient(125deg,#7356e1,#9664ef);box-shadow:0 0 13px #7356e147}.hv-export-actions button:hover:not(:disabled){filter:brightness(1.12)}.hv-export-actions button:disabled{opacity:.4;cursor:wait}
+.hv-export-progress-heading{display:flex;align-items:center;gap:24px;min-height:107px}.hv-export-progress-ring{flex:none;width:104px;height:104px;display:grid;place-items:center;position:relative;border-radius:50%;background:conic-gradient(#53c8fe var(--hv-percent),#334965 var(--hv-percent));box-shadow:0 0 17px #53bcf32a}.hv-export-progress-ring:before{content:'';position:absolute;inset:12px;border-radius:50%;background:#152139}.hv-export-progress-ring strong{position:relative;font-size:23px;color:#f4f6ff;font-variant-numeric:tabular-nums}.hv-export-progress-detail{flex:1;min-width:0}.hv-export-progress-detail small{display:block;font-size:12px;color:#aebbd0;margin-top:9px}.hv-export-progress-bar{height:11px;background:#314560;border-radius:20px;overflow:hidden;margin-top:16px}.hv-export-progress-bar span{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#40c4fa,#8f66fc);transition:width .2s ease}
+.hv-export-video-preview{position:relative;overflow:hidden;border-radius:12px;aspect-ratio:16/9;background:radial-gradient(at 55% 35%,#293559,#0a1122 80%);border:1px solid #608fc3;isolation:isolate;min-height:190px}.hv-export-video-preview>canvas{height:100%;width:100%;object-fit:contain;position:absolute;inset:0}.hv-export-video-preview .hv-preview-metric{display:none}.hv-export-video-controls{position:absolute;bottom:0;left:0;right:0;display:flex;align-items:center;gap:9px;padding:12px 16px;background:linear-gradient(transparent,#000a);font-size:12px;text-shadow:0 1px 4px #000}.hv-export-video-sample{margin-left:auto;color:#c1c9e2;font-size:10px}.hv-export-preview-error{position:absolute;inset:0;display:grid;place-items:center;background:#081221de;color:#cfdbec;font-size:12px}.hv-export-saved-location{font-size:11px;color:#b7c8e2;word-break:break-all;margin:0 0 2px}
+.hv-export-theme-shadow .hv-export-window{background:linear-gradient(145deg,#101a30,#111e37 65%,#181833)}.hv-export-theme-shadow .hv-export-cover{box-shadow:inset 0 0 15px #170b41a6}
+@media(max-width:780px){.hv-export-layout{grid-template-columns:1fr}.hv-export-sidebar{display:none}.hv-export-main{padding:20px;min-height:400px}.hv-export-heading{min-height:56px;padding:12px 17px}.hv-export-heading strong{font-size:16px}.hv-export-progress-heading{gap:12px}.hv-export-progress-ring{width:78px;height:78px}.hv-export-progress-ring:before{inset:10px}}
+@media(max-height:660px){.hv-export-main{padding:16px;gap:10px}.hv-export-sidebar{padding:16px}.hv-export-cover{max-height:140px}.hv-export-dialog.MuiDialog-paper{max-height:calc(100vh - 12px)}}
+@media(prefers-reduced-motion:reduce){.hv-export-progress-bar span,.hv-export-actions button{transition:none!important}}
+
+/* The export preview is a snapshot from its own frame stream. Do not launch
+ * another video decoder, renderer or competing playback clock in this dialog. */
+.hv-export-frame-image{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#050b16}
+.hv-export-preview-pending{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:12px;text-align:center;color:#b8cce4;padding:32px;background:radial-gradient(ellipse at center,#21324c,#080e1a 80%);font-size:13px}
+.hv-export-preview-pending>span{max-width:460px;font-size:11px;overflow-wrap:anywhere;color:#92a6c5}
+.hv-export-live-status{line-height:1.5;overflow-wrap:anywhere;max-height:60px;overflow:auto}
+.hv-export-progress-waiting{background:conic-gradient(#53c8fe 0% 9%,#334965 9% 100%);animation:hv-export-idle 1.3s linear infinite}
+@keyframes hv-export-idle{to{transform:rotate(360deg)}}
+.hv-export-progress-waiting strong{animation:hv-export-idle-text 1.3s linear infinite}
+@keyframes hv-export-idle-text{to{transform:rotate(-360deg)}}
+@media(prefers-reduced-motion:reduce){.hv-export-progress-waiting,.hv-export-progress-waiting strong{animation:none}}

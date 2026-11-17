@@ -13,7 +13,7 @@ const storage='huelith-video-workspace-v2';
 const keys=Object.fromEntries(VIDEO_COMMANDS.map(([id,,key])=>[id,key])) as StudioKeys;
 const bounded=(value:unknown,fallback:number,min:number,max:number)=>typeof value==='number'&&Number.isFinite(value)?Math.max(min,Math.min(max,value)):fallback;
 const layout=(value?:Partial<StudioLayout>):StudioLayout=>({
-  library:bounded(value?.library,230,175,500),inspector:bounded(value?.inspector,240,180,460),
+  library:bounded(value?.library,230,175,720),inspector:bounded(value?.inspector,240,180,600),
   timeline:bounded(value?.timeline,292,180,850),swap:value?.swap===true,
 });
 export const validStudioKey=(code:string)=>/^(?:Key[A-Z]|Digit\d|BracketLeft|BracketRight|Comma|Period|Semicolon|Slash|Backslash|Minus|Equal|Backquote)$/.test(code);

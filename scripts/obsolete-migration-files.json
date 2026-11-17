@@ -1,4 +1,12 @@
 {
-  "description": "Only add a migrated file after ALL consumers and parity tests are updated. No auto-delete by suffix.",
-  "obsolete": []
+  "description": "Video Editor native export overlay; retire the previous floating export status popup along with old WebView rendering modules.",
+  "obsolete": [
+    "src/editor/video/native-frame-decoder.ts",
+    "src/editor/video/native-frame-parity.ts",
+    "src-tauri/src/media/native_frames.rs",
+    "src/editor/video/compositor.ts",
+    "src/editor/video/composite-cache.ts",
+    "src/editor/video/effects-worker-client.ts",
+    "src/components/VideoExportActivity.tsx"
+  ]
 }

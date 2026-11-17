@@ -49,3 +49,86 @@
 .cutout-edit-parameters label{display:grid;gap:5px;font-size:10px}
 .cutout-edit-parameters select{background:var(--surface-input,#25263e);color:var(--text,#e7eaf8);border:1px solid var(--border,#ffffff38);border-radius:7px;padding:7px}
 .cutout-edit-parameters input[type=range]{accent-color:var(--accent,#98e4db)}
+
+/* Cutout 3.0: theme-aware offline AI action, separate from manual masks. */
+.huelith-cutout-options .cutout-ai-button { width:100%; min-height:40px; border-radius:10px; cursor:pointer; background:var(--accent-color, #8e78c7); color:var(--on-accent, #fff); border:1px solid var(--border-color, rgba(255,255,255,.2)); font-weight:650; padding:9px 12px; }
+.huelith-cutout-options .cutout-ai-button:disabled {cursor:wait;opacity:.65;}
+.huelith-cutout-options .cutout-ai-status {font-size:12px;line-height:1.4;overflow-wrap:anywhere;}
+
+/* Cutout Atelier 3.1 — compact, theme-aware editing surface. Keep all tools,
+   but put infrequent polygon/path controls behind an expandable rail. */
+.huelith-cutout-dialog{
+  width:min(1330px,96vw);height:min(840px,94vh);
+  background:var(--panel-bg,var(--surface-panel,#202235));
+  border:1px solid var(--accent-line,var(--border,#77738955));
+  color:var(--text,var(--text-primary,#f0eef9));
+  box-shadow:0 28px 92px #0008;
+}
+.huelith-cutout-backdrop{background:#090d19bd;backdrop-filter:blur(9px)}
+.huelith-cutout-dialog>header{
+  min-height:52px;padding:8px 16px;background:var(--panel-bg,#222237);
+  border-color:var(--border,#77738955);
+}
+.huelith-cutout-dialog .cutout-brand>span{width:32px;height:32px;font-size:20px;background:var(--accent-soft,var(--active-bg,#b0a0ee44));color:var(--accent,#baaeec)}
+.huelith-cutout-dialog .cutout-brand strong{font-size:14px}
+.huelith-cutout-dialog .cutout-brand small{font-size:10px;letter-spacing:.15px;color:var(--muted,#bbb7d0)}
+.cutout-header-help{font-size:10px;color:var(--muted,#a6a1b9)}
+.huelith-cutout-layout{grid-template-columns:67px minmax(0,1fr) 252px}
+.huelith-cutout-tools,.huelith-cutout-options{background:var(--panel-bg,#1c1d30);border-color:var(--border,#585b7366)}
+.huelith-cutout-tools{padding:9px 5px;gap:5px}
+.huelith-cutout-tools button{min-height:50px;font-size:19px;border-radius:9px;gap:3px}
+.huelith-cutout-tools button small{font-size:10px}
+.huelith-cutout-tools button[aria-pressed=true],.cutout-action-toggle button[aria-pressed=true]{
+  background:var(--accent-soft,var(--active-bg,#8b77d533));border-color:var(--accent,#a99bee);
+  color:var(--text,#fff);box-shadow:none;
+}
+.cutout-more-tools{margin-top:10px;padding-top:9px;border-top:1px solid var(--border,#ffffff20);width:100%}
+.cutout-more-tools summary{font-size:10px;text-align:center;cursor:pointer;line-height:1.6;color:var(--muted,#b0b0ca);list-style:none;padding:3px 0}
+.cutout-more-tools summary:focus-visible{outline:2px solid var(--accent,#aa95e4);outline-offset:2px}
+.cutout-more-tools summary::after{content:'⌄';display:block}
+.cutout-more-tools[open] summary::after{content:'⌃'}
+.cutout-more-tools button{width:100%;min-height:46px}
+.huelith-cutout-options{padding:13px 12px;gap:9px}
+.huelith-cutout-options .cutout-section-title{
+  margin:6px 0 0;padding:0 0 6px;border-bottom:1px solid var(--border,#ffffff22);
+  letter-spacing:.35px;font-size:10px;text-transform:uppercase;color:var(--muted,#bbb5d6);
+}
+.huelith-cutout-options label{font-size:11px;color:var(--text,#ebe8ff)}
+.huelith-cutout-options label.cutout-slider{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px;align-items:center}
+.huelith-cutout-options .cutout-slider output{
+  margin:0;justify-self:end;min-width:45px;text-align:right;font-variant-numeric:tabular-nums;
+  color:var(--muted,#a9b4d0);font-size:11px;
+}
+.huelith-cutout-options label.cutout-slider input[type=range]{grid-column:1/-1;min-width:0;width:100%;accent-color:var(--accent,#a3b6f1);margin:0 0 3px;cursor:pointer}
+.huelith-cutout-options .cutout-ai-button{background:var(--accent,var(--accent-color,#a69be4));color:var(--on-accent,#191625);border:0;border-radius:9px;min-height:39px;box-shadow:none;font-weight:700}
+.huelith-cutout-options .cutout-manual-start{background:var(--input-bg,var(--surface-input,#33364b));color:inherit;border:1px solid var(--border,#8886a850);border-radius:9px;min-height:35px;font:inherit;font-weight:600;cursor:pointer}
+.huelith-cutout-options .cutout-manual-start:hover{border-color:var(--accent,#9885c9)}
+.huelith-cutout-options .cutout-ai-status{margin:0;font-size:10px;color:var(--muted,#b8bad5);line-height:1.4}
+.cutout-action-toggle{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+.cutout-action-toggle button{padding:8px 4px;min-height:33px;border-radius:7px;font:inherit;font-size:11px;cursor:pointer;border:1px solid var(--border,#77738955);color:inherit;background:var(--input-bg,var(--surface-input,#292c40))}
+.huelith-cutout-view-modes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px;flex-wrap:nowrap}
+.huelith-cutout-view-modes button{padding:7px 3px;font-size:10px;min-width:0}
+.huelith-cutout-options .cutout-zoom-shortcuts{margin:-3px 0 2px}
+.huelith-cutout-options .cutout-zoom-shortcuts button{background:var(--input-bg,var(--surface-input,#292c40));border-color:var(--border,#77738955);color:inherit}
+.huelith-cutout-options .huelith-cutout-checkbox{display:flex;align-items:center;gap:8px;font-size:11px}
+.huelith-cutout-options .huelith-cutout-checkbox input{accent-color:var(--accent,#ae98e7)}
+.huelith-cutout-options .cutout-shape-inspector{padding:8px;margin:0;display:grid;gap:5px;background:var(--input-bg,var(--surface-input,#292c40))}
+.cutout-shape-inspector summary{font-weight:600;cursor:pointer;font-size:11px}
+.cutout-shape-inspector p{font-size:10px;margin:4px 0}
+.huelith-cutout-options .cutout-history-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin-top:6px}
+.huelith-cutout-options .cutout-history-actions button{border:1px solid var(--border,#78738f66);color:inherit;background:var(--input-bg,var(--surface-input,#292c40));border-radius:7px;padding:7px 3px;cursor:pointer;font-size:10px}
+.huelith-cutout-options .cutout-history-actions button:last-child{grid-column:1/-1}
+.huelith-cutout-dialog>footer{background:var(--panel-bg,#1e1f32);border-color:var(--border,#77738955);padding:10px 16px}
+.huelith-cutout-dialog>footer button.primary{background:var(--accent,#9f92de);color:var(--on-accent,#151521);box-shadow:none}
+.cutout-stage-hint{max-width:calc(100% - 20px);overflow:hidden;text-overflow:ellipsis;color:#f0edf9;font-size:9px;padding:7px 10px}
+@media(max-width:1100px){
+  .huelith-cutout-layout{grid-template-columns:60px minmax(0,1fr) 226px}
+  .huelith-cutout-options{padding:10px 8px}
+  .cutout-header-help{display:none}
+}
+@media(max-width:740px){
+  .huelith-cutout-layout{grid-template-columns:54px minmax(0,1fr)}
+  .huelith-cutout-options{grid-column:1/-1;max-height:230px;flex-direction:column;flex-wrap:nowrap;overflow-y:auto;border-top:1px solid var(--border,#77738955)}
+  .huelith-cutout-dialog{height:97vh}
+}
+@media(prefers-reduced-motion:reduce){.huelith-cutout-tools button{transition:none}}

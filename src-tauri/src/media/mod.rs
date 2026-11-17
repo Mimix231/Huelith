@@ -4,7 +4,12 @@
 //! The optional recording and WebM tools run separately from the native MP4 path.
 
 #[cfg(windows)] mod windows_mf;
+#[cfg(windows)] mod gpu_decode;
 mod stream;
+pub(crate) mod gpu_scene;
+pub(crate) mod native_timeline;
+pub use native_timeline::NativeTimelineJobs;
+#[cfg(windows)] mod pixel_convert;
 mod preview_audio;
 pub use stream::*;
 pub use preview_audio::*;
@@ -17,6 +22,63 @@ pub(crate) fn caption_audio(path:&Path,audio:&[AudioSource],duration:f64,cancell
     stream::validate_stream(&mut config)?;
     #[cfg(windows)]{windows_mf::caption_audio(path,&config.audio,duration,cancelled,progress)}
     #[cfg(not(windows))]{let _=(path,config,cancelled,progress);Err("Local caption audio decoding currently requires Windows".into())}
+}
+
+// GPU-decoded source frames remain native D3D11 DXGI surfaces. These commands
+// establish source ownership and timing for the native GPU graph; they NEVER
+// transport source pixel arrays over Tauri IPC.
+#[derive(Clone, Debug, serde::Deserialize)]
+#[serde(rename_all="camelCase")]
+pub struct GpuSourceRequest { pub id:String, pub path:PathBuf }
+#[derive(Clone, Debug, serde::Deserialize)]
+#[serde(rename_all="camelCase")]
+pub struct GpuFrameRequest { pub source_id:String, pub time_seconds:f64 }
+#[derive(Clone, Debug, serde::Serialize)]
+#[serde(rename_all="camelCase")]
+pub struct GpuFrameInfo {
+    pub source_id:String, pub presentation_time_100ns:i64,
+    pub width:u32, pub height:u32, pub subresource:u32, pub pixel_format:String,
+}
+
+#[tauri::command]
+pub async fn media_gpu_open_sources(sources:Vec<GpuSourceRequest>)->Result<(),String>{
+    if sources.len()>24 {return Err("GPU decoder supports at most 24 source tracks".into());}
+    let mut ids=std::collections::HashSet::new();
+    let mut checked=Vec::with_capacity(sources.len());
+    for source in sources {
+        if source.id.is_empty()||source.id.len()>128||!ids.insert(source.id.clone()) {
+            return Err("GPU source IDs must be unique and nonempty".into());
+        }
+        let file=validate_source_file(&source.path.to_string_lossy())?;
+        checked.push(GpuSourceRequest{id:source.id,path:file});
+    }
+    #[cfg(windows)] {
+        return tauri::async_runtime::spawn_blocking(move||gpu_decode::open_sources(checked))
+            .await.map_err(|e|e.to_string())?;
+    }
+    #[cfg(not(windows))] {let _=checked;Err("Native GPU decoding requires Windows".into())}
+}
+
+#[tauri::command]
+pub async fn media_gpu_acquire_frames(requests:Vec<GpuFrameRequest>)->Result<Vec<GpuFrameInfo>,String>{
+    if requests.len()>144||requests.iter().any(|r|r.source_id.is_empty()||r.source_id.len()>128
+        ||!r.time_seconds.is_finite()||!(0.0..=21600.0).contains(&r.time_seconds)) {
+        return Err("GPU frame requests contain invalid tracks or source timestamps".into());
+    }
+    #[cfg(windows)] {
+        return tauri::async_runtime::spawn_blocking(move||gpu_decode::acquire(requests))
+            .await.map_err(|e|e.to_string())?;
+    }
+    #[cfg(not(windows))] {let _=requests;Err("Native GPU decoding requires Windows".into())}
+}
+
+#[tauri::command]
+pub async fn media_gpu_close_sources()->Result<(),String>{
+    #[cfg(windows)] {
+        return tauri::async_runtime::spawn_blocking(gpu_decode::close)
+            .await.map_err(|e|e.to_string())?;
+    }
+    #[cfg(not(windows))] {Err("Native GPU decoding requires Windows".into())}
 }
 
 use serde::Serialize;

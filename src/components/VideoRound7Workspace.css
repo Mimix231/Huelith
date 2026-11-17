@@ -1,0 +1,61 @@
+/* Huelith Round 7 workspace polish. Resizable columns, timeline event hit
+   regions, preview pixels and theme semantic colors remain authoritative. */
+.app.is-video-studio .hv-workspace>.hv-card{
+  box-shadow:var(--hv-e-shadow);
+  border-color:color-mix(in srgb,var(--border) 72%,var(--accent) 28%);
+}
+.app.is-video-studio .hv-studio-titlebar{
+  background:linear-gradient(115deg,var(--title-bg) 60%,color-mix(in srgb,var(--title-bg) 83%,var(--accent)));
+  box-shadow:0 2px 17px color-mix(in srgb,var(--accent) 9%,transparent);
+}
+.app.is-video-studio .hv-monitor{
+  box-shadow:0 17px 43px #0008,0 0 0 1px color-mix(in srgb,var(--accent) 25%,#fff3);
+}
+.app.is-video-studio .hv-library-tabs button,
+.app.is-video-studio .hv-inspector-tabs button,
+.app.is-video-studio .hv-inspector-subtabs button{
+  position:relative;transition:color .18s ease,background .18s ease,border-color .18s ease,box-shadow .18s ease;
+}
+.app.is-video-studio .hv-library-tabs button.is-active,
+.app.is-video-studio .hv-inspector-tabs button[aria-pressed=true],
+.app.is-video-studio .hv-inspector-subtabs button[aria-pressed=true]{
+  box-shadow:inset 0 -2px var(--accent),0 3px 10px color-mix(in srgb,var(--accent) 12%,transparent);
+}
+.app.is-video-studio .hv-catalog-card,
+.app.is-video-studio .hv-media-card{
+  transition:background .18s ease,border-color .18s ease,box-shadow .18s ease;
+}
+.app.is-video-studio .hv-catalog-card:hover,
+.app.is-video-studio .hv-media-card:hover{
+  border-color:var(--accent-line);box-shadow:0 6px 18px color-mix(in srgb,var(--accent) 13%,#0002);
+}
+.app.is-video-studio .hv-player-transport .hv-play{
+  background:linear-gradient(135deg,var(--accent),color-mix(in srgb,var(--accent) 65%,var(--accent-line)));
+  box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 10%,transparent),0 5px 16px color-mix(in srgb,var(--accent) 25%,transparent);
+  transition:background .16s,box-shadow .16s,transform .16s;
+}
+.app.is-video-studio .hv-player-transport .hv-play:hover:not(:disabled){
+  transform:scale(1.05);box-shadow:0 0 0 6px color-mix(in srgb,var(--accent) 12%,transparent),0 8px 24px color-mix(in srgb,var(--accent) 32%,transparent);
+}
+.app.is-video-studio .hv-timeline{
+  box-shadow:0 -2px 15px color-mix(in srgb,var(--accent) 5%,transparent);
+}
+.app.is-video-studio .hv-timeline-primary button[aria-pressed=true],
+.app.is-video-studio .hv-timeline-actions button[aria-pressed=true]{
+  background:color-mix(in srgb,var(--accent) 15%,var(--control-bg));
+  color:var(--text);border-color:var(--accent-line);
+}
+.app.is-video-studio .hv-inspector-scroll{min-height:0;overflow:auto;will-change:auto}
+.app.is-video-studio .hv-inspector .hv-heading{border-bottom:1px solid var(--hv-e-line-faint)}
+.app.is-video-studio .hv-inspector-section{transition:border-color .2s ease,background .2s ease}
+.app.is-video-studio .hv-inspector-section:focus-within{
+  border-color:var(--accent-line);background:var(--hv-e-selected);
+}
+.app.is-video-studio .hv-shell :is(button,input,select,textarea):focus-visible{
+  outline:2px solid var(--accent);outline-offset:2px;
+}
+@media(prefers-reduced-motion:reduce){
+  .app.is-video-studio .hv-shell :is(.hv-catalog-card,.hv-media-card,.hv-library-tabs button,.hv-inspector-tabs button,.hv-inspector-subtabs button,.hv-play){
+    transition:none!important;transform:none!important;
+  }
+}

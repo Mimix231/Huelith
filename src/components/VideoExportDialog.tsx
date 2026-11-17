@@ -111,9 +111,9 @@ export default function VideoExportDialog(props:Props){
       {advanced&&<>
       <label className="hv-field">Format<select disabled={busy} value={format} onChange={event=>setFormat(event.target.value as VideoDeliveryFormat)}>
         <option value="mp4">MP4 · H.264 / AAC</option><option value="webm">WebM · VP9 / Opus (FFmpeg)</option>
-        <option value="wav">WAV · Stereo PCM</option><option value="png">PNG image sequence</option>
+        <option value="wav">WAV · Stereo PCM</option>
       </select></label>
-      {(format==='webm'||format==='png')&&<label className="hv-source-favorite"><input type="checkbox" disabled={busy} checked={transparent} onChange={event=>setTransparent(event.target.checked)}/> Transparent canvas</label>}
+
       {props.onQueue&&<fieldset className="hv-export-targets" disabled={busy}><legend>Delivery package</legend>
         <label className="hv-source-favorite"><input type="checkbox" checked={bundle} onChange={event=>setBundle(event.target.checked)}/> Export into one delivery folder</label>
         {bundle&&([['captions','SRT captions'],['chapters','Chapter timestamps'],['credits','Audio credits'],['stems','WAV stems for audible tracks']] as const)

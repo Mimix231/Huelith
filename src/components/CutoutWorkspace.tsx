@@ -3,6 +3,9 @@ import type { RasterLayer } from '../editor/types';
 import {resolveCutoutHistory,cutoutBounds,cutoutHandles,cutoutShapeHit,resizeCutout,translateCutout,insertCutoutNode,drawCutoutEditHandles,
  type CutoutShape,type CutoutHistoryEntry} from '../editor/cutout-edit';
 import './CutoutWorkspace.css';
+import {runBirefnetCutout} from '../editor/effects/birefnet-cutout';
+import {matteToRgba} from '../editor/effects/birefnet-matte';
+import {initializeFullCutoutMask} from '../editor/cutout-manual';
 
 type MaskTool = 'edit' | 'keep' | 'remove' | 'eraser' | 'line' | 'lasso' | 'polygon' | 'rectangle' | 'ellipse' | 'hand';
 type MaskView = 'original' | 'mask' | 'preview';
@@ -115,8 +118,11 @@ export default function CutoutWorkspace({ layer, onClose, onProcess }: {
   const [feather,setFeather]=useState(0);
   const [expand,setExpand]=useState(0);
   const [smoothing,setSmoothing]=useState(true);
+  const [overlayOpacity,setOverlayOpacity]=useState(45);
   const [revision,setRevision]=useState(0);
   const [error,setError]=useState('');
+  const [aiBusy,setAiBusy]=useState(false);
+  const [aiStatus,setAiStatus]=useState('');
   const [cursor,setCursor]=useState<P|null>(null);
   const [dimensions,setDimensions]=useState({width:1,height:1});
   const repaint=useCallback(()=>setRevision(n=>n+1),[]);
@@ -230,8 +236,26 @@ export default function CutoutWorkspace({ layer, onClose, onProcess }: {
     else if(event.shiftKey)setPan(v=>({...v,x:v.x-event.deltaY}));
     else setPan(v=>({...v,y:v.y-event.deltaY}));
   };
+  /** Manual Clear starts with the image completely visible. Removing from an
+   * empty selection is otherwise a no-op, which felt like a broken brush.
+   * The full mask is stored as editable baseData and never modifies source RGB. */
+  const beginFullMask=()=>{
+    if(!ready||aiBusy||!mask.current||!initial.current)return;
+    initializeFullCutoutMask(initial.current,mask.current);
+    originalMaskSnapshot.current=true;
+    history.current=[];future.current=[];activeCommand.current=null;points.current=[];
+    setHistorySize(0);setFutureSize(0);setHasSelection(true);
+    setSelectedId(null);setSelectedNode(null);setView('preview');
+    setAiStatus('Full image mask ready. Brush over anything you want to clear.');
+    repaint();
+  };
+  const changeTool=(next:MaskTool)=>{
+    if(polygon.current.length)finishPolygon();
+    setTool(next);
+    if(next==='keep'||next==='remove')setOperation(next);
+  };
   const down=(event:ReactPointerEvent<HTMLCanvasElement>)=>{
-    if(!ready)return;
+    if(!ready||aiBusy)return;
     if(event.button!==0&&event.button!==1)return;
     if (event.button===1) event.preventDefault();
     pointer.current=event.pointerId;
@@ -240,6 +264,7 @@ export default function CutoutWorkspace({ layer, onClose, onProcess }: {
       dragPan.current={x:event.clientX-pan.x,y:event.clientY-pan.y};return;
     }
     const pos=local(event);
+    if(tool==='remove'&&!hasSelection&&!originalMaskSnapshot.current)beginFullMask();
     if(tool==='edit'){
       const chosen=selectedShape();const threshold=10/(zoom* Math.min(1,1300/Math.max(dimensions.width,dimensions.height)));
       const handles=chosen?cutoutHandles(chosen):[];
@@ -295,13 +320,35 @@ export default function CutoutWorkspace({ layer, onClose, onProcess }: {
     if(command){commit({...command,points:[...command.points]},['keep','remove','eraser'].includes(command.tool));activeCommand.current=null;}
     points.current=[];repaint();
   };
+  const runAI=async()=>{
+    if(!ready||!original.current||!initial.current||!mask.current||aiBusy)return;
+    setAiBusy(true);setError('');setAiStatus('Initializing local BiRefNet');
+    try{
+      const alpha=await runBirefnetCutout(original.current,setAiStatus);
+      const w=dimensions.width,h=dimensions.height;
+      const base=initial.current,working=mask.current;
+      // ImageData requires a Uint8ClampedArray backed by ArrayBuffer (not SharedArrayBuffer).
+      // Constructing from the matte performs the required safe copy.
+      const image=new ImageData(new Uint8ClampedArray(matteToRgba(alpha)),w,h);
+      for(const canvas of [base,working]){
+        const ctx=canvas.getContext('2d');if(!ctx)throw Error('Cannot initialize the Cutout mask canvas.');
+        ctx.clearRect(0,0,w,h);ctx.putImageData(image,0,0);
+      }
+      originalMaskSnapshot.current=true;
+      history.current=[];future.current=[];points.current=[];activeCommand.current=null;
+      setHistorySize(0);setFutureSize(0);setHasSelection(true);
+      setSelectedId(null);setView('preview');setTool('keep');
+      setAiStatus('AI mask ready — refine with Keep / Remove brushes, then Apply.');
+      repaint();
+    }catch(cause){setError(cause instanceof Error?cause.message:String(cause));setAiStatus('');}
+    finally{setAiBusy(false);}
+  };
   const process=()=>{
     if(!mask.current||!hasSelection)return;
     const output=refineCutoutMask(mask.current,feather,expand,smoothing);
     onProcess(output.toDataURL('image/png'),output.width,output.height,{shapes:shapes().map(item=>structuredClone(item)),feather,expand,smoothing,
-      ...(!history.current.some(entry=>entry.kind==='clear') ?
-        (layer.cutoutMask?.editable?.baseData?{baseData:layer.cutoutMask.editable.baseData}:
-          !layer.cutoutMask?.editable&&layer.cutoutMask?.data?{baseData:layer.cutoutMask.data}:{}) : {})});
+      ...(!history.current.some(entry=>entry.kind==='clear') && originalMaskSnapshot.current && initial.current
+        ? {baseData:initial.current.toDataURL('image/png')} : {})});
   };
   useEffect(()=>{
     const press=(event:KeyboardEvent)=>{
@@ -343,7 +390,7 @@ export default function CutoutWorkspace({ layer, onClose, onProcess }: {
     const matte=view==='original'?draftMask:refineCutoutMask(draftMask,feather*ratio,Math.round(expand*ratio),smoothing);
     if(view==='original'){
       ctx.drawImage(original.current,0,0,w,h);
-      ctx.save();ctx.globalAlpha=.5;ctx.fillStyle='#1ce5a0';
+      ctx.save();ctx.globalAlpha=overlayOpacity/100;ctx.fillStyle='#1ce5a0';
       const overlay=document.createElement('canvas');overlay.width=w;overlay.height=h;
       const painter=overlay.getContext('2d');if(painter){painter.fillStyle='#1ce5a0';painter.fillRect(0,0,w,h);
         painter.globalCompositeOperation='destination-in';painter.drawImage(mask.current,0,0,w,h);ctx.drawImage(overlay,0,0);}
@@ -387,7 +434,7 @@ export default function CutoutWorkspace({ layer, onClose, onProcess }: {
       }
     }
     void revision;
-  },[ready,revision,view,dimensions,feather,expand,smoothing,operation,tool]);
+  },[ready,revision,view,dimensions,feather,expand,smoothing,operation,tool,overlayOpacity]);
   const displayRatio=Math.min(1,1300/Math.max(dimensions.width,dimensions.height));
   const editValue=previewEdit.current??selectedShape();
   const previewChange=(changes:Partial<CutoutShape>)=>{
@@ -402,10 +449,20 @@ export default function CutoutWorkspace({ layer, onClose, onProcess }: {
     <section ref={dialog} tabIndex={-1} className="huelith-cutout-dialog" role="dialog" aria-modal="true" aria-label="Huelith Cutout workspace"
       onKeyDown={event=>{if(event.key==='Escape'){event.stopPropagation();if(polygon.current.length){polygon.current=[];repaint();}else onClose();}
         if(event.key==='Enter'&&tool==='polygon'){event.preventDefault();finishPolygon();}}}>
-      <header><div className="cutout-brand"><span>✦</span><div><strong>Huelith Cutout</strong><small>MASK WORKSPACE / NON-DESTRUCTIVE</small></div></div><span className="cutout-header-help">Draw what stays. The original artwork is never erased.</span><button type="button" onClick={onClose} aria-label="Close Cutout">×</button></header>
+      <header><div className="cutout-brand"><span>✦</span><div><strong>Cutout Atelier</strong><small>Keep what matters. Clear the rest.</small></div></div><span className="cutout-header-help">Non-destructive layer mask</span><button type="button" onClick={onClose} aria-label="Close Cutout">×</button></header>
       <div className="huelith-cutout-layout">
-        <nav className="huelith-cutout-tools" aria-label="Selection tools">{TOOLS.map(([id,symbol,label])=><button key={id} title={label} aria-label={label} aria-pressed={tool===id}
-          onClick={()=>{if(polygon.current.length)finishPolygon();setTool(id);}}>{symbol}<small>{label}</small></button>)}</nav>
+        <nav className="huelith-cutout-tools" aria-label="Selection tools">
+          {TOOLS.filter(([id])=>['keep','remove','hand'].includes(id)).map(([id,symbol,label])=><button
+            type="button" key={id} title={label} aria-label={label} aria-pressed={tool===id} onClick={()=>changeTool(id)}>
+            <span aria-hidden="true">{symbol}</span><small>{id==='keep'?'Keep':id==='remove'?'Clear':'Pan'}</small>
+          </button>)}
+          <details className="cutout-more-tools"><summary title="More selection tools">More tools</summary>
+            {TOOLS.filter(([id])=>!['keep','remove','hand'].includes(id)).map(([id,symbol,label])=><button
+              type="button" key={id} title={label} aria-label={label} aria-pressed={tool===id} onClick={()=>changeTool(id)}>
+              <span aria-hidden="true">{symbol}</span><small>{label}</small>
+            </button>)}
+          </details>
+        </nav>
         <div ref={viewport} className="huelith-cutout-viewport" aria-label="Image and mask editor" onWheel={onWheel}
           onPointerDown={event=>{
             // Pan across empty stage space as well as directly over the image.
@@ -442,41 +499,81 @@ export default function CutoutWorkspace({ layer, onClose, onProcess }: {
             top:`calc(50% + ${pan.y+(cursor.y-dimensions.height/2)*displayRatio*zoom}px)`,
           }}/>}<div className="cutout-stage-hint">Ctrl + +/− zoom · Ctrl + wheel zoom to cursor · Middle drag or Space drag to pan</div>
         </div>
-        <aside className="huelith-cutout-options"><div className="cutout-section-title">✦ Selection craft</div>
-          <label>Paint action<select value={operation} onChange={event=>setOperation(event.target.value as 'keep'|'remove')}><option value="keep">Keep subject</option><option value="remove">Remove region</option></select></label>
-          <label>Brush / line size <output>{size}px</output><input aria-label="Selection brush size" type="range" min="1" max="1024" value={size} onChange={event=>setSize(+event.target.value)} /></label>
-          <input className="cutout-size-number" aria-label="Brush size exact value" type="number" min="1" max="4096" value={size} onChange={event=>setSize(constrain(+event.target.value||1,1,4096))}/>
-          <label>Zoom <output>{Math.round(zoom*100)}%</output><input aria-label="Cutout zoom" type="range" min=".1" max="16" step=".1" value={zoom} onChange={event=>setZoom(+event.target.value)}/></label>
-          <div className="cutout-zoom-shortcuts"><button onClick={()=>zoomAbout(1/1.25)}>−</button><button onClick={()=>{setZoom(1);setPan({x:0,y:0});}}>Fit / 100%</button><button onClick={()=>zoomAbout(1.25)}>+</button></div>
-          {tool==='edit'&&<div className="cutout-shape-inspector"><strong>◇ Editable mask geometry</strong>
-            <p>{selectedId?'Drag the path or the circular handles; Bézier lines have two end anchors and two diamond control points. Double-click polygon/lasso segments to add nodes.':'Select a committed mask line, polygon, lasso, brush, rectangle or ellipse.'}</p>
-            {editValue && <div className="cutout-edit-parameters">
-              <label>Selected shape size <output>{Math.round(editValue.size)}px</output><input type="range" min={1} max={512} value={Math.min(512,editValue.size)}
-                onChange={event=>previewChange({size:Number(event.target.value)})} onPointerUp={previewCommit} onKeyUp={previewCommit}/></label>
-              <input className="cutout-size-number" type="number" aria-label="Exact selected shape size" min={1} max={4096} value={editValue.size}
-                onChange={event=>previewChange({size:constrain(Number(event.target.value)||1,1,4096)})} onBlur={previewCommit} onKeyDown={event=>{if(event.key==='Enter')previewCommit();}}/>
-              <label>Shape action <select value={editValue.operation}
-                onChange={event=>commitSelectedUpdate({...editValue,operation:event.target.value as 'keep'|'remove'})}>
-                <option value="keep">Keep</option><option value="remove">Remove</option></select></label>
+        <aside className="huelith-cutout-options" aria-label="Mask controls">
+          <div className="cutout-section-title">Start here</div>
+          <button type="button" className="cutout-ai-button" disabled={!ready||aiBusy} onClick={()=>void runAI()}>
+            {aiBusy?'Isolating subject locally…':'✦ Remove Background · BiRefNet (Full)'}
+          </button>
+          <button type="button" className="cutout-manual-start" disabled={!ready||aiBusy}
+            onClick={()=>{beginFullMask();changeTool('remove');}}>Manual Clear — start with image</button>
+          {aiStatus&&<p role="status" className="cutout-ai-status">{aiStatus}</p>}
+
+          <div className="cutout-section-title">Paint mask</div>
+          <div className="cutout-action-toggle" role="group" aria-label="Brush action">
+            <button type="button" aria-pressed={tool==='keep'} onClick={()=>changeTool('keep')}>＋ Keep</button>
+            <button type="button" aria-pressed={tool==='remove'} onClick={()=>changeTool('remove')}>－ Clear</button>
+          </div>
+          <label className="cutout-slider">Brush size <output>{size}px</output>
+            <input aria-label="Selection brush size" type="range" min="1" max="1024" value={Math.min(1024,size)}
+              onChange={event=>setSize(+event.target.value)}/></label>
+
+          <div className="cutout-section-title">Inspect</div>
+          <div className="huelith-cutout-view-modes" role="group" aria-label="Preview mode">
+            {(['original','preview','mask'] as const).map(item=><button type="button" key={item} aria-pressed={view===item}
+              onClick={()=>setView(item)}>{item==='original'?'Overlay':item==='preview'?'Cutout':'Mask'}</button>)}
+          </div>
+          <label className="cutout-slider">Zoom <output>{Math.round(zoom*100)}%</output>
+            <input aria-label="Cutout zoom" type="range" min=".1" max="16" step=".1" value={zoom}
+              onChange={event=>setZoom(+event.target.value)}/></label>
+          <div className="cutout-zoom-shortcuts">
+            <button type="button" onClick={()=>zoomAbout(1/1.25)} aria-label="Zoom out">−</button>
+            <button type="button" onClick={()=>{setZoom(1);setPan({x:0,y:0});}}>100% / Center</button>
+            <button type="button" onClick={()=>zoomAbout(1.25)} aria-label="Zoom in">＋</button>
+          </div>
+          {view==='original'&&<label className="cutout-slider">Overlay opacity <output>{overlayOpacity}%</output>
+            <input aria-label="Mask overlay opacity" type="range" min="5" max="85" step="5" value={overlayOpacity}
+              onChange={event=>setOverlayOpacity(+event.target.value)}/></label>}
+
+          <div className="cutout-section-title">Refine edge</div>
+          <label className="cutout-slider">Soft edge <output>{feather}px</output>
+            <input aria-label="Mask feather" type="range" min="0" max="20" step=".5" value={feather}
+              onChange={event=>setFeather(+event.target.value)}/></label>
+          <label className="cutout-slider">Expand / Contract <output>{expand}px</output>
+            <input aria-label="Expand or contract mask" type="range" min="-10" max="10" value={expand}
+              onChange={event=>setExpand(+event.target.value)}/></label>
+          <label className="huelith-cutout-checkbox"><input type="checkbox" checked={smoothing}
+            onChange={event=>setSmoothing(event.target.checked)}/> Smooth selection outline</label>
+
+          {tool==='edit'&&<details className="cutout-shape-inspector" open><summary>Editable mask geometry</summary>
+            <p>{selectedId?'Drag a mask shape or its control handles. Double-click a path segment to insert a node.':'Choose a previously drawn shape to edit it.'}</p>
+            {editValue&&<div className="cutout-edit-parameters">
+              <label className="cutout-slider">Selected shape size <output>{Math.round(editValue.size)}px</output>
+                <input aria-label="Selected shape size" type="range" min="1" max="1024" value={Math.min(1024,editValue.size)}
+                  onChange={event=>previewChange({size:+event.target.value})} onPointerUp={previewCommit} onKeyUp={previewCommit}/></label>
+              <div className="cutout-action-toggle" role="group" aria-label="Shape action">
+                <button type="button" aria-pressed={editValue.operation==='keep'} onClick={()=>commitSelectedUpdate({...editValue,operation:'keep'})}>Keep</button>
+                <button type="button" aria-pressed={editValue.operation==='remove'} onClick={()=>commitSelectedUpdate({...editValue,operation:'remove'})}>Clear</button>
+              </div>
             </div>}
-            <div className="huelith-cutout-actions"><button disabled={!selectedId} onClick={()=>{const item=selectedShape();if(item)commitSelectedUpdate(translateCutout(item,0,-1));}}>↑ Nudge</button>
-              <button disabled={!selectedId||selectedNode===null} onClick={()=>{
+            <div className="huelith-cutout-actions">
+              <button type="button" disabled={!selectedId} onClick={()=>{const item=selectedShape();if(item)commitSelectedUpdate(translateCutout(item,0,-1));}}>↑ Nudge</button>
+              <button type="button" disabled={!selectedId||selectedNode===null} onClick={()=>{
                 const item=selectedShape();if(item&&selectedNode!==null&&item.points.length>(item.tool==='line'?2:3)&&!['rectangle','ellipse'].includes(item.tool)){
                   commitSelectedUpdate({...item,points:item.points.filter((_,i)=>i!==selectedNode)});setSelectedNode(null);}
               }}>Remove point</button>
-              <button disabled={!selectedId} onClick={deleteSelected}>Delete shape</button></div></div>}
-          <div className="cutout-section-title">◉ Inspection</div><div className="huelith-cutout-view-modes">{(['original','mask','preview'] as const).map(item=><button key={item} aria-pressed={view===item} onClick={()=>setView(item)}>{item[0].toUpperCase()+item.slice(1)}</button>)}</div>
-          <div className="cutout-section-title">⌁ Edge refinement</div>
-          <label>Feather <output>{feather}px</output><input aria-label="Mask feather" type="range" min="0" max="20" value={feather} onChange={event=>setFeather(+event.target.value)}/></label>
-          <label>Expand / Contract <output>{expand}px</output><input aria-label="Expand or contract mask" type="range" min="-10" max="10" value={expand} onChange={event=>setExpand(+event.target.value)}/></label>
-          <label className="huelith-cutout-checkbox"><input type="checkbox" checked={smoothing} onChange={event=>setSmoothing(event.target.checked)} /> Smooth selection outline</label>
-          <p>Keep preserves white clothing and other details exactly where you paint. Lasso fills its entire boundary. Eraser clears selection marks.</p>
-          <div className="huelith-cutout-actions"><button onClick={undoStep} disabled={!historySize}>↶ Undo</button><button onClick={redoStep} disabled={!futureSize}>↷ Redo</button><button onClick={reset}>Reset selection</button></div>
+              <button type="button" disabled={!selectedId} onClick={deleteSelected}>Delete shape</button>
+            </div>
+          </details>}
+          <div className="cutout-history-actions" role="group" aria-label="Mask history">
+            <button type="button" onClick={undoStep} disabled={!historySize}>↶ Undo</button>
+            <button type="button" onClick={redoStep} disabled={!futureSize}>↷ Redo</button>
+            <button type="button" onClick={reset}>Reset selection</button>
+          </div>
         </aside>
       </div>
       {error&&<p role="alert" className="huelith-cutout-error">{error}</p>}
-      <footer><span>{ready?`${dimensions.width} × ${dimensions.height} · Native pixel mask · ${historySize} operations`:'Loading image…'}</span>
-        <button onClick={onClose}>Cancel</button><button className="primary" disabled={!ready||!hasSelection} onClick={process}>✦ Process mask</button></footer>
+      <footer><span>{ready?`${dimensions.width} × ${dimensions.height} · Editable mask · ${historySize} operations`:'Loading image…'}</span>
+        <button onClick={onClose}>Cancel</button><button className="primary" disabled={!ready||!hasSelection} onClick={process}>✓ Apply mask</button></footer>
     </section>
   </div>;
 }

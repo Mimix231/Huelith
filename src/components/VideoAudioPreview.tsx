@@ -4,11 +4,12 @@ import {
 } from '../editor/video/preview-audio';
 import {isNativeMediaDesktop,type NativeAudioSource} from '../editor/video/native-media';
 import type {VideoPlaybackTransport} from '../editor/video/playback-transport';
+import {AudioSegmentCursor} from '../editor/video/audio-segment-cursor';
 import VideoLevelMeter,{createVideoMeterBus,MASTER_AUDIO_BUS,type VideoMeterBus} from './VideoLevelMeter';
 
 type Props={
   plan:NativeAudioSource[];sources:Record<string,string>;time:number;playing:boolean;
-  transport:VideoPlaybackTransport;meters?:VideoMeterBus;muted?:boolean;onError:(message:string)=>void;
+  transport:VideoPlaybackTransport;direction?:1|-1;meters?:VideoMeterBus;muted?:boolean;onError:(message:string)=>void;
 };
 type Segment={first:number;offset:number;count:number;window:AudioWindow};
 const startLead=.055;
@@ -17,12 +18,17 @@ const firstSample=(sample:number)=>Math.floor(sample/AUDIO_WINDOW)*AUDIO_WINDOW;
 
 function outputClock(context:AudioContext){
   const stamp=context.getOutputTimestamp?.();
-  if(stamp?.contextTime&&stamp.performanceTime&&Math.abs(performance.now()-stamp.performanceTime)<500)
-    return Math.min(context.currentTime,stamp.contextTime+(performance.now()-stamp.performanceTime)/1000);
+  // Some DOM typings expose optional members. Explicit primitives are needed
+  // for TypeScript to narrow them before arithmetic (TS18048).
+  const contextTime=stamp?.contextTime,performanceTime=stamp?.performanceTime;
+  if(typeof contextTime==='number'&&Number.isFinite(contextTime)
+    &&typeof performanceTime==='number'&&Number.isFinite(performanceTime)
+    &&Math.abs(performance.now()-performanceTime)<500)
+    return Math.min(context.currentTime,contextTime+(performance.now()-performanceTime)/1000);
   return Math.max(0,context.currentTime-context.baseLatency);
 }
 
-export default function VideoAudioPreview({plan,sources,time,playing,transport,meters:shared,muted=false,onError}:Props){
+export default function VideoAudioPreview({plan,sources,time,playing,transport,direction=1,meters:shared,muted=false,onError}:Props){
   const signature=useMemo(()=>JSON.stringify(plan),[plan]);
   const urls=isNativeMediaDesktop()&&plan.every(source=>!source.path.startsWith('browser:'))?emptyUrls:sources;
   const local=useMemo(createVideoMeterBus,[]),meters=shared??local;
@@ -50,8 +56,8 @@ export default function VideoAudioPreview({plan,sources,time,playing,transport,m
 
   useEffect(()=>{
     const windows=cache.current;
-    if(!playing||!plan.length||!windows){
-      if(playing)transport.continueWithoutAudio(transport.generation);
+    if(!playing||!plan.length||!windows||direction===-1||transport.playbackDirection===-1){
+      if(playing&&transport.waiting)transport.continueWithoutAudio(transport.generation);
       setBuffering(false);meters.publish({});
       return;
     }
@@ -60,8 +66,8 @@ export default function VideoAudioPreview({plan,sources,time,playing,transport,m
     setBuffering(true);
     const loop=transport.span(),start=loop?Math.round(loop.start*AUDIO_RATE):0;
     const end=Math.round((loop?.end??transport.end)*AUDIO_RATE);
-    let cursor=Math.max(start,Math.round(transport.time()*AUDIO_RATE));
-    if(loop&&cursor>=end)cursor=start;
+    const startSample=Math.min(end,Math.max(start,Math.round(transport.time()*AUDIO_RATE)));
+    const cursor=new AudioSegmentCursor(startSample,end,loop?start:undefined);
     let cancelled=false,timer:ReturnType<typeof setTimeout>|undefined;
     let bufferDeadline:ReturnType<typeof setTimeout>|undefined;
     let nextAudioTime=0;
@@ -71,12 +77,11 @@ export default function VideoAudioPreview({plan,sources,time,playing,transport,m
     let analyzer:AnalyserNode|undefined;
 
     async function nextSegment():Promise<Segment|undefined>{
-      if(cursor>=end){if(!loop||end<=start)return;cursor=start;}
-      const first=firstSample(cursor),offset=cursor-first,count=Math.min(AUDIO_WINDOW-offset,end-cursor);
-      const window=await windows!.get(first);
+      const segment=cursor.take();
+      if(!segment)return;
+      const window=await windows!.get(segment.first);
       if(cancelled)return;
-      cursor+=count;
-      return {first,offset,count,window};
+      return {...segment,window};
     }
 
     function schedule(audio:AudioContext,segment:Segment){
@@ -114,9 +119,10 @@ export default function VideoAudioPreview({plan,sources,time,playing,transport,m
         volume.current=gain;
       }
       volume.current.gain.value=monitorMuted.current?0:1;
-      analyzer=audio.createAnalyser();
-      analyzer.fftSize=1024;
-      volume.current.connect(analyzer);
+      const localAnalyzer=audio.createAnalyser();
+      analyzer=localAnalyzer;
+      localAnalyzer.fftSize=1024;
+      volume.current.connect(localAnalyzer);
       const samples=new Float32Array(1024);
       const resume=audio.resume();
       const initial:Segment[]=[];
@@ -139,8 +145,8 @@ export default function VideoAudioPreview({plan,sources,time,playing,transport,m
         if(cancelled)return;
         publishLevels(audio,samples);
         while(!cancelled&&nextAudioTime-audio.currentTime<2.25){
-          if(!loop&&cursor>=end)break;
-          const missingAt=cursor>=end?start:cursor;
+          if(!loop&&cursor.nextSample>=end)break;
+          const missingAt=cursor.nextSample;
           bufferDeadline=setTimeout(()=>{
             if(!cancelled){
               transport.holdForAudio(generation,missingAt/AUDIO_RATE);
@@ -178,7 +184,7 @@ export default function VideoAudioPreview({plan,sources,time,playing,transport,m
       if(analyzer){volume.current?.disconnect(analyzer);analyzer.disconnect();}
       meters.publish({});
     };
-  },[playing,plan.length>0,signature,urls,transport,meters,onError]);
+  },[playing,direction,plan.length>0,signature,urls,transport,meters,onError]);
 
   return <>
     <VideoLevelMeter bus={meters}/>

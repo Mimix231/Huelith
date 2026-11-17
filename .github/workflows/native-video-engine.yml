@@ -1,0 +1,39 @@
+name: Native Video Engine (Windows)
+on:
+  push:
+    paths:
+      - 'src-tauri/**'
+      - 'src/editor/video/**'
+      - 'scripts/audit-native-renderer.mjs'
+      - 'tests/native-engine-integrated.test.cjs'
+      - 'tests/native-timeline-export.test.cjs'
+      - '.github/workflows/native-video-engine.yml'
+  pull_request:
+    paths:
+      - 'src-tauri/**'
+      - 'src/editor/video/**'
+      - 'scripts/audit-native-renderer.mjs'
+      - 'tests/native-engine-integrated.test.cjs'
+      - 'tests/native-timeline-export.test.cjs'
+      - '.github/workflows/native-video-engine.yml'
+  workflow_dispatch:
+jobs:
+  native-engine:
+    runs-on: windows-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: npm ci
+      - run: npm run audit:native-renderer:check
+      - run: npm run test:native-engine
+      - run: npm run check
+      - run: cargo check --manifest-path src-tauri/Cargo.toml --all-targets
+      - run: cargo test --manifest-path src-tauri/Cargo.toml --lib media:: -- --nocapture

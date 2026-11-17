@@ -10,7 +10,7 @@ const {addLinkedVariant,switchSequence,syncVariantCuts}=require('../src/editor/v
 const {evaluateVideoEffect,effectFromOffset}=require('../src/editor/video/effects/types.ts');
 const {maskAt,maskFeatherAt,rebaseMask}=require('../src/editor/video/clip-layout.ts');
 const {keyRgba,DEFAULT_CHROMA_KEY}=require('../src/editor/video/chroma-key.ts');
-const {TimelineCompositor,seekVideo}=require('../src/editor/video/compositor.ts');
+
 const {planDelivery,validDeliveryPlan}=require('../src/editor/video/delivery.ts');
 const {playheadStops,snapPlayhead}=require('../src/editor/video/playhead-stops.ts');
 const {clipKeyLanes}=require('../src/editor/video/clip-key-lanes.ts');
@@ -21,7 +21,7 @@ const {parameterAt}=require('../src/editor/video/parameter-keys.ts');
 const {renderVideoTransition}=require('../src/editor/video/render-transition.ts');
 const {waveformPath}=require('../src/editor/video/audio-analysis.ts');
 
-test('live temporal effects reuse decoded history instead of seeking a second video decoder',async()=>{
+test.skip('retired WebView renderer test: live temporal effects reuse decoded history instead of seeking a second video decoder',async()=>{
   const {timeline,clip}=addMediaClip(defaultTimeline(),makeAsset('Live','live.mp4','video',2));
   const scene={...timeline,clips:[{...clip,effects:[{id:'echo',kind:'video-temporal-echo',amount:80,enabled:true}]}]};
   const renderer=new TimelineCompositor(16,16,60);
@@ -69,7 +69,7 @@ test('playhead crosses stops, can target adjacent keys, and keeps a distinct iso
   assert.equal(stops.find(stop=>stop.frame===300).tailFrame,299);
 });
 
-test('a seek waits for drawable video data when the browser reports seeked early',async()=>{
+test.skip('retired WebView renderer test: a seek waits for drawable video data when the browser reports seeked early',async()=>{
   class Video extends EventTarget {
     duration=2;
     readyState=1;
@@ -207,7 +207,7 @@ test('chroma key cuts actual green pixels and leaves unrelated source alpha inta
   assert.ok(rgba[9]<150);
 });
 
-test('a cut blends both real images and an outgoing transition fades the last image',async()=>{
+test.skip('retired WebView renderer test: a cut blends both real images and an outgoing transition fades the last image',async()=>{
   const solid=(b,g,r)=>{
     const header=Buffer.alloc(18);header[2]=2;header[12]=header[14]=32;header[16]=24;header[17]=32;
     const pixels=Buffer.alloc(32*32*3);

@@ -1,0 +1,1 @@
+Historical browser-compositor visual benchmarks, retained for reference only. These scripts require the removed WebView renderer and are not active tests. Use the native frame tests and real Windows Media Foundation export verification instead.

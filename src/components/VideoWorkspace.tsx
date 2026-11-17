@@ -5,9 +5,8 @@ import {
   Add, Audiotrack, Close, ContentCut, DeleteOutline, LockOutlined,
   LockOpenOutlined, MovieOutlined, Pause, PlayArrow, SkipPrevious, TextFields,
   VolumeOff, VolumeUp, VisibilityOutlined, VisibilityOffOutlined, ZoomIn, SkipNext, FastRewind, FastForward,
-  Fullscreen, MonitorOutlined, ExpandMore, PanToolOutlined, NearMeOutlined, Loop, Tune,
-  DiamondOutlined,MicNone,Link,LinkOff,BookmarkAddOutlined,FirstPage,LastPage,FitScreen,
-} from '@mui/icons-material';
+  MonitorOutlined, PanToolOutlined, NearMeOutlined, Loop, Tune,
+  DiamondOutlined,MicNone,Link,LinkOff,BookmarkAddOutlined,FirstPage,LastPage,FitScreen,} from '@mui/icons-material';
 import type { VideoProject } from '../editor/project-hub';
 import {
   activeClips, addTitle, defaultTimeline, durationOf, makeAsset, moveClip, newTrack,
@@ -21,7 +20,9 @@ import VideoAudioPreview from './VideoAudioPreview';
 import { VideoPlaybackTransport } from '../editor/video/playback-transport';
 import { timelineAudioSources } from '../editor/video/audio-plan';
 import VideoEffectInspector from './VideoEffectInspector';
-import VideoExportDialog,{type VideoExportSettings} from './VideoExportDialog';
+import VideoEditorExportOverlay from './VideoEditorExportOverlay';
+import {motion,useReducedMotion} from 'motion/react';
+import type {VideoExportSettings} from '../editor/video/delivery';
 import {planDelivery} from '../editor/video/delivery';
 import type {VideoEffect} from '../editor/video/effects/types';
 import VideoLibraryPane,{VideoTransitionGlyph} from './VideoLibraryPane';
@@ -29,6 +30,10 @@ import { useVideoLibraryDrag } from './useVideoLibraryDrag';
 import { applyLibraryClipCard, librarySampleTime, placeLibraryMedia, resolveLibraryDrop, type TimelineDrop, type VideoLibraryCard } from '../editor/video/library-drop';
 import VideoTransformOverlay from './VideoTransformOverlay';
 import VideoTransformControls from './VideoTransformControls';
+import VideoFocusTextEditor from './VideoFocusTextEditor';
+import VideoPaneSplitter from './VideoPaneSplitter';
+import {clipsInBox} from '../editor/video/box-selection';
+import type { VideoTextStyle } from '../editor/video/studio-types';
 import VideoMaskOverlay from './VideoMaskOverlay';
 import VideoMaskControls from './VideoMaskControls';
 import VideoKeyframeLanes from './VideoKeyframeLanes';
@@ -46,7 +51,7 @@ import VideoAudioControls from './VideoAudioControls';
 import VideoGradePanel from './VideoGradePanel';
 import {VideoTextControls,VideoMotionControls} from './VideoClipControls';
 import { TEXT_TEMPLATE_LOOKUP, type TextTemplate } from '../editor/video/text-templates';
-import {importRecording,recordingCredits,type Recording} from '../editor/video/audio-catalogue';
+import {importRecording,type Recording} from '../editor/video/audio-catalogue';
 import {STICKERS,libraryFilePath,resolvedAssetPath} from '../editor/video/library';
 import {transitionName} from '../editor/video/transitions';
 import {AUTHORED_TRANSITION_LOOKUP} from '../editor/video/transition-recipes';
@@ -76,6 +81,7 @@ import {useVideoJobs} from './useVideoJobs';
 import {useVideoFileDrop,type FileDropTarget} from './useVideoFileDrop';
 import {AuditionSoundtrack,PasteClipSettings,ReplaceFootage,StartFromFootage} from './VideoEditDialogs';
 import VideoWorkspaceShelf,{type ShelfTab} from './VideoWorkspaceShelf';
+import VideoMonitorActions from './VideoMonitorActions';
 import VideoVoiceover,{type VoiceTake} from './VideoVoiceover';
 import VideoClipFilmstrip from './VideoClipFilmstrip';
 import VideoAudioHandles from './VideoAudioHandles';
@@ -88,7 +94,10 @@ import './VideoWorkspace.css';
 import './VideoLibraryPane.css';
 import './VideoStudioDetails.css';
 import './VideoStudioDesign.css';
+import './VideoElegance.css';
+import './VideoRound7Workspace.css';
 import {frameTime,magneticFrame} from '../editor/video/timeline-grid';
+import {saveTimelineFramePng} from '../editor/video/frame-png';
 import {authoredTransitions,type TransitionDrop} from '../editor/video/transition-placement';
 
 type Props = { project: VideoProject;onChange: (next:VideoProject)=>void;onOpenCopy?:(next:VideoProject)=>void;
@@ -133,7 +142,11 @@ function requiredSourceDuration(project:VideoProject, assetId:string) {
 type Drag = { id:string;edge:'left'|'right'|'move'; initialX:number; start:number; length:number;guide?:number;
   trackId:string; targetTrackId:string; delta:number; pointerId:number; ids:string[]; scrollLeft:number };
 export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryChange}:Props){
+  const prefersReducedMotion=useReducedMotion();
   const fallbackTimeline=useRef<VideoTimeline>(defaultTimeline());
+  // Reuse preview decoders for the grading before/after inspector.
+  const gradePreviewSources=useRef<import('../editor/video/preview-media-sources').PreviewMediaSources|null>(null);
+  useEffect(()=>()=>{gradePreviewSources.current?.close();gradePreviewSources.current=null;},[]);
   const rootTimeline=project.timeline??fallbackTimeline.current;
   const [compoundPath,setCompoundPath]=useState<string[]>([]);
   const scenePath=useRef(compoundPath);scenePath.current=compoundPath;
@@ -143,6 +156,7 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
   const [monitorMuted,setMonitorMuted]=useState(false),[monitorTools,setMonitorTools]=useState(false);
   const [timelineTools,setTimelineTools]=useState(false),[panTimeline,setPanTimeline]=useState(false);
   const monitorStage=useRef<HTMLElement>(null);
+  const workspaceElement=useRef<HTMLDivElement>(null);
   const panning=useRef<{id:number;x:number;y:number;left:number;top:number}|undefined>(undefined);
   const [cacheRequest,setCacheRequest]=useState(0);
   const [sliderScrubbing,setSliderScrubbing]=useState(false);
@@ -189,6 +203,7 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
   const [error,setError]=useState('');
   const [notice,setNotice]=useState('');
   const [exportOpen,setExportOpen]=useState(false);
+  const [frameSaving,setFrameSaving]=useState(false);
   const [sourceAnalysis,setSourceAnalysis]=useState<'scene'|'loudness'>();
   const [meters]=useState(createVideoMeterBus);
   const [editorialOpen,setEditorialOpen]=useState(false);
@@ -210,6 +225,7 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
   const [collapsed,setCollapsed]=useState<string[]>([]);
   const [rangeMode,setRangeMode]=useState<'box'|'range'>(),[range,setRange]=useState<TimeSpan>();
   const rangeGesture=useRef<SelectionGesture|null>(null);
+  const marqueeElement=useRef<HTMLDivElement>(null);
   const [loop,setLoop]=useState<TimeSpan>(),looping=useRef(loop);looping.current=loop;
   const timelineSpan=range??loop,markedRange=!!range&&!rangeMode;
   const [skim,setSkim]=useState<number>(),[filmstrip,setFilmstrip]=useState(true);
@@ -249,10 +265,6 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
     return true;
   });
   const activeInspector=inspectorPages.includes(inspectorPage)?inspectorPage:inspectorPages[0];
-  const credits=useMemo(()=>{
-    const audible=new Set(audioPlan.map(source=>source.assetId));
-    return recordingCredits(timeline.assets.flatMap(asset=>asset.credit&&audible.has(asset.id)?[asset.credit]:[]));
-  },[timeline]);
   const total = useMemo(() => durationOf(timeline), [timeline]);
   const PX = zoom;
   const zoomMax=maxTimelineZoom(project.fps);
@@ -680,13 +692,13 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
         if(file)registerBrowserFile(asset.id,file);
         let url=await mediaUrl(asset);
         let metadata;
-        try{metadata=await mediaMetadata(url,kind,name);}
+        try{metadata=await mediaMetadata(url,kind,name,asset.path);}
         catch(error){
           if(file||kind!=='video'||asset.recordingPath||!isNativeMediaDesktop())throw error;
           setProgress('Preparing editing master · '+name);
           const [prepared]=await prepareRecording(path,'master',project.fps);
           asset.path=prepared.path;asset.recordingPath=path;
-          url=await mediaUrl(asset);metadata=await mediaMetadata(url,kind,name);
+          url=await mediaUrl(asset);metadata=await mediaMetadata(url,kind,name,asset.path);
         }
         if(kind!=='image'&&metadata.duration>MAX_TIMELINE)throw Error(`${name}: source exceeds the six-hour video media limit.`);
         if(kind!=='image'&&metadata.duration<.1)throw Error(`${name}: media duration is unavailable or the codec is unsupported`);
@@ -1232,6 +1244,10 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
     const next={...value,layout:{...value.layout,timeline:boundedTimelineHeight(value.layout.timeline)}};
     setPreferences(next);setTimelineHeight(next.layout.timeline);saveStudioPreferences(next);
   }
+  function savePaneSize(side:'library'|'inspector',width:number){
+    const next={...preferences,layout:{...preferences.layout,[side]:width}};
+    setPreferences(next);saveStudioPreferences(next);
+  }
   function saveTimelineSize(height:number){
     const next={...preferences,layout:{...preferences.layout,timeline:height}};
     setPreferences(next);saveStudioPreferences(next);
@@ -1269,6 +1285,7 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
   }
   function clearTimelineRange(){
     rangeGesture.current=null;
+    if(marqueeElement.current)marqueeElement.current.hidden=true;
     setRangeMode(undefined);setRange(undefined);
     if(loop){
       if(playing)setHead(transport.time());
@@ -1280,25 +1297,47 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
     event.preventDefault();event.stopPropagation();event.currentTarget.setPointerCapture(event.pointerId);
     rangeGesture.current={pointerId:event.pointerId,start:navigation.timeAt(event.clientX),trackId,x:event.clientX,y:event.clientY};
     setPlaying(false);setSkim(undefined);setSelection([]);setRange(undefined);
+    if(marqueeElement.current)marqueeElement.current.hidden=rangeMode!=='box';
     return true;
   }
-  function selectionMove(event:PointerEvent<HTMLElement>){
+  function selectionMove(event:PointerEvent<HTMLElement>,complete=false){
     const current=rangeGesture.current;if(!current||current.pointerId!==event.pointerId)return false;
     event.stopPropagation();
     const track=document.elementFromPoint(event.clientX,event.clientY)?.closest<HTMLElement>('[data-track-id]')?.dataset.trackId;
-    const a=timeline.tracks.findIndex(item=>item.id===current.trackId),b=timeline.tracks.findIndex(item=>item.id===(track??current.trackId));
     const x=navigation.timeAt(event.clientX),quantize=(time:number)=>cap(Math.round(time*project.fps)/project.fps,0,MAX_TIMELINE);
     const span={start:quantize(Math.min(x,current.start)),end:quantize(Math.max(x,current.start))};
-    const tracks=new Set(timeline.tracks.slice(Math.min(a,b<0?a:b),Math.max(a,b)+1).map(item=>item.id));
-    const ids=timeline.clips.filter(clip=>tracks.has(clip.trackId)&&clip.start<span.end&&clipEnd(clip)>span.start).map(clip=>clip.id);
-    setRange(span.end>span.start?span:undefined);setSelection(ids);
+    const visibleTracks=timeline.tracks.filter(item=>!item.folder||!collapsed.includes(item.folder)).map(item=>item.id);
+    const ids=clipsInBox(timeline,visibleTracks,current.trackId,track??current.trackId,span.start,span.end);
+    if(rangeMode==='box'){
+      // Draw in the scrolling content's coordinate space, without rebuilding the
+      // entire editor on every pointer movement. Selection commits on pointerup.
+      const marquee=marqueeElement.current;
+      const grid=marquee?.parentElement;
+      const rows=grid?Array.from(grid.querySelectorAll<HTMLElement>('.hv-track[data-track-id]')):[];
+      const first=rows.find(row=>row.dataset.trackId===current.trackId);
+      const last=rows.find(row=>row.dataset.trackId===(track??current.trackId))??first;
+      if(marquee&&first&&last){
+        const top=Math.min(first.offsetTop,last.offsetTop),bottom=Math.max(first.offsetTop+first.offsetHeight,last.offsetTop+last.offsetHeight);
+        marquee.hidden=false;
+        const visualStart=cap(Math.min(x,current.start),0,MAX_TIMELINE);
+        const visualEnd=cap(Math.max(x,current.start),0,MAX_TIMELINE);
+        marquee.style.left=`${TRACK_HEADER_WIDTH+visualStart*PX}px`;
+        marquee.style.top=`${top}px`;
+        marquee.style.width=`${Math.max(2,(visualEnd-visualStart)*PX)}px`;
+        marquee.style.height=`${Math.max(2,bottom-top)}px`;
+      }
+      if(complete)setSelection(ids);
+    }else{
+      setRange(span.end>span.start?span:undefined);setSelection(ids);
+    }
     return true;
   }
   function selectionEnd(event:PointerEvent<HTMLElement>){
     const current=rangeGesture.current;if(!current||current.pointerId!==event.pointerId)return false;
-    if(event.type==='pointerup')selectionMove(event);
+    if(event.type==='pointerup')selectionMove(event,true);
     else {setRange(undefined);setSelection([]);}
     rangeGesture.current=null;
+    if(marqueeElement.current)marqueeElement.current.hidden=true;
     return true;
   }
   function editSelectedRange(mode:'copy'|'cut'|'move'){
@@ -1333,10 +1372,10 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
     if(timeline.tracks.find(track=>track.id===clip.trackId)?.locked)return;
     commit({...timeline,clips:timeline.clips.map(item=>item.id===clip.id?{...item,labelColor:color}:item)});
   }
-  function finishTitle(){
-    if(!titleEdit)return;
-    const next=titleEdit.text.trim().slice(0,2000);
-    if(next&&titleEdit.id===selected)updateClip({title:next});
+  function applyTitle(text:string,style:VideoTextStyle){
+    if(!titleEdit||titleEdit.id!==selected)return;
+    const next=text.trim().slice(0,2000);
+    if(next)updateClip({title:next,textStyle:style});
     setTitleEdit(undefined);
   }
   function acceptVoice(take:VoiceTake){
@@ -1453,7 +1492,7 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
         const [prepared]=await prepareRecording(path,'master',project.fps);
         detached.path=prepared.path;detached.recordingPath=path;
       }
-      forgetMediaUrl(asset.id);const url=await mediaUrl(detached),metadata=await mediaMetadata(url,kind,next.name);
+      forgetMediaUrl(asset.id);const url=await mediaUrl(detached),metadata=await mediaMetadata(url,kind,next.name,detached.path);
       if(activeProject.current!==origin)return;const latest=latestModel.current.timeline;
       const required=requiredSourceDuration(latestModel.current.project,asset.id);
       if(kind!=='image'&&(metadata.duration<.1||metadata.duration>MAX_TIMELINE))throw Error('Choose a readable replacement source up to six hours long.');
@@ -1480,7 +1519,7 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
         if(candidates.length!==1)continue;
         const temporary={...asset,id:crypto.randomUUID(),path:candidates[0].path,libraryId:undefined};
         try{
-          const url=await mediaUrl(temporary),meta=await mediaMetadata(url,asset.kind,asset.name);
+          const url=await mediaUrl(temporary),meta=await mediaMetadata(url,asset.kind,asset.name,temporary.path);
           if(asset.kind!=='image'&&(meta.duration+.02<requiredSourceDuration(project,asset.id)||Math.abs(meta.duration-asset.duration)>.25))continue;
           if(asset.width&&meta.width&&asset.width!==meta.width||asset.height&&meta.height&&asset.height!==meta.height)continue;
           matches.push({asset,replacement:{...asset,path:temporary.path,missing:false,portablePath:undefined,revision:(asset.revision??0)+1},url});
@@ -1494,15 +1533,25 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
     finally{setBusy(false);setProgress('');}
   }
   async function gradeFrame(graded:boolean){
-    if(!selectedClip||selectedTrack?.kind==='audio')throw Error('Select a visual clip to measure its color.');
-    const {TimelineCompositor}=await import('../editor/video/compositor');
+    if(!selectedClip||selectedTrack?.kind==='audio')throw Error('Select a visual clip to inspect its color.');
+    // The inspector uses the same authored TypeScript effects/grade pipeline as
+    // the live monitor. It never asks the partial Rust effect registry to
+    // approximate or omit the selected clip's visual operations.
+    const [{createVideoRenderContract},{renderBrowserPreviewFrame},{PreviewMediaSources}]=await Promise.all([
+      import('../editor/video/preview-render-contract'),
+      import('../editor/video/preview-frame-compositor'),
+      import('../editor/video/preview-media-sources'),
+    ]);
+    gradePreviewSources.current??=new PreviewMediaSources();
     const ratio=Math.min(1,480/Math.max(project.width,project.height));
-    const renderer=new TimelineCompositor(Math.max(1,Math.round(project.width*ratio)),Math.max(1,Math.round(project.height*ratio)),project.fps,project.width);
+    const width=Math.max(1,Math.round(project.width*ratio));
+    const height=Math.max(1,Math.round(project.height*ratio));
     const clock=cap(previewHead,selectedClip.start,selectedClip.start+Math.max(0,selectedClip.duration-1/project.fps));
-    try{
-      if(selectedClip.adjustment)return await renderer.render(graded?timeline:{...timeline,clips:timeline.clips.filter(clip=>clip.id!==selectedClip.id)},clock);
-      return graded?await renderer.clipFrame(timeline,selectedClip,clock):await renderer.rawFrame(timeline,selectedClip,clock);
-    }finally{renderer.dispose();}
+    const subset={...timeline,clips:timeline.clips.filter(clip=>clip.id===selectedClip.id).map(clip=>({
+      ...clip,grade:graded?clip.grade:undefined,effects:graded?clip.effects:undefined,
+    }))};
+    return renderBrowserPreviewFrame(createVideoRenderContract(subset,width,height,project.fps,false,project.width),
+      clock,gradePreviewSources.current,false);
   }
 
   function applyGradeToSelection(grade:VideoGrade){
@@ -1529,6 +1578,24 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
     finally{if(activeProject.current===origin){setBusy(false);setProgress('');}}
   }
 
+  async function savePlayheadFrame() {
+    if (frameSaving || !timeline.clips.length) return;
+    // Snapshot the marker and current scene so a mid-export seek/edit does not
+    // silently change which frame the user asked to save.
+    const request = {
+      timeline: structuredClone(timeline),
+      time: Math.max(0, Math.min(head, Math.max(0, total - 1 / project.fps))),
+      width: project.width, height: project.height, fps: project.fps,
+      projectName: project.name,
+    };
+    setFrameSaving(true); setError('');
+    try {
+      const saved = await saveTimelineFramePng(request, isNativeMediaDesktop());
+      if (saved) setNotice(saved === 'download' ? 'PNG frame downloaded' : 'PNG frame saved');
+    } catch (reason) { setError(`Could not save PNG frame: ${String(reason)}`); }
+    finally { setFrameSaving(false); }
+  }
+
   function exportVideo(){
     if(!isNativeMediaDesktop()||!capabilities?.h264Mp4Encode){setError('Native Windows H.264 export is unavailable.');return;}
     if(!timeline.clips.length){setError('Add media to the timeline before exporting.');return;}
@@ -1543,8 +1610,7 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
       if(Object.keys(offline).some(id=>sceneUsesAsset(source,id)))throw Error('Relink missing media in the selected sequence before exporting.');
       return {request,source,width:sequence?.width??project.width,name:request.prefix??project.name};
     });
-    jobs.enqueueDelivery(requests.length===1?'Export '+requests[0].name:'Export '+requests.length+' edits',planDelivery(requests));
-    setNotice('Export queued. You can keep editing.');
+    return jobs.enqueueDelivery(requests.length===1?'Export '+requests[0].name:'Export '+requests.length+' edits',planDelivery(requests));
   }
 
   return <main ref={shell} className={`hv-shell${fileDrop.over?' is-file-drop':''}`} style={{'--hv-track-header':TRACK_HEADER_WIDTH+'px'} as CSSProperties}
@@ -1572,10 +1638,12 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
     </div>
     <div ref={libraryDrag.line} className="hv-library-drop-line" hidden aria-hidden="true"/>
     <input ref={fileInput} type="file" multiple accept={importMode.current==='stickers'?'.png,.gif,.jpg,.jpeg,.bmp,.tga,.webp':importMode.current==='audio'?'audio/*':'video/*,audio/*,image/*,.tga'} hidden onChange={(e:ChangeEvent<HTMLInputElement>)=>onFileInput(e.target.files)}/>
-    <div className={`hv-workspace${preferences.layout.swap?' is-swapped':''}`} style={{
+    <div ref={workspaceElement} className={`hv-workspace${preferences.layout.swap?' is-swapped':''}`} style={{
       '--hv-library-width':preferences.layout.library===DEFAULT_STUDIO_LAYOUT.library?'clamp(245px, 32.35vw, 680px)':preferences.layout.library+'px',
       '--hv-inspector-width':preferences.layout.inspector===DEFAULT_STUDIO_LAYOUT.inspector?'clamp(205px, 23.05vw, 485px)':preferences.layout.inspector+'px',
     } as CSSProperties}>
+      <VideoPaneSplitter side="library" swapped={preferences.layout.swap} workspace={workspaceElement} layout={preferences.layout} onCommit={savePaneSize}/>
+      <VideoPaneSplitter side="inspector" swapped={preferences.layout.swap} workspace={workspaceElement} layout={preferences.layout} onCommit={savePaneSize}/>
       <VideoLibraryPane project={project} timeline={timeline} sources={sources} offline={offline} head={head} playing={playing} selected={selectedClip} selectedIds={selection} onUserPreset={applyPreset} onCardDrag={libraryDrag.start} sceneKey={sceneKey} locked={!!selectedTrack?.locked} busy={busy}
         onImportFolder={isNativeMediaDesktop()?()=>void chooseMediaFolder():undefined} onBatchRelink={isNativeMediaDesktop()?()=>void batchRelink():undefined}
         onImportLocal={isNativeMediaDesktop()?entry=>void importPaths([entry.path]):undefined}
@@ -1597,7 +1665,20 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
             disabled={!timeline.clips.some(clip=>clip.trackId===track.id&&clip.start<=previewHead&&clip.start+clip.duration>previewHead)}
             onClick={()=>{try{commit(cutMulticam(timeline,track.id,previewHead,project.fps));}catch(error){setError(String(error));}}}>{track.name}</button>)}
         </div>}
-        <div className="hv-stage-flex"><div className="hv-monitor" style={{aspectRatio:`${project.width} / ${project.height}`,'--hv-ratio':project.width/project.height} as CSSProperties}>
+        <div className="hv-stage-flex"><div className="hv-monitor" style={{aspectRatio:`${project.width} / ${project.height}`,'--hv-ratio':project.width/project.height} as CSSProperties}
+          onDoubleClick={event=>{
+            if(playing||compare||auditionResult||original||event.target instanceof Element&&event.target.closest('.hv-transform-overlay,.hv-mask-overlay'))return;
+            // Double-click the footage to reveal the existing drag/resize handles;
+            // do not create a second, incompatible canvas-transform system.
+            const eligible=liveClips.filter(clip=>!clip.adjustment&&timeline.tracks.find(track=>track.id===clip.trackId)?.kind!=='audio'
+              &&!timeline.tracks.find(track=>track.id===clip.trackId)?.locked);
+            const candidate=eligible.find(clip=>clip.id===selected)??eligible[eligible.length-1];
+            if(!candidate)return;
+            setSelected(candidate.id);setPlaying(false);setInspectorPage('Video');setVideoPage('Basic');
+            const targetTrack=timeline.tracks.find(track=>track.id===candidate.trackId);
+            if(targetTrack?.kind==='title'&&!candidate.shape){setTitleEdit({id:candidate.id,text:candidate.title??''});return;}
+            setTransformClip(candidate.id);
+          }}>
           <VideoPreviewCanvas key={`${project.id}:${project.sequence?.id??'main'}:${compoundPath.join('/')}`} timeline={original?originalTimeline:displayTimeline}
             width={project.width} height={project.height} quality={previewQuality} fps={project.fps} time={displayHead} playing={monitorClock.playing} transport={transport} synchronizeStart
             interactive={monitorClock.interactive} cacheRequest={cacheRequest} onError={setError}/>
@@ -1625,8 +1706,8 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
           {original&&<span className="hv-view-badge">Original clip</span>}
           {skim!==undefined&&!playing&&<span className="hv-view-badge">Skim · {skim.toFixed(2)} s</span>}
           {guide&&<div className="hv-safe-guide" aria-hidden="true" style={{inset:guideInset+'%'}}><i/><b/></div>}
-          {!titleEdit&&!compare&&!auditionResult&&!playing&&activeInspector==='Video'&&videoPage==='Basic'&&selectedClip&&
-            (transformClip===selectedClip.id||selectedTrack?.kind==='title')&&liveClips.some(clip=>clip.id===selectedClip.id)&&!selectedTrack?.locked&&selectedTrack?.kind!=='audio'&&!selectedClip.adjustment&&
+          {!titleEdit&&!compare&&!auditionResult&&!playing&&selectedClip&&
+            (transformClip===selectedClip.id||activeInspector==='Video'&&videoPage==='Basic'&&selectedTrack?.kind==='title')&&liveClips.some(clip=>clip.id===selectedClip.id)&&!selectedTrack?.locked&&selectedTrack?.kind!=='audio'&&!selectedClip.adjustment&&
             <VideoTransformOverlay key={selectedClip.id} clip={selectedClip} asset={assetOf(selectedClip)} time={previewHead} width={project.width} height={project.height} showGuide={trackGuide===selectedClip.id}
               fps={project.fps} autoKey={autoKey}
               onEditText={selectedTrack?.kind==='title'&&!selectedClip.shape?()=>setTitleEdit({id:selectedClip.id,text:selectedClip.title??''}):undefined}
@@ -1638,13 +1719,7 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
               width={project.width} height={project.height} grade={activeInspector==='Adjust'}
               onChange={mask=>updateClip(activeInspector==='Adjust'?{grade:{...selectedClip.grade,mask}}:{mask},true)}
               onFinish={cancelled=>cancelled?cancelGesture():finishGesture()}/>}
-          {titleEdit&&selectedClip?.id===titleEdit.id&&<div className="hv-canvas-text-edit" style={{left:(.5+selectedClip.x)*100+'%',top:(.5+selectedClip.y)*100+'%',
-            width:Math.min(90,(selectedClip.textStyle?.width??.75)*100)+'%'}}>
-            <textarea autoFocus aria-label="Edit title on canvas" value={titleEdit.text} maxLength={2000}
-              onChange={event=>setTitleEdit({...titleEdit,text:event.target.value})} onBlur={finishTitle}
-              onKeyDown={event=>{if(event.key==='Escape'){event.stopPropagation();setTitleEdit(undefined);}if(event.key==='Enter'&&(event.ctrlKey||event.metaKey)){event.preventDefault();finishTitle();}}}/>
-            <small>Ctrl+Enter to apply · Escape to cancel</small></div>}
-          <VideoAudioPreview plan={audioPlan} sources={sources} time={head} playing={monitorClock.playing} transport={transport}
+          <VideoAudioPreview plan={audioPlan} sources={sources} time={head} playing={monitorClock.playing} transport={transport} direction={direction}
             meters={meters} muted={monitorMuted} onError={setError}/>
           {!displayClips.some(c=>timeline.tracks.find(t=>t.id===c.trackId)?.kind!=='audio')&&
             <div className="hv-monitor-empty"><MovieOutlined sx={{fontSize:40}}/><span>{timeline.clips.length?'No visual clip at this time':'Your story starts here'}</span>
@@ -1669,18 +1744,14 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
             <button aria-label="Next frame (Right)" data-hint="Next frame · Right arrow" onClick={()=>stepFrame(1)}><FastForward/></button>
             <button aria-label="Jump to end" data-hint="Jump to end" onClick={()=>seekTo(total)}><SkipNext/></button>
           </div>
-          <div className="hv-player-display">
-            <button aria-expanded={monitorTools} aria-label="Monitor settings" data-hint="Monitor settings" onClick={()=>setMonitorTools(value=>!value)}>
-              <MonitorOutlined/>{aspectLabel(project.width,project.height)}<ExpandMore fontSize="inherit"/>
-            </button>
-            <button aria-pressed={monitorMuted} aria-label={monitorMuted?'Unmute preview':'Mute preview'} data-hint={monitorMuted?'Unmute preview':'Mute preview'} onClick={()=>setMonitorMuted(value=>!value)}>
-              {monitorMuted?<VolumeOff/>:<VolumeUp/>}
-            </button>
-            <button aria-label="Toggle fullscreen preview" data-hint="Fullscreen preview" onClick={()=>{
+          <VideoMonitorActions aspect={aspectLabel(project.width,project.height)} settingsOpen={monitorTools}
+            onSettings={()=>setMonitorTools(value=>!value)} saving={frameSaving} canSave={timeline.clips.length>0}
+            onSaveFrame={()=>void savePlayheadFrame()} muted={monitorMuted} onMute={()=>setMonitorMuted(value=>!value)}
+            onFullscreen={()=>{
               const action=document.fullscreenElement?document.exitFullscreen():monitorStage.current?.requestFullscreen();
               void action?.catch(error=>setError(String(error)));
-            }}><Fullscreen/></button>
-          </div>
+            }}/>
+
         </div>
         {monitorTools&&<div className="hv-monitor-options" aria-label="Monitor settings">
           <label className="hv-field">Scrub timeline
@@ -1717,7 +1788,10 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
           {inspectorPages.map(page=><button type="button" key={page} aria-pressed={page===activeInspector}
             onClick={()=>{setInspectorPage(page);setGradeMask(false);}}>{page}</button>)}
         </nav>}
-        {selectedClip?<div className="hv-inspector-scroll" key={selectedClip.id}>
+        {selectedClip?<motion.div className="hv-inspector-scroll" key={`${selectedClip.id}:${activeInspector}:${activeInspector==='Video'?videoPage:''}`}
+          initial={prefersReducedMotion?false:{opacity:0,x:8}}
+          animate={{opacity:1,x:0}}
+          transition={{duration:prefersReducedMotion?0:.2,ease:'easeOut'}}>
           {activeInspector==='Video'&&<>
             <nav className="hv-inspector-subtabs" aria-label="Video tools">
               {VIDEO_PAGES.filter(page=>page==='Basic'||selectedTrack?.kind==='video').map(page=>
@@ -1862,14 +1936,14 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
           {activeInspector==='Stylize'&&<VideoEffectInspector effects={selectedClip.effects??[]} clock={clipClock} time={clipClock.time}
             duration={selectedClip.duration} fps={project.fps} onSeek={clipClock.onSeek} disabled={!!selectedTrack?.locked}
             onChange={updateEffects} onCommit={finishGesture} onError={setError}/>}
-        </div>:<div className="hv-project-details"><strong>Project details</strong><dl>
+        </motion.div>:<div className="hv-project-details"><strong>Project details</strong><dl>
           <dt>Name</dt><dd>{project.name}</dd><dt>Resolution</dt><dd>{project.width} × {project.height}</dd>
           <dt>Frame rate</dt><dd>{project.fps} fps</dd><dt>Duration</dt><dd>{sec(total)}</dd>
           <dt>Color space</dt><dd>Rec. 709 SDR</dd><dt>Media</dt><dd>{timeline.assets.length} assets · {timeline.clips.length} clips</dd>
           <dt>Source files</dt><dd>Referenced media</dd></dl><p>Select a clip to edit its text, transform, audio, effects and animation. Use Canvas to change the project format.</p></div>}
         {!selectedClip&&<div className="hv-inspector-note">
           {isNativeMediaDesktop()&&<button disabled={busy} onClick={()=>void collectProject()}>Collect portable copy</button>}
-          Effects are non-destructive. MP4 export uses the same compositor and mixes audible tracks.</div>}
+          Effects are non-destructive. The native MP4 renderer accepts supported effects and mixes audible tracks; unsupported effects stop export.</div>}
       </aside>
     </div>
     <div className="hv-timeline-resizer" role="separator" aria-label="Resize video timeline" aria-orientation="horizontal" aria-valuenow={Math.round(timelineHeight)} tabIndex={0}
@@ -1888,8 +1962,13 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
     <section ref={timelineSection} className="hv-timeline" aria-label="Video timeline" style={{flexBasis:timelineHeight===DEFAULT_STUDIO_LAYOUT.timeline?'clamp(270px, 35.2vh, 465px)':timelineHeight}}>
       <div className="hv-timeline-top">
         <div className="hv-timeline-primary" aria-label="Timeline editing controls">
-          <button aria-label="Select clips" aria-pressed={!panTimeline} data-hint="Select clips" onClick={()=>setPanTimeline(false)}><NearMeOutlined/></button>
-          <button aria-label="Pan timeline" aria-pressed={panTimeline} data-hint="Pan timeline" onClick={()=>setPanTimeline(true)}><PanToolOutlined/></button>
+          <button aria-label="Select clips" aria-pressed={!panTimeline&&!rangeMode} data-hint="Select clips" onClick={()=>{setPanTimeline(false);setRangeMode(undefined);}}><NearMeOutlined/></button>
+          <button aria-label="Pan timeline" aria-pressed={panTimeline} data-hint="Pan timeline" onClick={()=>{setPanTimeline(true);setRangeMode(undefined);}}><PanToolOutlined/></button>
+          <button type="button" className="hv-box-select-tool" aria-label="Box select clips" aria-pressed={rangeMode==='box'}
+            data-hint="Drag a rectangle across multiple clips to select and move them together"
+            onClick={()=>{setPanTimeline(false);setRangeMode(current=>current==='box'?undefined:'box');setRange(undefined);}}>
+            ▢ <span>Box select</span>
+          </button>
           <span className="hv-tb-sep"/>
           <button data-hint="Split clip at playhead (Ctrl+B)" onClick={split}><ContentCut/> Split</button>
           <span className="hv-tb-sep"/>
@@ -1957,7 +2036,6 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
           onCompound={()=>{try{const result=makeCompound(timeline,linkedSelection(timeline,selection));commit(result.timeline);setSelected(result.clip.id);}catch(error){setError(String(error));}}}
           onError={setError}/>
       <div className="hv-working-bar hv-inline-actions" aria-label="Timeline tools">
-        <button aria-pressed={rangeMode==='box'} onClick={()=>{setRangeMode(rangeMode==='box'?undefined:'box');setRange(undefined);}}>Box select</button>
         <button aria-pressed={rangeMode==='range'} onClick={()=>{setRangeMode(rangeMode==='range'?undefined:'range');setRange(undefined);}}>Time range</button>
         <button disabled={!total} data-hint="Set the start of the timeline range (I)" onClick={()=>markTimelineRange('start')}>Mark In</button>
         <button disabled={!total} data-hint="Set the end of the timeline range (O)" onClick={()=>markTimelineRange('end')}>Mark Out</button>
@@ -1989,7 +2067,7 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
           commit({...timeline,markers:timeline.markers?.filter(marker=>Math.abs(marker.time-head)>=1/project.fps)});
         }}>Remove marker here</button>
       </div>}
-      <div className={`hv-timeline-scroll${panTimeline?' is-pan':''}`} ref={navigation.scroll} onScroll={navigation.measure}
+      <div className={`hv-timeline-scroll${panTimeline?' is-pan':''}${rangeMode==='box'?' is-box-select':''}`} ref={navigation.scroll} onScroll={navigation.measure}
         onPointerDownCapture={event=>{
           if(event.ctrlKey&&event.button===1){
             event.preventDefault();event.stopPropagation();event.currentTarget.setPointerCapture(event.pointerId);
@@ -2101,7 +2179,7 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
                 onDoubleClick={event=>{if(clip.compound){event.stopPropagation();changeScene([...compoundPath,clip.id]);}}}>
                 <span className="hv-grip hv-grip-left" onPointerDown={(e:PointerEvent<HTMLSpanElement>)=>pointDown(e,clip,'left')}/>
                 {filmstrip&&track.kind==='video'&&assetOf(clip)?.kind==='video'&&sources[clip.assetId??'']&&length*PX>=52&&
-                  <VideoClipFilmstrip clip={clip} width={length*PX} url={sources[clip.assetId!]}
+                  <VideoClipFilmstrip clip={clip} width={length*PX} asset={assetOf(clip)!}
                     visibleLeft={(visibleStart-clip.start-offset)*PX} visibleRight={(visibleEnd-clip.start-offset)*PX}
                     fps={assetOf(clip)?.frameRate??project.fps}/>}
                 {assetOf(clip)?.kind==='image'&&sources[clip.assetId??'']&&!assetOf(clip)?.crop&&!/\.tga$/i.test(assetOf(clip)?.name??'')&&<span className="hv-timeline-clip-thumb" style={{backgroundImage:`url("${sources[clip.assetId??'']}")`}}/>}
@@ -2133,6 +2211,7 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
               visibleStart={visibleStart} visibleEnd={visibleEnd} locked={!!track.locked}
               onChange={updateClip} onSeek={seekTo} onCommit={finishGesture} onCancel={cancelGesture}/>}
         </Fragment>)}
+        <div ref={marqueeElement} className="hv-selection-marquee" hidden aria-hidden="true"/>
         {drag?.guide!==undefined&&<i aria-hidden="true" className="hv-magnet-guide" style={{left:TRACK_HEADER_WIDTH+drag.guide*PX}}/>}
         {navigation.stop&&<i aria-hidden="true" className="hv-magnet-guide hv-playhead-snap"
           style={{left:TRACK_HEADER_WIDTH+navigation.stop.frame/project.fps*PX}}><span>{navigation.stop.label}</span></i>}
@@ -2152,6 +2231,9 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
         (lastExport?`Exported ${lastExport.framesWritten} frames`:'')}</span>
       <button type="button" data-hint="More timeline tools" aria-expanded={timelineTools} onClick={()=>setTimelineTools(value=>!value)}><Tune/> Timeline tools</button>
     </div>
+    {titleEdit&&selectedClip?.id===titleEdit.id&&<VideoFocusTextEditor key={titleEdit.id} id={titleEdit.id}
+      text={titleEdit.text} style={selectedClip.textStyle} fonts={fonts}
+      onApply={applyTitle} onCancel={()=>setTitleEdit(undefined)}/>}
     {editorialOpen&&<VideoEditorialTools timeline={timeline} selected={selectedClip} head={head} fps={project.fps} width={project.width} height={project.height}
       onSeek={seekTo} onChange={commit} onClose={()=>setEditorialOpen(false)} onHighlights={makeHighlights} onOtio={isNativeMediaDesktop()?interchange:undefined}
       meters={meters} playing={playing} onPlay={togglePlayback}
@@ -2261,8 +2343,9 @@ export default function VideoWorkspace({project,onChange,onOpenCopy,onHistoryCha
           clips:[...timeline.clips.filter(clip=>clip!==soundtrack.original),...soundtrack.parts]});
         setSelection(soundtrack.parts.map(clip=>clip.id));setSoundtrack(undefined);seekTo(soundtrack.span.start);
       }}/>}
-    <VideoExportDialog open={exportOpen} name={project.sequence?`${project.name} - ${project.sequence.name}`:project.name} credits={credits} width={project.width} height={project.height} fps={project.fps}
-      ranges={timeline.ranges?.filter(range=>range.end<=total+1e-7)} sequences={compoundPath.length?undefined:project.sequences} onClose={()=>setExportOpen(false)}
-      onQueue={queueExports} issues={issues} onReview={issue=>{setExportOpen(false);seekTo(issue.time);if(issue.clipId)setSelected(issue.clipId);}}/>
+    <VideoEditorExportOverlay open={exportOpen} name={project.sequence?`${project.name} - ${project.sequence.name}`:project.name}
+      width={project.width} height={project.height} fps={project.fps} timeline={timeline} jobs={jobs.jobs} recent={exports}
+      onClose={()=>setExportOpen(false)} onQueue={queueExports} onCancel={jobs.cancel}
+      issues={issues} onReview={issue=>{setExportOpen(false);seekTo(issue.time);if(issue.clipId)setSelected(issue.clipId);}}/>
   </main>;
 }

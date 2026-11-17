@@ -24,7 +24,7 @@ export default function VideoWorkspacePreferences({commands,value,onChange,onRun
             }}/><small>Press a key</small>
           </div>)}
       </>:<>
-        {([['library','Library width',175,500],['inspector','Inspector width',180,460],['timeline','Timeline height',180,700]] as const).map(([key,label,min,max])=>
+        {([['library','Library width',175,720],['inspector','Inspector width',180,600],['timeline','Timeline height',180,700]] as const).map(([key,label,min,max])=>
           <label className="hv-field" key={key}>{label} · {Math.round(layout[key])} px<input type="range" min={min} max={max} value={layout[key]}
             onChange={event=>onChange({...value,layout:{...layout,[key]:event.target.valueAsNumber}})}/></label>)}
         <div className="hv-inline-actions"><button aria-pressed={layout.swap} onClick={()=>onChange({...value,layout:{...layout,swap:!layout.swap}})}>Swap side panels</button>

@@ -1,0 +1,58 @@
+/* Project Velocity: theme-aware controls and honest export telemetry.
+   These rules are deliberately scoped to Video Studio to preserve Image Editor. */
+.app.is-video-studio .hv-player-bar{
+  display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);
+  align-items:center;gap:clamp(4px,.5vw,10px);min-width:0;
+}
+.app.is-video-studio .hv-player-transport{min-width:0;white-space:nowrap;justify-content:center;}
+.app.is-video-studio .hv-player-display.hv-velocity-monitor-actions{
+  min-width:0;display:flex;flex:0 0 auto;justify-content:flex-end;
+  align-items:center;gap:4px;white-space:nowrap;
+}
+.app.is-video-studio .hv-player-display.hv-velocity-monitor-actions .hv-velocity-icon-button{
+  box-sizing:border-box;position:relative;flex:0 0 32px;
+  display:inline-flex;align-items:center;justify-content:center;
+  width:32px;min-width:32px;height:32px;min-height:32px;
+  padding:0;border:1px solid transparent;border-radius:8px;
+  color:var(--text);background:transparent;
+  cursor:pointer;transition:background-color .12s ease,border-color .12s ease;
+}
+.app.is-video-studio .hv-player-display.hv-velocity-monitor-actions .hv-velocity-icon-button:hover:not(:disabled),
+.app.is-video-studio .hv-player-display.hv-velocity-monitor-actions .hv-velocity-icon-button:focus-visible{
+  border-color:var(--accent-line);background:var(--hv-e-hover);outline-offset:2px;
+}
+.app.is-video-studio .hv-player-display.hv-velocity-monitor-actions .hv-velocity-icon-button:disabled{opacity:.46;cursor:not-allowed;}
+.app.is-video-studio .hv-player-display.hv-velocity-monitor-actions .hv-save-frame{
+  background:var(--hv-e-selected);border-color:var(--accent-line);box-shadow:0 0 8px var(--hv-e-glow);
+}
+.app.is-video-studio .hv-player-display.hv-velocity-monitor-actions .hv-velocity-icon-button svg{font-size:19px;flex:none;}
+.app.is-video-studio .hv-player-display.hv-velocity-monitor-actions .hv-aspect-button{
+  width:auto;min-width:56px;flex:0 0 auto;padding:0 4px;gap:2px;
+}
+.app.is-video-studio .hv-player-display.hv-velocity-monitor-actions .hv-velocity-aspect{
+  color:var(--text);font-size:10px;font-weight:650;line-height:1;
+}
+.app.is-video-studio .hv-player-display.hv-velocity-monitor-actions .hv-velocity-chevron{font-size:12px;}
+.hv-velocity-sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+@container (max-width:610px){.hv-velocity-monitor-actions .hv-velocity-aspect{display:none}}
+@media (max-width:1120px){
+  .app.is-video-studio .hv-player-bar{padding-inline:5px;gap:2px}
+  .app.is-video-studio .hv-player-display.hv-velocity-monitor-actions{gap:1px}
+  .app.is-video-studio .hv-player-display.hv-velocity-monitor-actions .hv-velocity-icon-button{width:28px;min-width:28px;flex-basis:28px;height:30px;min-height:30px}
+  .app.is-video-studio .hv-player-display.hv-velocity-monitor-actions .hv-aspect-button{min-width:43px;flex-basis:auto}
+  .app.is-video-studio .hv-player-display.hv-velocity-monitor-actions .hv-velocity-chevron{display:none}
+}
+@media (max-width:850px){
+  .app.is-video-studio .hv-player-bar{grid-template-columns:minmax(0,1fr) auto;}
+  .app.is-video-studio .hv-player-transport{grid-column:1;grid-row:1;justify-content:flex-start;}
+  .app.is-video-studio .hv-player-display.hv-velocity-monitor-actions{grid-column:2;grid-row:1;}
+  .app.is-video-studio .hv-clock{display:none;}
+}
+@media (prefers-reduced-motion:reduce){.app.is-video-studio .hv-velocity-icon-button{transition:none!important}}
+/* Existing below-button tooltip system, but with the active Huelith palette. */
+.app.is-video-studio .hv-studio-hint{
+  background:var(--panel-bg,#211d2d);
+  border-color:var(--accent-line,#67557d);
+  color:var(--text,#eee4f9);
+  box-shadow:0 6px 22px #0006;
+}

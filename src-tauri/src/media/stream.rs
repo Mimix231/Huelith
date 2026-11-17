@@ -1,6 +1,7 @@
 //! A bounded producer/consumer export session. All COM work lives on its worker.
 use super::{check_dimensions, validate_output_path, validate_source_file, ExportReport};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+use std::time::Instant;
 use std::{collections::HashMap, sync::{Arc, Mutex, atomic::{AtomicBool, AtomicU64, Ordering}, mpsc::{self, SyncSender, Sender}}, time::Duration};
 
 #[derive(Debug, Clone, Default, Deserialize)]
@@ -173,8 +174,26 @@ pub struct StreamConfig {
     #[serde(default)] pub bitrate:Option<u32>,
     #[serde(default)] pub audio:Vec<AudioSource>,
 }
+/// Timings from the native sink; `submitMs` is the time spent in Media
+/// Foundation's WriteSample call, NOT a claim of finished hardware encoding.
+/// Serializes to the existing Tauri IPC response without a second command.
+#[derive(Debug, Clone, Default, Serialize)]
+#[serde(rename_all="camelCase")]
+pub struct NativeFrameStages {
+    pub copy_ms:f64,         // Raw Tauri request -> owned native pixels
+    pub queue_ms:f64,        // Backpressure while submitting to the native worker
+    pub buffer_ms:f64,       // MF buffer allocation and Lock
+    pub convert_ms:f64,      // Exact RGBA-to-BGRX conversion
+    pub submit_ms:f64,       // MF sample creation and WriteSample
+    pub audio_ms:f64,        // Audio mixing + AAC submission, if present
+    pub native_total_ms:f64, // Entire native request duration; may overlap other work
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub input_format:Option<&'static str>, // Actual negotiated input (RGB32/NV12)
+}
 pub(super) enum ExportPacket {
-    Frame {index:u32,rgba:Vec<u8>,ack:Sender<Result<(),String>>},
+    Frame {index:u32,rgba:Vec<u8>,ack:Sender<Result<NativeFrameStages,String>>},
+    /// Encode the retained preceding RGBA frame at new timestamps, with new audio blocks.
+    Repeat {index:u32,count:u32,ack:Sender<Result<NativeFrameStages,String>>},
     Finish(Sender<Result<ExportReport,String>>),
     Cancel,
 }
@@ -241,17 +260,52 @@ pub async fn media_begin_export(mut config:StreamConfig,state:tauri::State<'_,Me
 }
 /// HLVF + u64 session + u32 sequential frame index + tight RGBA8. Binary IPC.
 #[tauri::command]
-pub async fn media_push_export_frame(request:tauri::ipc::Request<'_>,state:tauri::State<'_,MediaExportSessions>)->Result<(),String>{
+pub async fn media_push_export_frame(request:tauri::ipc::Request<'_>,state:tauri::State<'_,MediaExportSessions>)->Result<NativeFrameStages,String>{
+    let received_at=Instant::now();
     let tauri::ipc::InvokeBody::Raw(bytes)=request.body() else{return Err("Binary video frame required".into());};
     if bytes.len()<16||&bytes[..4]!=b"HLVF"{return Err("Invalid video frame envelope".into());}
     let id=u64::from_le_bytes(bytes[4..12].try_into().unwrap());let index=u32::from_le_bytes(bytes[12..16].try_into().unwrap());
     let session=session(&state,id)?;
     if bytes.len()-16!=session.frame_bytes{return Err("Frame length does not match export resolution".into());}
     let rgba=bytes[16..].to_vec();
+    let copy_ms=received_at.elapsed().as_secs_f64()*1000.0;
     tauri::async_runtime::spawn_blocking(move||{
         if session.cancelled.load(Ordering::Relaxed){return Err("Export cancelled".into());}
-        let (ack,reply)=mpsc::channel();session.sender.send(ExportPacket::Frame{index,rgba,ack}).map_err(|_|"Native encoder stopped".to_string())?;
-        reply.recv_timeout(Duration::from_secs(120)).map_err(|_|"Native encoder frame timed out".to_string())?
+        let queue_start=Instant::now();
+        let (ack,reply)=mpsc::channel();
+        session.sender.send(ExportPacket::Frame{index,rgba,ack})
+            .map_err(|_|"Native encoder stopped".to_string())?;
+        let queue_ms=queue_start.elapsed().as_secs_f64()*1000.0;
+        let mut stages=reply.recv_timeout(Duration::from_secs(120))
+            .map_err(|_|"Native encoder frame timed out".to_string())??;
+        stages.copy_ms=copy_ms;
+        stages.queue_ms=queue_ms;
+        stages.native_total_ms=received_at.elapsed().as_secs_f64()*1000.0;
+        Ok(stages)
+    }).await.map_err(|e|e.to_string())?
+}
+/// Small JSON control message for time-invariant output spans. The native
+/// worker retains only the last *accepted* RGBA frame and re-encodes it at
+/// successive sample times. No raw pixels cross IPC for repeated frames.
+/// Bounds and ordering are validated again on the encoder thread.
+#[tauri::command]
+pub async fn media_repeat_export_frames(id:u64,index:u32,repeat_count:u32,
+    state:tauri::State<'_,MediaExportSessions>)->Result<NativeFrameStages,String>{
+    if repeat_count==0 || repeat_count>120 {return Err("Repeat count must be 1..120".into());}
+    let received_at=Instant::now();
+    let session=session(&state,id)?;
+    tauri::async_runtime::spawn_blocking(move||{
+        if session.cancelled.load(Ordering::Relaxed){return Err("Export cancelled".into());}
+        let start=Instant::now();
+        let (ack,reply)=mpsc::channel();
+        session.sender.send(ExportPacket::Repeat{index,count:repeat_count,ack})
+            .map_err(|_|"Native encoder stopped".to_string())?;
+        let queue_ms=start.elapsed().as_secs_f64()*1000.;
+        let mut stages=reply.recv_timeout(Duration::from_secs(120))
+            .map_err(|_|"Native repeated frame timed out".to_string())??;
+        stages.queue_ms=queue_ms;
+        stages.native_total_ms=received_at.elapsed().as_secs_f64()*1000.;
+        Ok(stages)
     }).await.map_err(|e|e.to_string())?
 }
 #[tauri::command]

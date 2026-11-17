@@ -3,13 +3,14 @@ import {captionCues,serializeCaptions,type CaptionCue} from './captions';
 import {durationOf,isVideoTimeline,type VideoRange,type VideoScene,type VideoTimeline} from './timeline';
 import {exportEditedVideo,timelineAudioSources,type VideoDeliveryFormat} from './export-timeline';
 import {recordingCredits} from './audio-catalogue';
+import {createExportProgressTracker} from './export-progress';
 import {rememberExport} from './working-storage';
 import type {NativeExportReport} from './native-media';
 
 export type DeliveryExtras={captions:boolean;chapters:boolean;credits:boolean;stems:boolean};
 export type VideoExportSettings={
   width:number;height:number;fps:number;bitrate:number;outputPath:string;format:VideoDeliveryFormat;transparent:boolean;
-  range?:VideoRange;sequenceId?:string;prefix?:string;package?:DeliveryExtras;directory?:string;
+  includeAudio?:boolean;range?:VideoRange;sequenceId?:string;prefix?:string;package?:DeliveryExtras;directory?:string;
 };
 export type ExportRequest={request:VideoExportSettings;source:VideoTimeline;width:number;name:string};
 type DeliveryStep={index:number;path:string;kind:'main'|'captions'|'chapters'|'credits'|'stem';trackId?:string};
@@ -82,16 +83,20 @@ function creditsFor(source:VideoTimeline,range?:VideoRange){
 }
 
 export async function runDeliveryStep(plan:DeliveryPlan,cursor:number,signal:AbortSignal,
-  progress:(message:string,fraction?:number)=>void){
+  progress:(message:string,fraction?:number,previewDataUrl?:string)=>void){
   signal.throwIfAborted();
   const step=plan.steps[cursor],{request,source,width,name}=plan.requests[step.index];
   const range=request.range??{start:0,end:durationOf(source)};
   const prefix=name+' · ';
-  const report=(message:string,fraction=0)=>progress(prefix+message,(cursor+fraction)/plan.steps.length);
+  const report=(message:string,fraction=0,previewDataUrl?:string)=>
+    progress(prefix+message,(cursor+fraction)/plan.steps.length,previewDataUrl);
   if(step.kind==='main'||step.kind==='stem'){
     const format=step.kind==='stem'?'wav':request.format;
+    const tracker=createExportProgressTracker(({message,fraction,previewDataUrl})=>report(
+      (step.kind==='stem'?'Audio stem · ':format==='wav'?'Audio mix · ':format==='png'?'PNG sequence · ':'')+message,fraction,previewDataUrl),
+      {frameBytes:format==='mp4'||format==='webm'?request.width*request.height*4:undefined});
     const result=await exportEditedVideo({...request,timeline:source,referenceWidth:width,signal,format,outputPath:step.path,
-      audioTrackId:step.trackId,resumePng:format==='png',onProgress:(n,total)=>report((step.kind==='stem'?'Audio stem · ':'')+n+' / '+total,n/Math.max(1,total))});
+      audioTrackId:step.trackId,includeAudio:request.includeAudio,resumePng:format==='png',onProgress:tracker});
     return step.kind==='main'?result:undefined;
   }
   report('Writing '+step.kind);

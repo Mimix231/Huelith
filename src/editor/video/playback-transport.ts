@@ -34,6 +34,8 @@ export class VideoPlaybackTransport {
   }
 
   get generation(){return this.epoch;}
+  /** Reverse transport must never be driven by forward-only Web Audio. */
+  get playbackDirection(){return this.direction;}
   get waiting(){return this.waitingForAudio;}
   get advancing(){return this.running&&!this.waitingForAudio&&this.clock()>=this.startedAt;}
   get end(){return this.duration;}

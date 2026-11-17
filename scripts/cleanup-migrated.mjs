@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-/** Tauri startup cleanup: manifest-only, safe root containment, and a reference check.
- * By design new native .rs files DO NOT make their TS counterparts obsolete.
+/** Tauri startup cleanup: manifest-only, safe root containment, and runtime reference checks.
+ * Only files explicitly listed in the manifest are removed. Browser-rendering
+ * tests are migrated separately; they are not runtime imports.
  */
 import { readFileSync, existsSync, lstatSync, realpathSync, rmSync, readdirSync } from 'node:fs';
 import { dirname, resolve, relative, sep } from 'node:path';
@@ -22,7 +23,7 @@ function scan(folder,files=[]) {
   return files;
 }
 // Do not treat the manifest itself as a code reference to every path it lists.
-const sources=scan('src').concat(scan('src-tauri/src'),scan('scripts'),scan('tests'))
+const sources=scan('src').concat(scan('src-tauri/src'),scan('scripts'))
   .filter(file => file !== 'scripts/obsolete-migration-files.json');
 // These are live integration points. They must never be deleted even if a
 // future migration incorrectly lists them in the obsolete-file manifest.
@@ -31,6 +32,9 @@ const protectedEntrypoints = new Set([
   'src/editor/effects-worker.ts',
   'src/editor/effect-stack-cache.ts',
   'src/editor/fx.ts',
+  'src/editor/video/native-timeline-export.ts',
+  'src/editor/video/export-timeline.ts',
+  'src-tauri/src/media/native_timeline.rs',
 ]);
 const removed=[];const skipped=[];
 for (const rel of manifest.obsolete) {
@@ -41,10 +45,20 @@ for (const rel of manifest.obsolete) {
   if(!existsSync(absolute)) {skipped.push(`${rel}: already absent`);continue;}
   if(realpathSync(dirname(absolute)).startsWith(root+sep)===false)throw Error('Symlinked directory');
   if(!lstatSync(absolute).isFile())throw Error('Not a regular file');
-  // Stop if any source mentions its exact basename (including common extensionless imports).
-  const stem=rel.split('/').at(-1).replace(/\.[^.]+$/,'');
-  const references=sources.filter(file=>file!==rel &&
-    readFileSync(resolve(root,file),'utf8').includes(stem));
+  // Only actual module imports count, not incidental words in comments,
+  // CSS, or unrelated modules with the same basename. Resolve references
+  // against their importer so e.g. editor/effects-worker-client is distinct
+  // from the retired editor/video/effects-worker-client module.
+  const references=sources.filter(file=>file!==rel && existsSync(resolve(root,file)) && (()=>{
+    const source=readFileSync(resolve(root,file),'utf8');
+    const imports=source.matchAll(/(?:\bfrom\s*|\bimport\s*\(|\brequire\s*\(|\bnew\s+URL\s*\(|\bimport\s+)['"]([^'"]+)['"]/g);
+    for(const match of imports){
+      const name=match[1];if(!name.startsWith('.'))continue;
+      const target=resolve(dirname(resolve(root,file)),name);
+      if(target===absolute||['.ts','.tsx','.js','.mjs','.cjs','.rs'].some(ext=>target+ext===absolute))return true;
+    }
+    return false;
+  })());
   if(references.length) {skipped.push(`${rel}: referenced by ${references.slice(0,4).join(', ')}`);continue;}
   if(apply) rmSync(absolute);
   removed.push(rel);
